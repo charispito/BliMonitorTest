@@ -1,0 +1,53 @@
+﻿<Window x:Class="BliMonitorTest.OneChannelWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:BliMonitorTest" xmlns:controls="clr-namespace:BliMonitorTest.controls"
+        mc:Ignorable="d"
+        Title="Bli 모니터링 프로그램" Height="800" Width="1100" SizeToContent="Width">
+    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+        <Grid ShowGridLines="False">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="20"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="20"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition/>
+                <RowDefinition Height="20"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="20"/>
+                <ColumnDefinition Width="850"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="20"/>
+            </Grid.ColumnDefinitions>
+            <Grid Grid.Column="1" Grid.ColumnSpan="2" Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                    <ColumnDefinition Width="900"/>
+                    <ColumnDefinition Width="200"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <CheckBox Content="바탕화면 저장" FontSize="17" VerticalContentAlignment="Center" HorizontalAlignment="Right" Margin="10, 0" x:Name="SaveCheck"/>
+                <Label Grid.Column="5" Margin="0,0,20,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontSize="17" x:Name="VersionText"/>
+                <Border Grid.Row="1" Grid.Column="1" Padding="5" BorderThickness="1" BorderBrush="#AAA">
+                    <WrapPanel>
+                        <Label Content="Save File Name" FontSize="17" VerticalContentAlignment="Center" FontWeight="Black"/>
+                        <TextBox FontSize="18" FontWeight="Black" Width="753" VerticalContentAlignment="Center" x:Name="FileName"/>
+                    </WrapPanel>
+                </Border>
+                <controls:LabeledCombobox x:Name="PortList" Title="COM"  Grid.Column="2" Margin="10, 0"/>
+                <Button Grid.Column="3" Content="연결" Padding="30, 0" Width="90" x:Name="ConnectButton"/>
+                <Button Grid.Column="4" Content="갱신" Padding="20, 0" Width="90" Margin="10, 0" x:Name="RefreshButton"/>
+                <Label Grid.Column="5" Content="2022.02.01 ver 1.0.0" FontWeight="Black" Visibility="Hidden"/>
+            </Grid>
+            <controls:OneChannelValueDetail x:Name="channel" Grid.Row="3" Grid.Column="1"/>
+            <controls:SingleDetail x:Name="DetailView" Grid.Column="2" Grid.Row="3" Margin="20, 0, 0, 0"/>
+            <controls:OxyView Grid.Column="1" Grid.Row="5" Grid.ColumnSpan="2" x:Name="Chart"/>
+        </Grid>
+    </ScrollViewer>
+</Window>

@@ -5,8 +5,28 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:BliMonitorTest"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="MainWindow" Height="400" Width="600">
     <Grid>
-        
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="20"/>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+            <ColumnDefinition Width="20"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="20"/>
+            <RowDefinition Height="40"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition/>
+            <RowDefinition Height="20"/>
+        </Grid.RowDefinitions>
+        <Label Content="검사 선택" Grid.Row="2" FontSize="35" Grid.Column="1" HorizontalContentAlignment="Center" Grid.ColumnSpan="2"/>
+        <WrapPanel Margin="10, 30" VerticalAlignment="Center" HorizontalAlignment="Center" Orientation="Vertical" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2">
+            <Button Content="1채널 검사" Width="150" Height="40" Margin="10, 30" x:Name="OneChannelButton"/>
+            <!--
+            <Button Content="8채널 검사" Height="40" Margin="10, 10" x:Name="MultiChannelButton"/>
+            -->
+        </WrapPanel>
     </Grid>
 </Window>

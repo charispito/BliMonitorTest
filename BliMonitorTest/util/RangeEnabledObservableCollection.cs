@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SmartCaraTest.util
+namespace BliMonitorTest.util
 {
     class RangeEnabledObservableCollection<T> : ObservableCollection<T>
     {

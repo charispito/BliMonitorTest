@@ -23,6 +23,22 @@ namespace BliMonitorTest
         public MainWindow()
         {
             InitializeComponent();
+            OneChannelButton.Click += OneChannelButton_Click;
+            //멀티제품 - 미구현
+            //MultiChannelButton.Click += MultiChannelButton_Click;
+        }
+
+        private void OneChannelButton_Click(object sender, RoutedEventArgs e)
+        {
+            new OneChannelWindow().Show();
+            this.Close();
+        }
+
+        private void MultiChannelButton_Click(object sender, RoutedEventArgs e)
+        {
+            //멀티제품 - 미구현
+            //new MultiWindow1().Show();
+            this.Close();
         }
     }
 }

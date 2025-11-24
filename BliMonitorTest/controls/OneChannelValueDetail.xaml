@@ -1,0 +1,66 @@
+﻿<UserControl x:Class="BliMonitorTest.controls.OneChannelValueDetail"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:BliMonitorTest.controls"
+             mc:Ignorable="d" 
+             d:DesignHeight="300" d:DesignWidth="800">
+    <Border Margin="6" BorderBrush="#AAA" BorderThickness="1" Background="#FFF">
+        <Grid ShowGridLines="False">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="5"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition Width="5"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="5"/>
+                <RowDefinition Height="35"/>
+                <RowDefinition Height="35"/>
+                <RowDefinition Height="35"/>
+                <RowDefinition Height="35"/>
+                <RowDefinition Height="35"/>
+                <RowDefinition Height="35"/>
+                <RowDefinition Height="5"/>
+            </Grid.RowDefinitions>
+            <local:DoubleLabel Grid.Row="1" Grid.Column="2" Margin="5, 3" x:Name="Item1"/>
+            <local:DoubleLabel Grid.Row="2" Grid.Column="2" Margin="5, 3" x:Name="Item2"/>
+            <local:DoubleLabel Grid.Row="3" Grid.Column="2" Margin="5, 3" x:Name="Item3"/>
+            <local:DoubleLabel Grid.Row="4" Grid.Column="2" Margin="5, 3" x:Name="Item4"/>
+            <local:DoubleLabel Grid.Row="5" Grid.Column="2" Margin="5, 3" x:Name="Item5"/>
+            <local:DoubleLabel Grid.Row="6" Grid.Column="2" Margin="5, 3" x:Name="Item6"/>
+            <CheckBox x:Name="Item1Check" Grid.Row="1" Grid.Column="1" VerticalAlignment="Center"/>
+            <CheckBox x:Name="Item2Check" Grid.Row="2" Grid.Column="1" VerticalAlignment="Center"/>
+            <CheckBox x:Name="Item3Check" Grid.Row="3" Grid.Column="1" VerticalAlignment="Center"/>
+            <CheckBox x:Name="Item4Check" Grid.Row="4" Grid.Column="1" VerticalAlignment="Center"/>
+
+            <local:DoubleLabel Grid.Row="1" Grid.Column="4" Margin="5, 3" x:Name="Item11"/>
+            <local:DoubleLabel Grid.Row="2" Grid.Column="4" Margin="5, 3" x:Name="Item12"/>
+            <local:DoubleLabel Grid.Row="3" Grid.Column="4" Margin="5, 3" x:Name="Item13"/>
+            <local:DoubleLabel Grid.Row="4" Grid.Column="4" Margin="5, 3" x:Name="Item14"/>
+            <local:DoubleLabel Grid.Row="5" Grid.Column="4" Margin="5, 3" x:Name="Item15"/>
+            <local:DoubleLabel Grid.Row="6" Grid.Column="4" Margin="5, 3" x:Name="Item16"/>
+            <CheckBox x:Name="Item5Check" Grid.Row="1" Grid.Column="3" VerticalAlignment="Center"/>
+            <CheckBox x:Name="Item6Check" Grid.Row="2" Grid.Column="3" VerticalAlignment="Center"/>
+            <CheckBox x:Name="Item7Check" Grid.Row="3" Grid.Column="3" VerticalAlignment="Center"/>
+            <CheckBox x:Name="Item8Check" Grid.Row="4" Grid.Column="3" VerticalAlignment="Center"/>
+
+            <local:DoubleLabel Grid.Row="4" Grid.Column="5" Margin="5, 3" x:Name="VersionBox" TitleBackground="#EEE"/>
+            <local:DoubleLabel Grid.Row="5" Grid.Column="5" Margin="5, 3" x:Name="CompileBox" TitleBackground="#EEE"/>
+            <local:DoubleLabel Grid.Row="6" Grid.Column="5" Margin="5, 3" x:Name="Statebox" TitleBackground="#EEE"/>
+            <local:ModeTimeLabel Grid.Row="2" Grid.RowSpan="2" Grid.Column="6" Margin="5, 3" x:Name="ModeTimeView"/>
+            <!--<local:DoubleLabel Grid.Row="6" Grid.Column="5" Margin="5, 3" x:Name="Item26" TitleBackground="#EEE"/>-->
+            <Label Grid.Row="2" Grid.RowSpan="2" Grid.Column="5" Margin="5, 3"  BorderBrush="#000" BorderThickness="1" x:Name="StateContent" FontSize="18" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+            <local:DoubleLabel TitleBroderBrush="Black" ContentBroderBrush="Black" ContentSize="16" TitleSize="16" Grid.RowSpan="1" x:Name="ChannelView" Grid.Row="1" Grid.Column="5" TitleBackground="#FFF" Margin="5, 3" Title="연결상태"/>
+            <CheckBox Content="신버전 적용" Grid.Column="6" Grid.Row="1" Height="35" FontSize="20" VerticalContentAlignment="Center" Margin="5, 3" x:Name="ApplyNewVersion"/>
+            <Button Padding="0" x:Name="ParameterButton" Grid.Row="4" Grid.Column="6" Margin="5, 3" Content="파라미터" FontSize="17"/>
+            <Button Padding="0" x:Name="StartButton" Background="Transparent" FontSize="16" BorderBrush="Blue" BorderThickness="1" Grid.Row="5" Grid.Column="6" Grid.RowSpan="1" Content="Start" Foreground="Blue" Margin="5, 5"/>
+            <Button Padding="0" x:Name="StopButton" Background="Transparent" FontSize="16" BorderBrush="Red" BorderThickness="1" Grid.Row="6" Grid.Column="6" Grid.RowSpan="1" Content="Stop"  Foreground="Red" Margin="5, 5"/>
+        </Grid>
+    </Border>
+</UserControl>

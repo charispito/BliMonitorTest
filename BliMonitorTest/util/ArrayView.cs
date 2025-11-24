@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SmartCaraTest.util
+namespace BliMonitorTest.util
 {
     public class ArrayView<T> : IEnumerable<T>
     {

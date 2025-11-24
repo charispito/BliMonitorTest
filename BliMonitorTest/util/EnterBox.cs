@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace SmartCaraTest.util
+namespace BliMonitorTest.util
 {
     public partial class EnterBox : TextBox
     {
