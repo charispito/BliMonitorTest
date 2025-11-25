@@ -9,7 +9,12 @@
     <AutoGenerateBindingRedirects>True</AutoGenerateBindingRedirects>
     <AssemblyVersion>1.0.0.9</AssemblyVersion>
     <FileVersion>1.0.0.9</FileVersion>
+    <ApplicationIcon>logo_re.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="logo_re.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="OxyPlot.Core" Version="2.1.0" />
