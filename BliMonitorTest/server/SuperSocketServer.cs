@@ -50,7 +50,7 @@ namespace BliMonitorTest.server
                 byte[] cmd = Protocol.GetNewCommand(1);
                 session.Send(cmd, 0, cmd.Length);
                 cmd = Protocol.GetCommand(1);
-                session.Send(cmd, 0, cmd.Length); ;
+                session.Send(cmd, 0, cmd.Length);
                 Console.WriteLine("send");
             });
         }

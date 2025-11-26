@@ -1,11 +1,12 @@
-﻿using OxyPlot;
-using BliMonitorTest.controls;
+﻿using BliMonitorTest.controls;
 using BliMonitorTest.data;
 using BliMonitorTest.server;
 using BliMonitorTest.util;
+using OxyPlot;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Ports;
 using System.Linq;
@@ -124,6 +125,12 @@ namespace BliMonitorTest
 
         private void Timer_Elapsed(object sender, ElapsedEventArgs e)
         {
+            Console.Write("00000000000000");
+            Console.WriteLine("1  Timer Elapsed");
+            Debug.WriteLine("2  Timer Elapsed");
+            System.Diagnostics.Debug.WriteLine("3   Timer Elapsed");
+            Trace.WriteLine("444444444444444444444");
+
             if (port.IsOpen)
             {
                 TestTime += TimeSpan.FromSeconds(1);

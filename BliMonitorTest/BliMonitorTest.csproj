@@ -13,6 +13,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Log4Net.config" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Log4Net.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="logo_re.ico" />
   </ItemGroup>
 

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using log4net;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -20,12 +21,17 @@ namespace BliMonitorTest
     /// </summary>
     public partial class MainWindow : Window
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(MainWindow));
+
         public MainWindow()
         {
             InitializeComponent();
             OneChannelButton.Click += OneChannelButton_Click;
+
             //멀티제품 - 미구현
             //MultiChannelButton.Click += MultiChannelButton_Click;
+
+            //log.Debug($"환경: {Environment.MachineName}, 사용자: {Environment.UserName}");
         }
 
         private void OneChannelButton_Click(object sender, RoutedEventArgs e)
