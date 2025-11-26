@@ -29,8 +29,8 @@ namespace BliMonitorTest.util
         public ClientData(TcpClient client)
         {
             this.client = client;
-            this.readByteData = new byte[57];
-            this.readByteParameterData = new byte[70];
+            this.readByteData = new byte[57];                   // START STOP 상태 Packet 레이아웃형태
+            this.readByteParameterData = new byte[70];          // ERROR DATGA요청, ERROR 리셋, PARAMETER 요청, PARAMTER 설정의 Packet 레이아웃형태
             ResponseCount = 0;
             Start = false;
             string clientEndPoint = client.Client.RemoteEndPoint.ToString();

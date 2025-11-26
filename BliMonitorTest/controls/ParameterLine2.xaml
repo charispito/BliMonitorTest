@@ -1,0 +1,53 @@
+﻿<UserControl x:Class="BliMonitorTest.controls.ParameterLine2"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:BliMonitorTest.controls"
+             mc:Ignorable="d" 
+             d:DesignHeight="187" d:DesignWidth="400">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <Label Content="Mode4" Margin="0, 3" FontWeight="Black"/>
+        <local:ParameterLabel Grid.Row="1" Height="17" x:Name="Mode41" Title="ON TIME CW" Margin="0, 2, 0, 0"/>
+        <local:ParameterLabel Grid.Row="2" Height="17" x:Name="Mode42" Title="OFF TIME CW" Margin="0, 2, 0, 0"/>
+        <local:ParameterLabel Grid.Row="3" Height="17" x:Name="Mode43" Title="ON TIME CCW" Margin="0, 2, 0, 0"/>
+        <local:ParameterLabel Grid.Row="4" Height="17" x:Name="Mode44" Title="OFF TIME CCW" Margin="0, 2, 0, 0"/>
+        <local:ParameterLabel Grid.Row="5" Height="17" x:Name="Mode45" Title="HEATER TEMP" Margin="0, 2, 0, 0"/>
+        <local:ParameterLabel Grid.Row="6" Height="17" x:Name="Mode46" Title="HEATER OFF TIME" Margin="0, 2, 0, 0"/>
+        <local:ParameterLabel Grid.Row="7" Height="17" x:Name="Mode47" Title="VENTILE TEMP" Margin="0, 2, 0, 0"/>
+        <local:ParameterLabel Grid.Row="8" Height="17" x:Name="Mode48" Title="OPERATE TIME" Margin="0, 2, 0, 0"/>
+
+        <Label Content="Mode5" Grid.Column="1" Margin="0, 3" FontWeight="Black"/>
+        <local:ParameterLabel Grid.Row="1" Grid.Column="1" Height="17" x:Name="Mode51" Title="ON TIME CW" Margin="2, 2, 0, 0"/>
+        <local:ParameterLabel Grid.Row="2" Grid.Column="1" Height="17" x:Name="Mode52" Title="OFF TIME CW" Margin="2, 2, 0, 0"/>
+        <local:ParameterLabel Grid.Row="3" Grid.Column="1" Height="17" x:Name="Mode53" Title="ON TIME CCW" Margin="2, 2, 0, 0"/>
+        <local:ParameterLabel Grid.Row="4" Grid.Column="1" Height="17" x:Name="Mode54" Title="OFF TIME CCW" Margin="2, 2, 0, 0"/>
+        <local:ParameterLabel Grid.Row="5" Grid.Column="1" Height="17" x:Name="Mode55" Title="HEATER TEMP" Margin="2, 2, 0, 0"/>
+        <local:ParameterLabel Grid.Row="6" Grid.Column="1" Height="17" x:Name="Mode56" Title="HEATER OFF TIME" Margin="2, 2, 0, 0"/>
+        <local:ParameterLabel Grid.Row="7" Grid.Column="1" Height="17" x:Name="Mode57" Title="VENTILE TEMP" Margin="2, 2, 0, 0"/>
+        <local:ParameterLabel Grid.Row="8" Grid.Column="1" Height="17" x:Name="Mode58" Title="OPERATE TIME" Margin="2, 2, 0, 0"/>
+
+        <Label Content="Motor" Grid.Column="2" Margin="0, 3" FontWeight="Black"/>
+        <local:ParameterLabel Grid.Row="1" Grid.Column="2" Height="17" x:Name="Motor1" Title="이물질 감지 시간" Margin="2, 2, 0, 0"/>
+        <local:ParameterLabel Grid.Row="2" Grid.Column="2" Height="17" x:Name="Motor2" Title="이물질 감지 전류" Margin="2, 2, 0, 0"/>
+        <local:ParameterLabel Grid.Row="3" Grid.Column="2" Height="17" x:Name="Motor3" Title="이물질 감지 횟수" Margin="2, 2, 0, 0"/>
+        <local:ParameterLabel Grid.Row="4" Grid.Column="2" Height="17" x:Name="Motor4" Title="과부하 감지 전류" Margin="2, 2, 0, 0"/>
+        <local:ParameterLabel Grid.Row="5" Grid.Column="2" Height="17" x:Name="Motor5" Title="과부하 감지 횟수" Margin="2, 2, 0, 0"/>
+    </Grid>
+</UserControl>

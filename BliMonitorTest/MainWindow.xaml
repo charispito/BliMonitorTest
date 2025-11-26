@@ -21,7 +21,7 @@
             <RowDefinition/>
             <RowDefinition Height="20"/>
         </Grid.RowDefinitions>
-        <Label Content="검사 선택" Grid.Row="2" FontSize="35" Grid.Column="1" HorizontalContentAlignment="Center" Grid.ColumnSpan="2"/>
+        <Label Content="BLI 검사 선택" Grid.Row="2" FontSize="35" Grid.Column="1" HorizontalContentAlignment="Center" Grid.ColumnSpan="2"/>
         <WrapPanel Margin="10, 30" VerticalAlignment="Center" HorizontalAlignment="Center" Orientation="Vertical" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2">
             <Button Content="1채널 검사" Width="150" Height="40" Margin="10, 30" x:Name="OneChannelButton"/>
             <!--

@@ -1,0 +1,17 @@
+﻿<UserControl x:Class="BliMonitorTest.controls.LabeledBox"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:BliMonitorTest.controls"
+             mc:Ignorable="d" 
+             d:DesignHeight="30" d:DesignWidth="230">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <Label BorderBrush="#AAA" BorderThickness="1" x:Name="label" Background="#FFA3BDFD"/>
+        <TextBox Grid.Column="1" BorderBrush="#AAA" BorderThickness="1" x:Name="cont"/>
+    </Grid>
+</UserControl>
