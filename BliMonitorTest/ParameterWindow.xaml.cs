@@ -2,6 +2,7 @@
 using BliMonitorTest.data;
 using BliMonitorTest.setting;
 using BliMonitorTest.util;
+using log4net;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -26,6 +27,8 @@ namespace BliMonitorTest
     /// </summary>
     public partial class ParameterWindow : Window
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(ParameterWindow));
+
         private SerialPort port = null;
         private bool Errorset = false;
         private OneChannelValueDetail oneChannel;
@@ -140,6 +143,13 @@ namespace BliMonitorTest
                     command.PrintHex(1);
                     oneChannel.setParameter();
                     port.Write(command, 0, command.Length);
+
+                    log.Debug("============        LOG DATA ParameterWindow.cs [ReadErrorButton] RESPONSE START       ==================");
+                    log.Debug("ReadErrorButton IsNewVersion : " + oneChannel.IsNewVersion);
+                    ByteLogHelper.LogPacket(command, "RX");
+                    ByteLogHelper.ToHexWith0x(command);
+                    ByteLogHelper.DumpLinesWith0x(command, 16);
+                    log.Debug("============        LOG DATA ParameterWindow.cs [ReadErrorButton] RESPONSE END       ==================");
                 };
                 WriteParamButton.Click += WriteParamButton_Click;
                 ResetErrorButton.Click += ResetErrorButton_Click;
@@ -338,7 +348,15 @@ namespace BliMonitorTest
                 MessageBox.Show("값이 설정 되지 않았습니다.");
                 return;
             }
+            
             byte[] command = GetParameterSettingData();
+
+            log.Debug("============        LOG DATA ParameterWindow.cs [WriteParamButton_Click] RESPONSE START       ==================");
+            log.Debug("WriteParamButton_Click RightSet : " + RightSet);
+            ByteLogHelper.LogPacket(command, "RX");
+            ByteLogHelper.ToHexWith0x(command);
+            ByteLogHelper.DumpLinesWith0x(command, 16);
+            log.Debug("============        LOG DATA ParameterWindow.cs [WriteParamButton_Click] RESPONSE END       ==================");
 
             port.Write(command, 0, command.Length);
             //PrintCommand(GetParameterSettingData());
@@ -462,6 +480,7 @@ namespace BliMonitorTest
         private void ResetErrorButton_Click(object sender, RoutedEventArgs e)
         {
             byte[] command = null;
+
             if (oneChannel.IsNewVersion)
             {
                 command = Protocol.GetErrorReset(true);
@@ -471,17 +490,32 @@ namespace BliMonitorTest
                 command = Protocol.GetErrorReset(false);
             }
             command.PrintHex(1);
+
+            log.Debug("============        LOG DATA ParameterWindow.cs [ResetErrorButton_Click] RESPONSE START       ==================");
+            log.Debug("ResetErrorButton_Click oneChannel.IsNewVersion : " + oneChannel.IsNewVersion);
+            ByteLogHelper.LogPacket(command, "RX");
+            ByteLogHelper.ToHexWith0x(command);
+            ByteLogHelper.DumpLinesWith0x(command, 16);
+            log.Debug("============        LOG DATA ParameterWindow.cs [ResetErrorButton_Click] RESPONSE END       ==================");
+
             if (port != null)
             {
-                
                 port.Write(command, 0, command.Length);
             }
         }
 
         private void ReadParamButton_Click(object sender, RoutedEventArgs e)
         {
-            byte[] command = Protocol.GetParameter(oneChannel.IsNewVersion);
+            byte[] command = Protocol.GetParameter(oneChannel.IsNewVersion);        // 0000  12 01 99 07 00 60 34
             command.PrintHex(1);
+
+            log.Debug("============        LOG DATA ParameterWindow.cs [ReadParamButton_Click] RESPONSE START       ==================");
+            log.Debug("ReadParamButton_Click oneChannel.IsNewVersion : " + oneChannel.IsNewVersion);
+            ByteLogHelper.LogPacket(command, "RX");
+            ByteLogHelper.ToHexWith0x(command);
+            ByteLogHelper.DumpLinesWith0x(command, 16);
+            log.Debug("============        LOG DATA ParameterWindow.cs [ReadParamButton_Click] RESPONSE END       ==================");
+
             if (port != null)
             {
                 oneChannel.setParameter();
@@ -521,11 +555,12 @@ namespace BliMonitorTest
             HeaterGridSetting.ItemsSource = heater11;
             HeaterGridSetting2.ItemsSource = heater12;
         }
-
-
-
+        
         public void setParameter(byte[] data)
         {
+            log.Debug("parameterwindow  data.Length 537 : " + data.Length);
+            log.Debug("parameterwindow  data : " + data);
+
             if (data.Length != 70)
             {
                 return;
@@ -751,6 +786,14 @@ namespace BliMonitorTest
         {
             byte[] command = new byte[70];
             command[0] = 0xCC;
+
+            log.Debug(command);
+            log.Debug(" parameterwindow command 773 :  " + command);    
+            log.Debug(" parameterwindow command 773 :  " + command[0]);
+            log.Debug(" parameterwindow command 773 :  " + command[1]);
+            log.Debug(" parameterwindow command 773 :  " + command);
+
+
             if (oneChannel.IsNewVersion)
             {
                 command[0] = 0x12;

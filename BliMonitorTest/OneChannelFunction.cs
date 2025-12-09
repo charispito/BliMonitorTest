@@ -242,7 +242,16 @@ namespace BliMonitorTest
                     motor = getMotorState(motorRun),
                     motor_current = currentfloat / 2.0
                 };
-                channel.WriteFile(read);
+
+            log.Debug("onechannelfunction 246 : " + data);
+            log.Debug("============        OneChannelWindow setView           ==================");
+            log.Debug("OneChannelWindow setView 248 data : ");
+            ByteLogHelper.LogPacket(data, "RX");
+            log.Debug("============        OneChannelWindow setView           ==================");
+
+            log.Debug("onechannelfunction 246 : " + read);
+
+            channel.WriteFile(read);
             //}
             //ReadData read = new ReadData()
             //{

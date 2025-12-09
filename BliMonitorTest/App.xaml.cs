@@ -26,7 +26,7 @@ namespace BliMonitorTest
             XmlConfigurator.Configure(new FileInfo(configPath));
 
             // 60일 보존 정책 적용
-            CleanupOldLogs(Path.Combine(baseDir, "logs"), TimeSpan.FromDays(3));
+            CleanupOldLogs(Path.Combine(baseDir, "logs"), TimeSpan.FromDays(60));
 
             LogManager.GetLogger(typeof(App)).Info("log4net 초기화 및 로그 정리 완료");
         }

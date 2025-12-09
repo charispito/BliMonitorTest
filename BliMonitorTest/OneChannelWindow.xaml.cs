@@ -2,6 +2,7 @@
 using BliMonitorTest.data;
 using BliMonitorTest.server;
 using BliMonitorTest.util;
+using log4net;
 using OxyPlot;
 using System;
 using System.Collections.Generic;
@@ -26,10 +27,16 @@ using System.Windows.Shapes;
 using FontWeights = System.Windows.FontWeights;
 using Timer = System.Timers.Timer;
 
+// Dummy Serial Port Namespace  
+using DummySerialPortNs;
+using System.Collections;
+
 namespace BliMonitorTest
 {
     public partial class OneChannelWindow : Window
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(OneChannelWindow));
+
         private Dictionary<int, int> seriesList = new Dictionary<int, int>();
         private SerialPort port;
         public bool Modify = false;
@@ -42,6 +49,41 @@ namespace BliMonitorTest
         private Timer testTimer;
         private List<OxyColor> colorList = new List<OxyColor>();
         
+        // 더미 포트(응답 생성 전용)
+        private DummySerialPortNs.DummySerialPort _dummyPort;    // 더미 포트
+        // 더미 모드 스위치: 체크박스 상태를 즉시 반영하는 계산 프로퍼티
+        private bool UseDummy => UseDummyCheck?.IsChecked == true;
+        // 현재 선택된 시뮬레이션 프로토콜
+        private ProtocolKind CurrentKind = ProtocolKind.StartStopStatus;
+
+        // 1) 더미 인터페이스 콤보값(1~5) → enum 매핑
+        private void ApplyDummyKindFromCombo()
+        {
+            try
+            {
+                if (DummyInterfaceCombo?.SelectedItem is ComboBoxItem item)
+                {
+                    var selText = (item.Content?.ToString() ?? "").Trim();
+                    if (!int.TryParse(selText, out var sel))
+                        sel = 2;
+
+                    switch (sel)
+                    {
+                        case 1: CurrentKind = ProtocolKind.ErrorDataRequest;    break;
+                        case 2: CurrentKind = ProtocolKind.ErrorReset;          break;
+                        case 3: CurrentKind = ProtocolKind.StartStopStatus;     break;
+                        case 4: CurrentKind = ProtocolKind.ParameterRequest;    break;
+                        case 5: CurrentKind = ProtocolKind.ParameterSet;        break; // 필요시 별도 매핑
+                        default: CurrentKind = ProtocolKind.StartStopStatus;    break;
+                    }
+                }
+            }
+            catch
+            {
+                CurrentKind = ProtocolKind.StartStopStatus;
+            }
+        }
+
         public OneChannelWindow()
         {
             InitializeComponent();
@@ -103,6 +145,7 @@ namespace BliMonitorTest
         {
             if (parameterReceived == null)
                 parameterReceived = new List<byte>();
+
             parameterReceived.Clear();
             parameterCnt = 1;
         }
@@ -125,17 +168,17 @@ namespace BliMonitorTest
 
         private void Timer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            Console.Write("00000000000000");
-            Console.WriteLine("1  Timer Elapsed");
-            Debug.WriteLine("2  Timer Elapsed");
-            System.Diagnostics.Debug.WriteLine("3   Timer Elapsed");
-            Trace.WriteLine("444444444444444444444");
-
             if (port.IsOpen)
             {
                 TestTime += TimeSpan.FromSeconds(1);
+
+                log.Debug("onchannelwindow Timer_Elapsed sender : " + sender);
+
+                log.Debug("onchannelwindow Timer_Elapsed parameterCnt : " + parameterCnt);
+                log.Debug("onchannelwindow Timer_Elapsed TestTime : " + TestTime);
+                log.Debug("onchannelwindow Timer_Elapsed channel.IsNewVersion : " + channel.IsNewVersion);
+
                 //if (!channel.ParameterMode)
-                //{
                 if (parameterCnt > 0)
                 {
                     Console.WriteLine("ParameterLoad");
@@ -177,10 +220,42 @@ namespace BliMonitorTest
             int Length = port.BytesToRead;
             byte[] data = new byte[Length];
             port.Read(data, 0, Length);
-            Console.WriteLine("---------");
-            data.PrintHex(1);
-            Console.WriteLine("---------");
-            receiveData(data, Length);
+
+            log.Debug("============        LOG DATA OneChannelWindow.cs [Port_DataReceived] RESPONSE START       ==================");
+            if(Length == 57 || Length == 70)
+            {
+                log.Debug("Port_DataReceived sender : " + sender);
+                log.Debug("Port_DataReceived length OK DATA : " + data.Length);
+
+                try
+                {
+                    var sp = sender as SerialPort;
+                    if (sp == null || !sp.IsOpen) return;
+
+                    var len = sp.BytesToRead;
+                    if (len <= 0) return;
+
+                    var buf = new byte[len];
+                    var n = sp.Read(buf, 0, len);
+                    if (n > 0)
+                    {
+                        // 실물은 프로토콜 프레이밍이 필요하다면 누적 후 완프레임에서 호출
+                        receiveData(buf, n);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("RX error: " + ex);
+                }
+            }
+
+            ByteLogHelper.LogPacket(data, "RX");
+            ByteLogHelper.ToHexWith0x(data);
+            ByteLogHelper.DumpLinesWith0x(data, 16);
+            log.Debug("============        LOG DATA OneChannelWindow.cs [Port_DataReceived] RESPONSE END       ==================");
+
+            //data.PrintHex(1);
+            //receiveData(data, Length);
         }
 
         private void CheckNewDataValid(byte[] array)
@@ -328,52 +403,194 @@ namespace BliMonitorTest
                 }
             }
         }
-        
+
         private void ConnectButton_Click(object sender, RoutedEventArgs e)
         {
-            //new SuperSocketServer().init();
-            //return;
+            if ( PortList.box.SelectedIndex == -1 && !UseDummyCheck.IsChecked.Value)
+            {
+                MessageBox.Show("포트가 선택 되지 않았습니다.");
+                return;
+            }
+
+            // 1) 더미 인터페이스 적용
+            ApplyDummyKindFromCombo();
+
+            // 2) SerialPort를 실제로 Open(더미/실물 공통)
             try
             {
-                if (port.IsOpen)
+                if (port == null)
+                    port = new SerialPort();
+
+                // 포트 이름/속도는 기존 UI에서 가져오세요.
+                // 아래는 예시: PortList.box.SelectedItem.ToString() 등
+                // port.PortName = "COM5"; // 하드코딩 테스트 시
+                // BaudRate 등 기존 설정 유지
+                if (port.BaudRate <= 0) port.BaudRate = 9600;
+                
+                if(PortList.box.SelectedItem == null)
                 {
-                    port.Close();
-                    if(channel.streamWriter != null)
-                    {
-                        channel.streamWriter.Close();
-                    }
-                    channel.ConnectState = 0;
-                    ConnectButton.Content = "연결";
-                    return;
-                }
-                if (PortList.box.SelectedIndex == -1)
-                {
-                    MessageBox.Show("포트가 선택 되지 않았습니다.");
-                }
-                else
+                    port.PortName = "COM1";
+                } else
                 {
                     port.PortName = PortList.box.SelectedItem.ToString();
-                    port.Open();
-                    channel.ConnectState = 1;
-                    ConnectButton.Content = "해제";
                 }
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                Console.WriteLine(ex.ToString());
-                MessageBox.Show("포트를 확인 하세요");
-            }
-            catch (IOException ex) {
-                Console.WriteLine(ex.ToString());
-                ConnectButton.Content = "연결";
-                return;
+
+                // 중복 이벤트 방지
+                port.DataReceived -= Port_DataReceived;
+                port.DataReceived += Port_DataReceived;
+
+                if (!port.IsOpen)
+                    port.Open();
+
+                // 여기서 UI 연결 상태 갱신(예: 라벨/아이콘/버튼 텍스트 등)
+                // UpdateUiConnected(true);
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.ToString());
-                MessageBox.Show("문제가 있습니다.");
+                // UI에 연결 실패 표시
+                // UpdateUiConnected(false);
+                Console.WriteLine("Open failed: " + ex);
+                return;
             }
 
+            //new SuperSocketServer().init();
+            //return;
+            // 3) 동작 분기
+            if (UseDummy)
+            {
+                // 더미 응답을 만들어 '수신된 것처럼' 밀어넣기
+                if (_dummyPort == null) _dummyPort = new DummySerialPortNs.DummySerialPort();
+                if (!_dummyPort.IsOpen) _dummyPort.Open();
+
+                // REQ 생성 및 로깅(선택)
+                var req = _dummyPort.GetRequestPacket(CurrentKind);
+                if (req.Length > 0)
+                {
+                    // 실제 포트에도 써서 TX 로그/후처리가 동일하게 보이게 할 수 있음(옵션)
+                    // 포트가 실제로 연결 안돼도 Write는 예외 없이 통과할 수 있음(가상 포트/드라이버 상황)
+                    try {
+                        log.Debug("============        LOG DATA ConnectButton_Click [req] REQUEST START       ==================");
+                        port.Write(req, 0, req.Length);
+                        ByteLogHelper.LogPacket(req, "RX");
+                        ByteLogHelper.ToHexWith0x(req);
+                        ByteLogHelper.DumpLinesWith0x(req, 16);
+                        log.Debug("============        LOG DATA ConnectButton_Click [req] REQUEST END       ==================");
+                    } catch { /* 무시 */ }
+                }
+
+                // 더미에서 해당 요청의 RES 생성
+                var simulated = GetSimulatedResponse(_dummyPort, CurrentKind);
+                if (simulated?.Length > 0)
+                {
+                    // 핵심: receiveData에 직접 주입해서 "수신된 것처럼" 처리
+                    receiveData(simulated, simulated.Length);
+
+                    log.Debug("============        LOG DATA ConnectButton_Click [req] RESPONSE START       ==================");
+                    port.Write(simulated, 0, simulated.Length);
+                    ByteLogHelper.LogPacket(simulated, "TX");
+                    ByteLogHelper.ToHexWith0x(simulated);
+                    ByteLogHelper.DumpLinesWith0x(simulated, 16);
+                    log.Debug("============        LOG DATA ConnectButton_Click [req] RESPONSE END       ==================");
+                }
+            }
+            else
+            {
+                try
+                {
+                    if (port.IsOpen)
+                    {
+                        port.Close();
+                        if (channel.streamWriter != null)
+                        {
+                            channel.streamWriter.Close();
+                        }
+                        channel.ConnectState = 0;
+                        ConnectButton.Content = "연결";
+                        return;
+                    }
+                    if (PortList.box.SelectedIndex == -1)
+                    {
+                        MessageBox.Show("포트가 선택 되지 않았습니다.");
+                    }
+                    else
+                    {
+                        port.PortName = PortList.box.SelectedItem.ToString();
+                        port.Open();
+                        channel.ConnectState = 1;
+                        ConnectButton.Content = "해제";
+                    }
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    Console.WriteLine(ex.ToString());
+                    MessageBox.Show("포트를 확인 하세요");
+                }
+                catch (IOException ex)
+                {
+                    Console.WriteLine(ex.ToString());
+                    ConnectButton.Content = "연결";
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.ToString());
+                    MessageBox.Show("문제가 있습니다.");
+                }
+            }
+        }
+
+        // 더미 응답 생성 헬퍼(더미 포트 내부 상수 RSP를 복제해서 반환)
+        private byte[] GetSimulatedResponse(DummySerialPort dummy, ProtocolKind kind)
+        {
+            try
+            {
+                switch (kind)
+                {
+                    case ProtocolKind.ErrorDataRequest:
+                        return (byte[])dummy.RSP_ErrorData.Clone();
+                    case ProtocolKind.ParameterRequest:
+                        return (byte[])dummy.RSP_ParameterRequest.Clone();
+                    case ProtocolKind.ParameterSet:
+                        
+                    case ProtocolKind.StartStopStatus:
+                        return (byte[])dummy.RSP_StartStopStatus.Clone();
+                    default:
+                        return (byte[])dummy.RSP_StartStopStatus.Clone();
+                }
+                //switch (kind)
+                //{
+                //    case ProtocolKind.ErrorDataRequest:
+                //        return (byte[])dummy.RSP_ErrorData.Clone();
+                //    case ProtocolKind.ParameterRequest:
+                //    case ProtocolKind.ParameterSet:
+                //        return (byte[])dummy.RSP_ParameterRequest.Clone();
+                //    case ProtocolKind.StartStopStatus:
+                //    default:
+                //        return (byte[])dummy.RSP_StartStopStatus.Clone();
+                //}
+            }
+            catch
+            {
+                return Array.Empty<byte>();
+            }
+        }
+
+        // 실물 요청 바이트 헬퍼(더미 REQ 상수를 재사용)
+        private byte[] GetRealRequestByKind(ProtocolKind kind)
+        {
+            if (_dummyPort == null) _dummyPort = new DummySerialPort();
+            switch (kind)
+            {
+                case ProtocolKind.ErrorDataRequest:
+                    return (byte[])_dummyPort.REQ_ErrorData.Clone();
+                case ProtocolKind.ParameterRequest:
+                    return (byte[])_dummyPort.REQ_ParameterRequest.Clone();
+                case ProtocolKind.ParameterSet:
+                    return (byte[])_dummyPort.REQ_ParameterSet.Clone();
+                case ProtocolKind.StartStopStatus:
+                default:
+                    return (byte[])_dummyPort.REQ_StartStopStatus.Clone();
+            }
         }
 
         private void OneChannelWindow_Loaded(object sender, RoutedEventArgs e)

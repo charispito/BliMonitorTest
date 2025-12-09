@@ -1,6 +1,7 @@
-﻿using OxyPlot;
-using BliMonitorTest.data;
+﻿using BliMonitorTest.data;
 using BliMonitorTest.util;
+using log4net;
+using OxyPlot;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -17,6 +18,8 @@ namespace BliMonitorTest.controls
 {
     public partial class ChannelItem : UserControl
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(ChannelItem));
+
         public StreamWriter streamWriter;
         private bool _ParameterMode = false;
         public bool ParameterMode
@@ -562,8 +565,12 @@ namespace BliMonitorTest.controls
                     motor = getMotorState(motorRun),
                     motor_current = currentfloat / 2.0
                 };
-                WriteFile(read);
-            //}
+
+                log.Debug("ChannelItem 556 : " + read);
+                log.Debug("ChannelItem 556 : " + data);
+                log.Debug("ChannelItem 556 : " + data.Length);
+
+            WriteFile(read);
             string errorStr = GetErrorName(binary0, binary1);
             StateContent.Content = errorStr;
             VersionBox.cont.Content = getModelName(model);

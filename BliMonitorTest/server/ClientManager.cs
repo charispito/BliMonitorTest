@@ -1,4 +1,5 @@
 ﻿using BliMonitorTest.data;
+using log4net;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -12,6 +13,8 @@ namespace BliMonitorTest.util
 {
     public class ClientManager
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(ClientManager));
+
         public static ConcurrentDictionary<long, ClientData> clientDic = new ConcurrentDictionary<long, ClientData>();
         public delegate void ConnectionHandler(ClientData clientSocket);
         public ConnectionHandler OnConnected;
@@ -24,6 +27,8 @@ namespace BliMonitorTest.util
 
         public void AddClient(TcpClient newClient)
         {
+            log.Debug("!!!!!!!!!!!  AddClient AddClient START 303030303030   !!!!!!!!!!!!!!!!");
+
             Console.WriteLine("connected");
             ClientData clientData = new ClientData(newClient);
             OnConnected(clientData);
@@ -39,6 +44,11 @@ namespace BliMonitorTest.util
 
                 //clientData.client.GetStream().BeginRead(clientData.readByteData, 0, clientData.readByteData.Length, new AsyncCallback(DataReceived), clientData);
                 clientDic.TryAdd(clientData.TimeMills, clientData);
+
+                log.Debug("!!!!!!!!!!!  AddClient START  !!!!!!!!!!!!!!!!");
+                log.Debug("ClientManager AddClient.Click 50 check : " + check);
+                log.Debug("ClientManager AddClient.Click 50 check : " + read);
+                log.Debug("!!!!!!!!!!!  AddClient END  !!!!!!!!!!!!!!!!");
             }
             catch (Exception ex)
             {
@@ -86,24 +96,49 @@ namespace BliMonitorTest.util
                             Console.WriteLine("init");
                         }
                     }
-                    
-                    if(result > 0)
+
+                    log.Debug("!!!!!!!!!!!!!!!!!!!        ClientManager ClientManager START      !!!!!!!!!!!!!!!!!!!");
+                    log.Debug("ClientManager asyncReadAsync 99 command.result : " + result);
+                    log.Debug("ClientManager asyncReadAsync 99 clientdata.channel.IsNewVersion : " + clientdata.channel.IsNewVersion);
+                    log.Debug("!!!!!!!!!!!!!!!!!!!        ClientManager ClientManager END      !!!!!!!!!!!!!!!!!!!");
+
+                    if (result > 0)
                     {
+                        log.Debug("clientmanager 95 : " + result);
+                        log.Debug("clientmanager 95 : " + clientdata.channel.IsNewVersion);
+
                         Console.WriteLine("-----------------");
                         Console.WriteLine("lenght: {0}",result);
                         Console.WriteLine("-----------------");
+
                         if (clientdata.channel.IsNewVersion)
                         {
                             if (clientdata.parameterCnt > 0)
                             {
                                 byte[] slice = clientdata.readByteParameterData.Slice(result);
                                 Array.Clear(clientdata.readByteParameterData, 0, result);
+
+                                log.Debug("clientmanager 108 : " + slice);
+                                log.Debug("clientmanager 108 : " + clientdata.readParameterData.Count);
+                                log.Debug("clientmanager 108 : " + clientdata.readParameterData.ToArray());
+
                                 Console.WriteLine("param read");
+
                                 //slice.PrintHex(1);
                                 clientdata.readParameterData.AddRange(slice);
-                                if(clientdata.readParameterData.Count >= 70)
+
+                                log.Debug("!!!!!!!!!!!!!!!!!!!        11111111111111111111 START IsNewVersion     !!!!!!!!!!!!!!!!!!!");
+                                log.Debug("ClientManager asyncReadAsync 127 slice : " + slice);
+                                log.Debug("ClientManager asyncReadAsync 127 clientdata.readParameterData.Count : " + clientdata.readParameterData.Count);
+                                log.Debug("ClientManager asyncReadAsync 127 clientdata.readParameterData.ToArray() : " + clientdata.readParameterData.ToArray());
+                                log.Debug("!!!!!!!!!!!!!!!!!!!        11111111111111111111 END IsNewVersion     !!!!!!!!!!!!!!!!!!!");
+
+                                if (clientdata.readParameterData.Count >= 70)
                                 {
                                     byte[] receive = clientdata.readParameterData.ToArray();
+
+                                    log.Debug("clientmanager 108 : " + receive);
+
                                     int s_idx = getNewStxIndex(receive);
                                     //receive.PrintHex(1);
                                     if (s_idx == 0)
@@ -158,6 +193,14 @@ namespace BliMonitorTest.util
                                 Array.Clear(clientdata.readByteData, 0, clientdata.readByteData.Length);
                                 clientdata.readCompleteData.AddRange(slice);
                                 //slice.PrintHex(1);
+
+                                log.Debug("!!!!!!!!!!!!!!!!!!!        2222222222222222 START      !!!!!!!!!!!!!!!!!!!");
+                                log.Debug("ClientManager asyncReadAsync 127 clientdata.readCompleteData.Count : " + clientdata.readCompleteData.Count);
+                                log.Debug("ClientManager asyncReadAsync 127 slice : " + slice);
+                                log.Debug("ClientManager asyncReadAsync 127 clientdata.readByteData.Length : " + clientdata.readByteData.Length);
+                                log.Debug("ClientManager asyncReadAsync 127 clientdata.readCompleteData : " + clientdata.readCompleteData);
+                                log.Debug("!!!!!!!!!!!!!!!!!!!        2222222222222222 END      !!!!!!!!!!!!!!!!!!!");
+
                                 if (clientdata.readCompleteData.Count >= 57)
                                 {
                                     byte[] receive = clientdata.readCompleteData.ToArray();
@@ -219,10 +262,22 @@ namespace BliMonitorTest.util
                                 byte[] slice = clientdata.readByteParameterData.Slice(result);
                                 Array.Clear(clientdata.readByteParameterData, 0, result);
                                 clientdata.readParameterData.AddRange(slice);
+
+                                log.Debug("!!!!!!!!!!!!!!!!!!!        3333333333333333 START Old Version     !!!!!!!!!!!!!!!!!!!");
+                                log.Debug("ClientManager asyncReadAsync 265 slice : " + slice);
+                                log.Debug("ClientManager asyncReadAsync 265 clientdata.readParameterData.Count : " + clientdata.readParameterData.Count);
+                                log.Debug("ClientManager asyncReadAsync 265 clientdata.readParameterData.ToArray() : " + clientdata.readParameterData.ToArray());
+                                log.Debug("!!!!!!!!!!!!!!!!!!!        3333333333333333 END Old Version     !!!!!!!!!!!!!!!!!!!");
+
                                 if (clientdata.readParameterData.Count >= 70)
                                 {
                                     byte[] receive = clientdata.readParameterData.ToArray();
                                     int s_idx = getStxIndex(receive);
+
+                                    log.Debug("ClientManager asyncReadAsync 275 receive : " + receive);
+                                    log.Debug("ClientManager asyncReadAsync 275 s_idx : " + s_idx);
+                                    ByteLogHelper.LogPacket(receive, "RX");
+
                                     Console.WriteLine("s_idx={0} length={1}", s_idx, receive.Length);
                                     //receive.PrintHex(1);
                                     if (s_idx == 0)
@@ -280,6 +335,14 @@ namespace BliMonitorTest.util
                                 {
                                     byte[] receive = clientdata.readCompleteData.ToArray();
                                     int s_idx = getStxIndex(receive);
+
+                                    log.Debug("!!!!!!!!!!!!!!!!!!!        44444444444444 START      !!!!!!!!!!!!!!!!!!!");
+                                    log.Debug("ClientManager asyncReadAsync 337 slice : " + slice);
+                                    log.Debug("ClientManager asyncReadAsync 337 slice : " + s_idx);
+                                    log.Debug("ClientManager asyncReadAsync 337 clientdata.readParameterData.Count : " + clientdata.readParameterData.Count);
+                                    log.Debug("ClientManager asyncReadAsync 337 clientdata.readParameterData.ToArray() : " + clientdata.readParameterData.ToArray());
+                                    ByteLogHelper.LogPacket(receive, "RX");
+                                    log.Debug("!!!!!!!!!!!!!!!!!!!        44444444444444 END      !!!!!!!!!!!!!!!!!!!");
                                     Console.WriteLine("s_idx={0} length={1}", s_idx, receive.Length);
                                     //receive.PrintHex(1);
                                     if (s_idx == 0)
@@ -344,6 +407,13 @@ namespace BliMonitorTest.util
         private void CheckClient(Object obj)
         {
             ClientData data = obj as ClientData;
+
+            log.Debug("!!!!!!!!!!!  CheckClient CheckClient START  !!!!!!!!!!!!!!!!");
+            log.Debug("ClientManager ReadErrorButton.Click 362 obj : " + obj);
+            log.Debug("ClientManager ReadErrorButton.Click 362             log.Debug(\"ClientManager ReadErrorButton.Click 362 command : \" + data);\r\n : " + data);
+            log.Debug("ClientManager ReadErrorButton.Click 362 data.parameterCnt : " + data.parameterCnt);
+            log.Debug("!!!!!!!!!!!  CheckClient CheckClient END  !!!!!!!!!!!!!!!!");
+
             while (data.Run)
             {
                 if(data.parameterCnt > 0)
@@ -366,6 +436,14 @@ namespace BliMonitorTest.util
                     {
                         RemoveClient(data);
                     }
+
+                    log.Debug("!!!!!!!!!!!  CheckClient CheckClient START  !!!!!!!!!!!!!!!!");
+                    log.Debug("ClientManager ReadErrorButton.Click 392 obj : " + obj);
+                    log.Debug("ClientManager ReadErrorButton.Click 392");
+                    log.Debug("ClientManager ReadErrorButton.Click 392 data.parameterCnt : " + command);
+                    ByteLogHelper.LogPacket(command, "RX");
+                    log.Debug("!!!!!!!!!!!  CheckClient CheckClient END  !!!!!!!!!!!!!!!!");
+
                     data.channel.TestTime += TimeSpan.FromSeconds(1);
                     data.readCompleteData.Clear();
                     data.parameterCnt--;
@@ -383,7 +461,15 @@ namespace BliMonitorTest.util
                         {
                             command = Protocol.GetCommand(1);
                         }
+
                         //Console.WriteLine("[{0}]write: " + command.byteToString(), DateTime.Now.ToString("HH:mm:ss"));
+                        log.Debug("!!!!!!!!!!!  CheckClient CheckClient START  !!!!!!!!!!!!!!!!");
+                        log.Debug("ClientManager ReadErrorButton.Click 418 obj : " + obj);
+                        log.Debug("ClientManager ReadErrorButton.Click 418");
+                        log.Debug("ClientManager ReadErrorButton.Click 418 data.parameterCnt : " + command);
+                        ByteLogHelper.LogPacket(command, "RX");
+                        log.Debug("!!!!!!!!!!!  CheckClient CheckClient END  !!!!!!!!!!!!!!!!");
+
                         if (data.client.Connected)
                         {
                             data.client.GetStream().Write(command, 0, command.Length);
@@ -392,6 +478,9 @@ namespace BliMonitorTest.util
                         {
                             RemoveClient(data);
                         }
+
+                        log.Debug("ClientManager 403 : " + command);
+                        log.Debug("ClientManager 403 : " + command.Length);
                     }
                     catch (Exception ex)
                     {
@@ -400,6 +489,9 @@ namespace BliMonitorTest.util
                         RemoveClient(data);
                     }
                 }
+
+                log.Debug("ClientManager 414 : " + data.errorCnt);
+
                 if (data.errorCnt > 0)
                     data.errorCnt--;
                 data.channel.TestTime += TimeSpan.FromSeconds(1);
@@ -412,6 +504,11 @@ namespace BliMonitorTest.util
             ClientData client = null;
             targetClient.Run = false;
             bool remove = clientDic.TryRemove(targetClient.TimeMills, out client);
+
+            log.Debug("!!!!!!!!!!!  RemoveClient RemoveClient START  !!!!!!!!!!!!!!!!");
+            log.Debug("ClientManager ReadErrorButton.Click 413 obj : " + remove);
+            log.Debug("!!!!!!!!!!!  RemoveClient RemoveClient END  !!!!!!!!!!!!!!!!");
+
             if (remove)
             {
                 OnDisconnected(targetClient);
@@ -441,9 +538,14 @@ namespace BliMonitorTest.util
 
         private void CheckCommand(byte[] array, ClientData data)
         {
-            Console.WriteLine("Function CheckCommand below...");
             //array.PrintHex(1);
             //byte check = Protocol.GetCheckSum(array, 1, array.Length - 3);
+            log.Debug("!!!!!!!!!!!  CheckCommand CheckCommand START  !!!!!!!!!!!!!!!!");
+            log.Debug("ClientManager ReadErrorButton.Click 489 array[2] : " + array[2]);
+            log.Debug("ClientManager ReadErrorButton.Click 489 array.Length : " + array.Length);
+            ByteLogHelper.LogPacket(array, "RX");
+            log.Debug("!!!!!!!!!!!  CheckCommand CheckCommand END  !!!!!!!!!!!!!!!!");
+            
             try
             {
                 switch (array[2])

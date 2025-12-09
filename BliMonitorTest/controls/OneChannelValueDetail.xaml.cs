@@ -1,5 +1,6 @@
 ﻿using BliMonitorTest.data;
 using BliMonitorTest.util;
+using log4net;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -27,16 +28,26 @@ namespace BliMonitorTest.controls
     /// </summary>
     public partial class OneChannelValueDetail : UserControl
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(OneChannelValueDetail));
+
         private int _ConnectState = 0;
         private bool _ParameterMode = false;
         public bool ParameterMode {
             get
             {
+                log.Debug("============        OneChannelValueDetail ParameterMode       ==================");
+                log.Debug("OneChannelValueDetail ParameterMode 39 : " + _ParameterMode);
+                log.Debug("============        OneChannelValueDetail ParameterMode       ==================");
+
                 return _ParameterMode;
             }
             set
             {
                 _ParameterMode = value;
+                log.Debug("============        OneChannelValueDetail ParameterMode       ==================");
+                log.Debug("OneChannelValueDetail ParameterMode 49 value : " + _ParameterMode);
+                log.Debug("============        OneChannelValueDetail ParameterMode       ==================");
+
                 if (_ParameterMode)
                 {
                     OnParameterLoadAction();
@@ -218,7 +229,8 @@ namespace BliMonitorTest.controls
             number++;
             air_sum += data.air_temp;
             off_sum += data.heater_off_time;
-            if(streamWriter != null)
+
+            if (streamWriter != null)
             {
                 Console.WriteLine("check2");
                 if (Modify)
@@ -310,11 +322,15 @@ namespace BliMonitorTest.controls
         {
             if (!port.IsOpen)
             {
+                log.Debug("OneChannelValueDetail StartButton_Click 328 : " + port);
+                log.Debug("============        OneChannelValueDetail  StartButton_Click 연결 되지 않았습니다        ==================");
                 MessageBox.Show("연결 되지 않았습니다.");
                 return;
             }
             if (run)
             {
+                log.Debug("OneChannelValueDetail StartButton_Click 335 : " + run);
+                log.Debug("============        OneChannelValueDetail  StartButton_Click 이미 운전중입니다        ==================");
                 MessageBox.Show("이미 운전중입니다.");
                 return;
             }
@@ -374,11 +390,21 @@ namespace BliMonitorTest.controls
             {
                 byte[] command = Protocol.GetNewCommand(3);
                 port.Write(command, 0, command.Length);
+                log.Debug("============        LOG DATA START  396 LINE     ==================");
+                ByteLogHelper.LogPacket(command, "TX");
+                ByteLogHelper.ToHexWith0x(command);
+                ByteLogHelper.DumpLinesWith0x(command, 16);
+                log.Debug("============        LOG DATA END       ==================");
             }
             else
             {
                 byte[] command = Protocol.GetCommand(3);
                 port.Write(command, 0, command.Length);
+                log.Debug("============        LOG DATA START  405 LINE       ==================");
+                ByteLogHelper.LogPacket(command, "TX");
+                ByteLogHelper.ToHexWith0x(command);
+                ByteLogHelper.DumpLinesWith0x(command, 16);
+                log.Debug("============        LOG DATA END       ==================");
             }
             //client.GetStream().Write(command, 0, command.Length);
         }

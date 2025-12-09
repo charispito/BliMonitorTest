@@ -5,7 +5,22 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:BliMonitorTest" xmlns:controls="clr-namespace:BliMonitorTest.controls"
         mc:Ignorable="d"
-        Title="Bli 모니터링 프로그램" Height="800" Width="1100" SizeToContent="Width">
+        Title="Bli 모니터링 프로그램" Height="800" Width="1800" SizeToContent="Width">
+    <Window.Resources>
+        <!-- ComboBox 텍스트/항목 센터 정렬 -->
+        <Style x:Key="CenterAlignedComboBox" TargetType="ComboBox">
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="ItemContainerStyle">
+                <Setter.Value>
+                    <Style TargetType="ComboBoxItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                        <Setter Property="VerticalContentAlignment" Value="Center"/>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
         <Grid ShowGridLines="False">
             <Grid.RowDefinitions>
@@ -44,6 +59,19 @@
                 <Button Grid.Column="3" Content="연결" Padding="30, 0" Width="90" x:Name="ConnectButton"/>
                 <Button Grid.Column="4" Content="갱신" Padding="20, 0" Width="90" Margin="10, 0" x:Name="RefreshButton"/>
                 <Label Grid.Column="5" Content="2022.02.01 ver 1.0.0" FontWeight="Black" Visibility="Hidden"/>
+                <ComboBox x:Name="DummyInterfaceCombo" Grid.Row="0" Grid.Column="5" Width="120" Margin="123,0,12,0" Style="{StaticResource CenterAlignedComboBox}">
+                    <ComboBoxItem Content="에러 요청" Tag="1"/>
+                    <ComboBoxItem Content="에러 리셋" Tag="2"/>
+                    <ComboBoxItem Content="상태 요청" Tag="3"/>
+                    <ComboBoxItem Content="PARAM 요청" Tag="4"/>
+                    <ComboBoxItem Content="PARAM 설정" Tag="5"/>
+                </ComboBox>
+                <CheckBox x:Name="UseDummyCheck"
+                   Grid.Column="5"
+                   Margin="15,0,170,0"
+                   VerticalAlignment="Center" 
+                   Width="70"
+                   Content="더미 모드" />
             </Grid>
             <controls:OneChannelValueDetail x:Name="channel" Grid.Row="3" Grid.Column="1"/>
             <controls:SingleDetail x:Name="DetailView" Grid.Column="2" Grid.Row="3" Margin="20, 0, 0, 0"/>

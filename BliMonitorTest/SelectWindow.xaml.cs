@@ -29,7 +29,7 @@ namespace BliMonitorTest
             OneChannelButton.Click += OneChannelButton_Click;
 
             //멀티제품 - 미구현
-            //MultiChannelButton.Click += MultiChannelButton_Click;
+            MultiChannelButton.Click += MultiChannelButton_Click;
 
             //log.Debug($"환경: {Environment.MachineName}, 사용자: {Environment.UserName}");
         }
