@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:BliMonitorTest" xmlns:controls="clr-namespace:BliMonitorTest.controls"
         mc:Ignorable="d"
-        Title="Bli 모니터링 프로그램" Height="800" Width="1800" SizeToContent="Width">
+        Title="BLI 모니터링 프로그램" Height="800" Width="1800" SizeToContent="Width">
     <Window.Resources>
         <!-- ComboBox 텍스트/항목 센터 정렬 -->
         <Style x:Key="CenterAlignedComboBox" TargetType="ComboBox">

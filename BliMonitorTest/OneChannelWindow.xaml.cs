@@ -48,7 +48,7 @@ namespace BliMonitorTest
         private TimeSpan TestTime;
         private Timer testTimer;
         private List<OxyColor> colorList = new List<OxyColor>();
-        
+
         // 더미 포트(응답 생성 전용)
         private DummySerialPortNs.DummySerialPort _dummyPort;    // 더미 포트
         // 더미 모드 스위치: 체크박스 상태를 즉시 반영하는 계산 프로퍼티
@@ -171,14 +171,8 @@ namespace BliMonitorTest
             if (port.IsOpen)
             {
                 TestTime += TimeSpan.FromSeconds(1);
-
-                log.Debug("onchannelwindow Timer_Elapsed sender : " + sender);
-
-                log.Debug("onchannelwindow Timer_Elapsed parameterCnt : " + parameterCnt);
-                log.Debug("onchannelwindow Timer_Elapsed TestTime : " + TestTime);
-                log.Debug("onchannelwindow Timer_Elapsed channel.IsNewVersion : " + channel.IsNewVersion);
-
                 //if (!channel.ParameterMode)
+                //{
                 if (parameterCnt > 0)
                 {
                     Console.WriteLine("ParameterLoad");
@@ -204,6 +198,55 @@ namespace BliMonitorTest
                 }
 
                 //}
+            }
+        }
+
+        private void DoPeriodicTickCore()
+        {
+            if (UseDummy)
+            {
+                // 더미: 동일 데이터 지속 응답 주입
+                var rsp = GetSimulatedResponse(_dummyPort, CurrentKind);
+                if (rsp.Length > 0)
+                {
+                    ByteLogHelper.LogPacket(rsp, "RX");
+                    receiveData(rsp, rsp.Length);
+                }
+                return; // 더미는 실장비 요청 로직 수행하지 않음
+            }
+
+            // 실기구: 기존 로직 유지
+            else
+            {
+                if (port.IsOpen)
+                {
+                    TestTime += TimeSpan.FromSeconds(1);
+
+                    //if (!channel.ParameterMode)
+                    if (parameterCnt > 0)
+                    {
+                        Console.WriteLine("ParameterLoad");
+                        receivedData.Clear();
+                        parameterCnt--;
+                        TestTime += TimeSpan.FromSeconds(1);
+                    }
+                    else
+                    {
+                        if (channel.IsNewVersion)
+                        {
+                            //byte[] command = Protocol.GetNewCommand(1);
+                            byte[] command = Protocol.GetNewCommand(1);
+                            port.Write(command, 0, command.Length);
+                            command.PrintHex(1);
+                        }
+                        else
+                        {
+                            byte[] command = Protocol.GetCommand(1);
+                            port.Write(command, 0, command.Length);
+                            command.PrintHex(1);
+                        }
+                    }
+                }
             }
         }
 
@@ -254,8 +297,8 @@ namespace BliMonitorTest
             ByteLogHelper.DumpLinesWith0x(data, 16);
             log.Debug("============        LOG DATA OneChannelWindow.cs [Port_DataReceived] RESPONSE END       ==================");
 
-            //data.PrintHex(1);
-            //receiveData(data, Length);
+            data.PrintHex(1);
+            receiveData(data, Length);
         }
 
         private void CheckNewDataValid(byte[] array)
@@ -404,6 +447,40 @@ namespace BliMonitorTest
             }
         }
 
+        private void PrepareIo()
+        {
+            // 실기 포트 준비
+            if (port == null) port = new SerialPort();
+            if (port.BaudRate <= 0) port.BaudRate = 9600;
+
+            if (PortList.box.SelectedItem == null)
+            {
+                port.PortName = "";
+            }
+            else
+            {
+                port.PortName = PortList.box.SelectedItem.ToString();
+            }
+
+            if (!port.IsOpen)
+            {
+                try
+                {
+                    port.Open();
+                    port.DataReceived -= Port_DataReceived;
+                    port.DataReceived += Port_DataReceived;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Open failed: " + ex);
+                }
+            }
+
+            // 더미 포트 준비
+            if (_dummyPort == null) _dummyPort = new DummySerialPortNs.DummySerialPort();
+            if (!_dummyPort.IsOpen) _dummyPort.Open();
+        }
+
         private void ConnectButton_Click(object sender, RoutedEventArgs e)
         {
             if ( PortList.box.SelectedIndex == -1 && !UseDummyCheck.IsChecked.Value)
@@ -411,86 +488,29 @@ namespace BliMonitorTest
                 MessageBox.Show("포트가 선택 되지 않았습니다.");
                 return;
             }
-
-            // 1) 더미 인터페이스 적용
-            ApplyDummyKindFromCombo();
-
-            // 2) SerialPort를 실제로 Open(더미/실물 공통)
-            try
-            {
-                if (port == null)
-                    port = new SerialPort();
-
-                // 포트 이름/속도는 기존 UI에서 가져오세요.
-                // 아래는 예시: PortList.box.SelectedItem.ToString() 등
-                // port.PortName = "COM5"; // 하드코딩 테스트 시
-                // BaudRate 등 기존 설정 유지
-                if (port.BaudRate <= 0) port.BaudRate = 9600;
-                
-                if(PortList.box.SelectedItem == null)
-                {
-                    port.PortName = "COM1";
-                } else
-                {
-                    port.PortName = PortList.box.SelectedItem.ToString();
-                }
-
-                // 중복 이벤트 방지
-                port.DataReceived -= Port_DataReceived;
-                port.DataReceived += Port_DataReceived;
-
-                if (!port.IsOpen)
-                    port.Open();
-
-                // 여기서 UI 연결 상태 갱신(예: 라벨/아이콘/버튼 텍스트 등)
-                // UpdateUiConnected(true);
-            }
-            catch (Exception ex)
-            {
-                // UI에 연결 실패 표시
-                // UpdateUiConnected(false);
-                Console.WriteLine("Open failed: " + ex);
-                return;
-            }
-
-            //new SuperSocketServer().init();
-            //return;
-            // 3) 동작 분기
+            
+            // 1) 동작 분기
             if (UseDummy)
             {
-                // 더미 응답을 만들어 '수신된 것처럼' 밀어넣기
-                if (_dummyPort == null) _dummyPort = new DummySerialPortNs.DummySerialPort();
-                if (!_dummyPort.IsOpen) _dummyPort.Open();
-
-                // REQ 생성 및 로깅(선택)
-                var req = _dummyPort.GetRequestPacket(CurrentKind);
-                if (req.Length > 0)
-                {
-                    // 실제 포트에도 써서 TX 로그/후처리가 동일하게 보이게 할 수 있음(옵션)
-                    // 포트가 실제로 연결 안돼도 Write는 예외 없이 통과할 수 있음(가상 포트/드라이버 상황)
-                    try {
-                        log.Debug("============        LOG DATA ConnectButton_Click [req] REQUEST START       ==================");
-                        port.Write(req, 0, req.Length);
-                        ByteLogHelper.LogPacket(req, "RX");
-                        ByteLogHelper.ToHexWith0x(req);
-                        ByteLogHelper.DumpLinesWith0x(req, 16);
-                        log.Debug("============        LOG DATA ConnectButton_Click [req] REQUEST END       ==================");
-                    } catch { /* 무시 */ }
-                }
+                // 2) 더미 인터페이스 적용
+                ApplyDummyKindFromCombo();
+                
+                // 3) SerialPort를 실제로 Open(더미/실물 공통)
+                PrepareIo();
 
                 // 더미에서 해당 요청의 RES 생성
                 var simulated = GetSimulatedResponse(_dummyPort, CurrentKind);
+
+                log.Debug("============        LOG DATA ConnectButton_Click [req] RESPONSE START       ==================");
+                ByteLogHelper.LogPacket(simulated, "TX");
+                ByteLogHelper.ToHexWith0x(simulated);
+                ByteLogHelper.DumpLinesWith0x(simulated, 16);
+                log.Debug("============        LOG DATA ConnectButton_Click [req] RESPONSE END       ==================");
+
                 if (simulated?.Length > 0)
                 {
                     // 핵심: receiveData에 직접 주입해서 "수신된 것처럼" 처리
                     receiveData(simulated, simulated.Length);
-
-                    log.Debug("============        LOG DATA ConnectButton_Click [req] RESPONSE START       ==================");
-                    port.Write(simulated, 0, simulated.Length);
-                    ByteLogHelper.LogPacket(simulated, "TX");
-                    ByteLogHelper.ToHexWith0x(simulated);
-                    ByteLogHelper.DumpLinesWith0x(simulated, 16);
-                    log.Debug("============        LOG DATA ConnectButton_Click [req] RESPONSE END       ==================");
                 }
             }
             else
@@ -522,12 +542,10 @@ namespace BliMonitorTest
                 }
                 catch (UnauthorizedAccessException ex)
                 {
-                    Console.WriteLine(ex.ToString());
                     MessageBox.Show("포트를 확인 하세요");
                 }
                 catch (IOException ex)
                 {
-                    Console.WriteLine(ex.ToString());
                     ConnectButton.Content = "연결";
                     return;
                 }
