@@ -196,8 +196,6 @@ namespace BliMonitorTest
                         command.PrintHex(1);
                     }
                 }
-
-                //}
             }
         }
 
