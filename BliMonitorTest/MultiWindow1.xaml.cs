@@ -71,6 +71,8 @@ namespace BliMonitorTest
                     return;
                 }
                 server.Start();
+
+                StartDummyChannelsIfNeeded();       // 더미 패킷전송 실행
             };
             StopButton.Click += (s, e) =>
             {
@@ -92,6 +94,7 @@ namespace BliMonitorTest
                                 {
                                     cmd = Protocol.GetCommand(3);
                                 }
+
                                 item.Value.channel.CloseWriter();
                                 item.Value.client.GetStream().Write(cmd, 0, cmd.Length);
                                 item.Value.client.Close();
@@ -103,6 +106,8 @@ namespace BliMonitorTest
                 {
                     server.listener.Stop();
                 }
+
+                BliMonitorTest.util.ClientManager.StopAllDummyChannels();       // ✅ 더미 채널 정지
                 server.run = false;
             };
         }
@@ -1263,5 +1268,43 @@ namespace BliMonitorTest
                     break;
             }
         }
+
+        private void StartDummyChannelsIfNeeded()
+        {
+            // 0~7 (총 8채널)
+            for (int uiIndex = 0; uiIndex < 8; uiIndex++)
+            {
+                var ch = GetChannelItem(uiIndex);
+                if (ch == null) continue;
+
+                if (!ch.IsDummyEnabled) continue;
+
+                // ✅ clientNumber 규칙: 실기구가 channel.Channel = data.clientNumber - 10 이므로
+                // 더미도 동일하게 10 + 채널번호로 맞추기
+                int clientNumber = 10 + uiIndex;
+
+                // UI index 매핑도 실기구와 동일하게 window.channelList 사용
+                long key = DateTimeOffset.Now.Ticks + clientNumber;
+                channelList[key] = uiIndex;
+
+                // 기존 OnConnected와 유사하게 UI 초기화 + 채널 번호 세팅
+                ch.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    ch.clearData();
+                    // ClearCheck(ch);  // 실기구에서 쓰던 체크 초기화 함수가 필요하면 호출
+                    ch.Channel = clientNumber - 10; // 즉 uiIndex
+                }));
+
+                // ClientData 더미 생성 후 시작
+                var dummyClient = new BliMonitorTest.util.ClientData(ch, clientNumber)
+                {
+                    TimeMills = key, // 위에서 만든 key로 통일(중요: channelList 키와 맞추기)
+                    Run = true
+                };
+                
+                BliMonitorTest.util.ClientManager.StartDummyChannel(dummyClient);
+            }
+        }
+
     }
 }

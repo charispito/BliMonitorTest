@@ -43,5 +43,24 @@ namespace BliMonitorTest.util
             readParameterData = new List<byte>();
             StartTime = new DateTime();
         }
+
+        // ✅ 더미용 생성자 추가
+        public ClientData(BliMonitorTest.controls.ChannelItem channel, int clientNumber)
+        {
+            this.channel = channel;
+            this.clientNumber = clientNumber;
+
+            // TCP 없음
+            this.client = null;
+
+            // 기존 로직과 동일하게 "유니크 키" 역할
+            TimeMills = DateTimeOffset.Now.Ticks + clientNumber;
+
+            // 더미 루프 제어
+            Run = true;
+
+            // 초기 카운트 (기존 코드 흐름에 맞춰)
+            initCount = 0;
+        }
     }
 }

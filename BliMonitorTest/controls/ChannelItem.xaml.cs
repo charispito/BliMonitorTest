@@ -38,6 +38,16 @@ namespace BliMonitorTest.controls
                 }
             }
         }
+
+        public bool IsDummyEnabled
+        {
+            get => DummyCheck?.IsChecked == true;
+            set
+            {
+                if (DummyCheck != null) DummyCheck.IsChecked = value;
+            }
+        }
+
         string now = DateTime.Now.ToString("yyyy-MM-dd");
         public bool Response = false;
         public int number = 1;
@@ -260,6 +270,19 @@ namespace BliMonitorTest.controls
 
         private void ApplyNewVersion_Click(object sender, RoutedEventArgs e)
         {
+            // ✅ 더미 모드면 연결 체크 없이 그냥 적용 (체크가 풀리지 않게)
+            if (IsDummyEnabled)
+            {
+                IsNewVersion = (sender as CheckBox)?.IsChecked == true;
+
+                // UI 체크 상태도 그대로 유지 (혹시 모를 외부 변경 대비)
+                ApplyNewVersion.IsChecked = IsNewVersion;
+
+                OnCheckChanged?.Invoke();
+                return;
+            }
+
+            // ===== 기존 로직 그대로 =====
             if (client == null || !client.Connected)
             {
                 IsNewVersion = false;
@@ -267,17 +290,16 @@ namespace BliMonitorTest.controls
                 MessageBox.Show("연결 되지 않았습니다.");
                 return;
             }
+
             IsNewVersion = (sender as CheckBox).IsChecked.Value;
-            if(OnCheckChanged != null)
-            {
+
+            if (OnCheckChanged != null)
                 OnCheckChanged();
-            }
             else
             {
                 IsNewVersion = false;
                 ApplyNewVersion.IsChecked = false;
             }
-            
         }
 
         private void ParameterButton_Click(object sender, RoutedEventArgs e)
@@ -566,9 +588,9 @@ namespace BliMonitorTest.controls
                     motor_current = currentfloat / 2.0
                 };
 
-                log.Debug("ChannelItem 556 : " + read);
-                log.Debug("ChannelItem 556 : " + data);
-                log.Debug("ChannelItem 556 : " + data.Length);
+            ByteLogHelper.LogPacket(data, "RX");
+            ByteLogHelper.ToHexWith0x(data);
+            ByteLogHelper.DumpLinesWith0x(data, 16);
 
             WriteFile(read);
             string errorStr = GetErrorName(binary0, binary1);
@@ -609,14 +631,7 @@ namespace BliMonitorTest.controls
             }
             if (Item3Check.IsChecked.Value)
             {
-                //if (IsNewVersion)
-                //{
-                //    chartView.ViewModel.AddData(seriesList[ItemIndex * 10 + 2], new DataPoint(total_minute, averOffTime));
-                //}
-                //else
-                //{
-                    chartView.ViewModel.AddData(seriesList[ItemIndex * 10 + 2], new DataPoint(total_minute, airheatertemp));
-                //}
+                chartView.ViewModel.AddData(seriesList[ItemIndex * 10 + 2], new DataPoint(total_minute, airheatertemp));
             }
             if (Item4Check.IsChecked.Value)
             {
@@ -670,7 +685,6 @@ namespace BliMonitorTest.controls
                     return "";
             }
         }
-
 
         private int getMotorValue(int run)
         {

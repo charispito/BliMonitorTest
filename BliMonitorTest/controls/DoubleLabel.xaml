@@ -10,7 +10,7 @@
             <ColumnDefinition/>
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
-        <Label FontSize="13" Padding="0" VerticalContentAlignment="Center" FontWeight="Bold" HorizontalContentAlignment="Center" Foreground="Black" BorderBrush="#AAA" BorderThickness="1" x:Name="label" Background="#6503BDFD"/>
+        <Label FontSize="13" Padding="0" VerticalContentAlignment="Center" FontWeight="Bold" HorizontalContentAlignment="Center" Foreground="Black" BorderBrush="#AAA" BorderThickness="1" x:Name="label" Background="#6571FF00"/>
         <Label HorizontalContentAlignment="Center" Padding="0" VerticalContentAlignment="Center" Background="#FFF" FontSize="13" Grid.Column="1" BorderBrush="#AAA" BorderThickness="0,1,1,1" x:Name="cont"/>
     </Grid>
 </UserControl>

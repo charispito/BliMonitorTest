@@ -1,4 +1,6 @@
-﻿using BliMonitorTest.data;
+﻿using BliMonitorTest.controls;
+using BliMonitorTest.data;
+using DummySerialPortNs;
 using log4net;
 using System;
 using System.Collections.Concurrent;
@@ -16,6 +18,8 @@ namespace BliMonitorTest.util
         private static readonly ILog log = LogManager.GetLogger(typeof(ClientManager));
 
         public static ConcurrentDictionary<long, ClientData> clientDic = new ConcurrentDictionary<long, ClientData>();
+        public static ConcurrentDictionary<long, ClientData> dummyClientDic = new ConcurrentDictionary<long, ClientData>();
+
         public delegate void ConnectionHandler(ClientData clientSocket);
         public ConnectionHandler OnConnected;
         public ConnectionHandler OnDisconnected;
@@ -536,13 +540,12 @@ namespace BliMonitorTest.util
             return -1;
         }
 
-        private void CheckCommand(byte[] array, ClientData data)
+        public void CheckCommand(byte[] array, ClientData data)
         {
             //array.PrintHex(1);
-            //byte check = Protocol.GetCheckSum(array, 1, array.Length - 3);
+            byte check = Protocol.GetCheckSum(array, 1, array.Length - 3);
             log.Debug("!!!!!!!!!!!  CheckCommand CheckCommand START  !!!!!!!!!!!!!!!!");
-            log.Debug("ClientManager ReadErrorButton.Click 489 array[2] : " + array[2]);
-            log.Debug("ClientManager ReadErrorButton.Click 489 array.Length : " + array.Length);
+            log.Debug("ClientManager ReadErrorButton.Click 548 array[2] : " + array[2]);
             ByteLogHelper.LogPacket(array, "RX");
             log.Debug("!!!!!!!!!!!  CheckCommand CheckCommand END  !!!!!!!!!!!!!!!!");
             
@@ -615,5 +618,94 @@ namespace BliMonitorTest.util
             }
             return -1;
         }
+
+        public static void StartDummyChannel(ClientData dummyClient)
+        {
+            if (!dummyClientDic.TryAdd(dummyClient.TimeMills, dummyClient))
+                return;
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    dummyClient.channel?.Dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        dummyClient.channel.run = true;
+                    }));
+
+                    while (dummyClient.Run)
+                    {
+                        byte[] pkt57 = DummySerialPortNs.DummySerialPort.RSP_StartStopStatus.ToArray();
+                        if (pkt57 == null || pkt57.Length != 57)
+                            throw new InvalidOperationException("RSP_StartStopStatus must be 57 bytes.");
+
+                        // ✅ SetView 통과 조건 강제 보정
+                        NormalizeStatusPacketForSetView(dummyClient.channel, pkt57);
+
+                        // ✅ UI 갱신은 SetView로 확정
+                        dummyClient.channel?.Dispatcher.BeginInvoke(new Action(() =>
+                        {
+                            dummyClient.channel.IsNewVersion = dummyClient.channel.ApplyNewVersion?.IsChecked == true;
+                            dummyClient.channel.IsNewVersion = true;
+                            dummyClient.channel.SetView(pkt57);
+                        }));
+
+                        await Task.Delay(200);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex);
+                }
+                finally
+                {
+                    dummyClientDic.TryRemove(dummyClient.TimeMills, out _);
+                }
+            });
+        }
+
+        public static void StopAllDummyChannels()
+        {
+            foreach (var kv in dummyClientDic.ToArray())
+            {
+                if (kv.Value != null)
+                    StopDummyChannel(kv.Value);
+            }
+
+            dummyClientDic.Clear();
+        }
+
+        public static void StopDummyChannel(ClientData dummyClient)
+        {
+            if (dummyClient == null) return;
+            dummyClient.Run = false; // ✅ 루프 종료 트리거
+            dummyClient.channel?.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                dummyClient.channel.run = false; // UI 상태도 같이 끔(선택)
+            }));
+        }
+
+        private static void NormalizeStatusPacketForSetView(ChannelItem channel, byte[] pkt57)
+        {
+            if (pkt57 == null || pkt57.Length != 57) return;
+
+            // SetView가 길이 체크로 보는 값
+            pkt57[3] = 57;
+
+            // 채널 버전에 맞춰 STX/ETX 강제
+            bool isNew = channel?.IsNewVersion == true;
+            if (isNew)
+            {
+                pkt57[0] = 0x12;
+                pkt57[56] = 0x34;
+            }
+            else
+            {
+                pkt57[0] = 0xCC;
+                pkt57[56] = 0xEF;
+            }
+        }
+
+
     }
 }
