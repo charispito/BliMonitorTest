@@ -1,5 +1,6 @@
 ﻿using BliMonitorTest.controls;
 using BliMonitorTest.data;
+using BliMonitorTest.dummy;
 using DummySerialPortNs;
 using log4net;
 using System;
@@ -7,6 +8,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -28,6 +30,9 @@ namespace BliMonitorTest.util
         public bool parameter = false;
         private byte[] welcome = { 0x02, 0x4D, 0x59, 0x20, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x3A, 0x31, 0x03, 0x0D, 0x0A };
         private byte[] blank = { 0x0D, 0x0A };
+
+        private byte[] _dummyLastBuffer;
+        private readonly DummyValueGenerator _dummyGen = new DummyValueGenerator();
 
         public void AddClient(TcpClient newClient)
         {
@@ -619,7 +624,7 @@ namespace BliMonitorTest.util
             return -1;
         }
 
-        public static void StartDummyChannel(ClientData dummyClient)
+        public void StartDummyChannel(ClientData dummyClient)
         {
             if (!dummyClientDic.TryAdd(dummyClient.TimeMills, dummyClient))
                 return;
@@ -635,19 +640,24 @@ namespace BliMonitorTest.util
 
                     while (dummyClient.Run)
                     {
-                        byte[] pkt57 = DummySerialPortNs.DummySerialPort.RSP_StartStopStatus.ToArray();
-                        if (pkt57 == null || pkt57.Length != 57)
+                        byte[] rsp = DummySerialPortNs.DummySerialPort.RSP_StartStopStatus.ToArray();
+                        if (rsp == null || rsp.Length != 57)
                             throw new InvalidOperationException("RSP_StartStopStatus must be 57 bytes.");
 
-                        // ✅ SetView 통과 조건 강제 보정
-                        NormalizeStatusPacketForSetView(dummyClient.channel, pkt57);
+                                          // ✅ SetView 통과 조건 강제 보정
+                        NormalizeStatusPacketForSetView(dummyClient.channel, rsp);
 
-                        // ✅ UI 갱신은 SetView로 확정
+                        var sample = _dummyGen.Next();
+
+                                          // 엑셀 정의서 기준 오프셋에 값 세팅 + 체크섬 갱신
+                        DummyFramePatcher.PatchStatusResponse57(rsp, sample);
+
+                                          // ✅ UI 갱신은 SetView로 확정
                         dummyClient.channel?.Dispatcher.BeginInvoke(new Action(() =>
                         {
                             dummyClient.channel.IsNewVersion = dummyClient.channel.ApplyNewVersion?.IsChecked == true;
                             dummyClient.channel.IsNewVersion = true;
-                            dummyClient.channel.SetView(pkt57);
+                            dummyClient.channel.SetView(rsp);
                         }));
 
                         await Task.Delay(200);

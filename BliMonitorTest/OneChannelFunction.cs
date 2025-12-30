@@ -11,7 +11,9 @@ using System.Threading.Tasks;
 namespace BliMonitorTest
 {
     partial class OneChannelWindow
-    {        
+    {
+        private DateTime? _dummyStartTime;
+
         public string GetDateTime()
         {
             DateTime NowDate = DateTime.Now;
@@ -80,28 +82,50 @@ namespace BliMonitorTest
             {
                 return;
             }
-            
+
+            log.Debug("$$$$$$$$$$$$$$$$$$$      OneChannelFunction.cs      $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
+
+            bool IsDummyEnabled = (UseDummyCheck?.IsChecked == true);
+
+            // 기본은 기존 로직대로 TestTime 기반
             long total_second = (long)TestTime.TotalSeconds;
-            double total_minute = total_second/60;
-            double remain_second = (double)total_second%60/100.0;
-            double remain_value = 0.40 / 60;
+            double total_minute = total_second / 60.0;
+
+            // (기존에 있던 보정 로직 유지: 필요 없으면 제거 가능)
+            double remain_second = (double)(total_second % 60) / 100.0;
+            double remain_value = 0.40 / 60.0;
+
             if (total_second > 0)
             {
-                Console.WriteLine("22");
-                total_minute += (remain_second + remain_value * (total_second % 60));                
+                total_minute += (remain_second + remain_value * (total_second % 60));
             }
             else
             {
-                Console.WriteLine("11");
                 total_minute += remain_second;
             }
 
-            //if(total_minute >= Chart._XMax)
-            //{
-            //    Chart._XMax += 10;
-            //    Chart.MinutesAxis.Maximum = Chart._XMax;
-            //    Chart.setViewPort(60);
-            //}
+            // 더미일경우
+            if (IsDummyEnabled)
+            {
+                // null일 때만 1회 설정 (핵심)
+                if (_dummyStartTime == null)
+                    _dummyStartTime = DateTime.Now;
+
+                TimeSpan elapsed = DateTime.Now - _dummyStartTime.Value;
+
+                total_second = (long)elapsed.TotalSeconds;
+                total_minute = elapsed.TotalMinutes;   // 분 단위 double (가장 깔끔)
+            }
+            else
+            {
+                // 더미 해제 시 리셋(선택)
+                _dummyStartTime = null;
+
+                // 다시 TestTime 기반으로 (원래 의미 유지)
+                total_second = (long)TestTime.TotalSeconds;
+                total_minute = TestTime.TotalMinutes;
+            }
+
             Console.WriteLine("total: {0}", total_minute);
             int motorRun = data[5];
             int heateroff = data[7]; //히터 오프타임
@@ -206,42 +230,46 @@ namespace BliMonitorTest
             float heateroffTime = (float)(heateroff / 10.0f);
             float averOffTime = (float)(airheatertemp / 10.0f);
             DateTime now = DateTime.Now;
-            //if (channel.run)
-            //{
-            //if (channel.IsNewVersion)
-            //{
-            //    ReadData read = new ReadData()
-            //    {
-            //        date = DateTime.Now.ToString("yyyy-MM-dd_HH_mm_ss"),
-            //        mode = mode + 1,
-            //        remain_time = time,
-            //        heater_temp = heatertemp,
-            //        heater_off_time = averOffTime,
-            //        air_temp = airtemp,
-            //        fan_speed = fan_duty,
-            //        hot_air_temp = airheatertemp,
-            //        hot_air_ontime = heaterduty,
-            //        motor = getMotorState(motorRun),
-            //        motor_current = currentfloat / 2.0
-            //    };
-            //    channel.WriteFile(read);
-            //}
-            //else
-            //{
-                ReadData read = new ReadData()
+
+            /*
+            if (channel.run)
+            {
+                if (channel.IsNewVersion)
                 {
-                    date = DateTime.Now.ToString("yyyy-MM-dd_HH_mm_ss"),
-                    mode = mode + 1,
-                    remain_time = time,
-                    heater_temp = heatertemp,
-                    heater_off_time = heateroff,
-                    air_temp = airtemp,
-                    fan_speed = fan_duty,
-                    hot_air_temp = airheatertemp,
-                    hot_air_ontime = heaterduty,
-                    motor = getMotorState(motorRun),
-                    motor_current = currentfloat / 2.0
-                };
+                    ReadData read = new ReadData()
+                    {
+                        date = DateTime.Now.ToString("yyyy-MM-dd_HH_mm_ss"),
+                        mode = mode + 1,
+                        remain_time = time,
+                        heater_temp = heatertemp,
+                        heater_off_time = averOffTime,
+                        air_temp = airtemp,
+                        fan_speed = fan_duty,
+                        hot_air_temp = airheatertemp,
+                        hot_air_ontime = heaterduty,
+                        motor = getMotorState(motorRun),
+                        motor_current = currentfloat / 2.0
+                    };
+                    channel.WriteFile(read);
+                }
+                else
+                {
+            */
+
+            ReadData read = new ReadData()
+            {
+                date = DateTime.Now.ToString("yyyy-MM-dd_HH_mm_ss"),
+                mode = mode + 1,
+                remain_time = time,
+                heater_temp = heatertemp,
+                heater_off_time = heateroff,
+                air_temp = airtemp,
+                fan_speed = fan_duty,
+                hot_air_temp = airheatertemp,
+                hot_air_ontime = heaterduty,
+                motor = getMotorState(motorRun),
+                motor_current = currentfloat / 2.0
+            };
 
             log.Debug("onechannelfunction 246 : " + data);
             log.Debug("============        OneChannelWindow setView           ==================");
@@ -335,15 +363,7 @@ namespace BliMonitorTest
             }
             if (channel.Item3Check.IsChecked.Value)
             {
-                //if (channel.IsNewVersion)
-                //{
-                //    channel.chartView.ViewModel.AddData(seriesList[12], new DataPoint(total_minute, averOffTime));
-                //}
-                //else
-                //{
-                    channel.chartView.ViewModel.AddData(seriesList[12], new DataPoint(total_minute, airheatertemp));
-                //}
-                //channel.chartView.ViewModel.AddData(seriesList[12], new DataPoint(total_minute, airheatertemp));
+                channel.chartView.ViewModel.AddData(seriesList[12], new DataPoint(total_minute, airheatertemp));
                 //channel.list3.Add(new KeyValuePair<double, int>(total_minute, airheatertemp));
             }
             if (channel.Item4Check.IsChecked.Value)
@@ -371,8 +391,9 @@ namespace BliMonitorTest
                 channel.chartView.ViewModel.AddData(seriesList[17], new DataPoint(total_minute, currnetDouble / 2.0));
                 //channel.list8.Add(new KeyValuePair<double, double>(total_minute, currnetDouble / 2.0));
             }
+
+            log.Debug($"isDummy={IsDummyEnabled} total_second={total_second} total_minute={total_minute:F3} start={_dummyStartTime:HH:mm:ss.fff}");
             channel.chartView.ViewModel.panXAxis(total_minute);
-            //}
         }
 
         //CC 00 A0 07 00 A7 EF

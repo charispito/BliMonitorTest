@@ -30,6 +30,7 @@ using Timer = System.Timers.Timer;
 // Dummy Serial Port Namespace  
 using DummySerialPortNs;
 using System.Collections;
+using BliMonitorTest.dummy;
 
 namespace BliMonitorTest
 {
@@ -60,6 +61,7 @@ namespace BliMonitorTest
         // 현재 선택된 시뮬레이션 프로토콜
         //private ProtocolKind CurrentKind = ProtocolKind.StartStopStatus;
         private byte[] _dummyLastBuffer;
+        private readonly DummyValueGenerator _dummyGen = new DummyValueGenerator();
 
         public OneChannelWindow()
         {
@@ -78,7 +80,7 @@ namespace BliMonitorTest
             channel.OnParameterLoadAction += Channel_OnParameterLoadAction;
             channel.OnCheckChanged += Channel_OnCheckChanged;
             _useDummyCached = (UseDummyCheck?.IsChecked == true);       // 초기 캐시 동기화 (UI 스레드)
-            UseDummyCheck.Checked += UseDummyCheck_Checked;    
+            UseDummyCheck.Checked += UseDummyCheck_Checked;
             UseDummyCheck.Unchecked += UseDummyCheck_Unchecked;
             timer = new Timer();
             timer.Interval = 1000;
@@ -148,7 +150,7 @@ namespace BliMonitorTest
 
         private void Timer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
-            // 타이머 스레드에서 예외로 멈추지 않도록 try-catch
+                     // 타이머 스레드에서 예외로 멈추지 않도록 try-catch
             try
             {
                 DoPeriodicTickCore();
@@ -161,10 +163,10 @@ namespace BliMonitorTest
 
         private void DoPeriodicTickCore()
         {
-            // ConnectState=1일 때만 수행
+                     // ConnectState=1일 때만 수행
             if (channel.ConnectState != 1) return;
 
-            // 더미/실기구 스냅샷
+                     // 더미/실기구 스냅샷
             bool useDummy = UseDummy;
 
             try
@@ -203,15 +205,27 @@ namespace BliMonitorTest
                 }
                 else
                 {
-                    // 더미: 동일 데이터 지속 응답 주입
-                    var rsp = GetSimulatedResponse(_dummyPort, ProtocolKind.StartStopStatus);
-                    
+                                     //  더미: 동일 데이터 지속 응답 주입
+                     // var rsp = GetSimulatedResponse(_dummyPort, ProtocolKind.StartStopStatus);
+                                    // 상태 응답(57바이트) 프레임을 하나 만들고, 그 안에 더미 값을 심어서
+                                    // 실기와 동일하게 receiveData(...) 경로로 흘려보낸다.
+                    var rsp = GetSimulatedResponse(_dummyPort, DummySerialPortNs.ProtocolKind.StartStopStatus);
+
                     if (rsp != null && rsp.Length > 0)
-                    {
-                        _dummyLastBuffer = rsp;
-                        ByteLogHelper.LogPacket(rsp, "RX");
-                        InvokePortDataReceivedWith(rsp);
-                    }
+                        if (rsp != null && rsp.Length >= 57)
+                        {
+                            var sample = _dummyGen.Next();
+
+                                                 // 엑셀 정의서 기준 오프셋에 값 세팅 + 체크섬 갱신
+                            DummyFramePatcher.PatchStatusResponse57(rsp, sample);
+
+                            _dummyLastBuffer = rsp;
+                            ByteLogHelper.LogPacket(rsp, "RX");
+                            //ByteLogHelper.LogPacket(rsp, "RX(DUMMY)");
+
+                                                  // 실기 수신과 동일 루트로 주입
+                            InvokePortDataReceivedWith(rsp);
+                        }
                 }
             }
             catch (Exception ex)
@@ -318,14 +332,14 @@ namespace BliMonitorTest
                             }
                             else
                             {
-                                
+
                             }
                             command.ToArray().PrintHex(1);
                         }
                     }
                     else
                     {
-                        
+
                         if (etx_cnt > stx_cnt)
                         {
                             for (int i = 0; i < STXIndex.Count; i++)
@@ -356,49 +370,50 @@ namespace BliMonitorTest
             List<int> STXIndex = new List<int>();
             List<int> ETXIndex = new List<int>();
             //array.PrintHex();
-            if(array.Length < 3)
+            if (array.Length < 3)
             {
                 return;
             }
-            if(array[3] == array.Length)
+            if (array[3] == array.Length)
             {
                 CheckCommand(array);
             }
             else
             {
-                for(int i = 0; i < array.Length; i++)
+                for (int i = 0; i < array.Length; i++)
                 {
-                    if(array[i] == 0xCC)
+                    if (array[i] == 0xCC)
                     {
                         STXIndex.Add(i);
                         stx_cnt++;
-                    }else if(array[i] == 0xEF)
+                    }
+                    else if (array[i] == 0xEF)
                     {
                         ETXIndex.Add(i);
                         etx_cnt++;
                     }
                 }
-                if(stx_cnt > 1)
+                if (stx_cnt > 1)
                 {
-                    if(stx_cnt == etx_cnt)
+                    if (stx_cnt == etx_cnt)
                     {
-                        for(int i = 0; i < STXIndex.Count; i++)
+                        for (int i = 0; i < STXIndex.Count; i++)
                         {
                             ArrayView<byte> command = new ArrayView<byte>(array, STXIndex[i], ETXIndex[i] - STXIndex[i] + 1);
-                            if(command[3] == command.Length)
+                            if (command[3] == command.Length)
                             {
                                 CheckCommand(command.ToArray());
                             }
                             else
                             {
-                                
+
                             }
                             command.ToArray().PrintHex(1);
                         }
                     }
                     else
                     {
-                        
+
                         if (etx_cnt > stx_cnt)
                         {
                             for (int i = 0; i < STXIndex.Count; i++)
@@ -539,27 +554,27 @@ namespace BliMonitorTest
                     case DummySerialPortNs.ProtocolKind.ErrorDataRequest:
                         return DummySerialPortNs.DummySerialPort.RSP_ErrorData;
                     case DummySerialPortNs.ProtocolKind.ErrorReset:
-                        
+
                     case DummySerialPortNs.ProtocolKind.StartStopStatus:
                         return DummySerialPortNs.DummySerialPort.RSP_StartStopStatus;
                     case DummySerialPortNs.ProtocolKind.ParameterRequest:
                         return DummySerialPortNs.DummySerialPort.RSP_ParameterRequest;
                     case DummySerialPortNs.ProtocolKind.ParameterSet:
-                        
+
                     default:
                         return DummySerialPortNs.DummySerialPort.RSP_StartStopStatus;
-                    /*
-                    case ProtocolKind.ErrorDataRequest:
-                        return (byte[])dummy.RSP_ErrorData.Clone();
-                    case ProtocolKind.ParameterRequest:
-                        return (byte[])dummy.RSP_ParameterRequest.Clone();
-                    case ProtocolKind.ParameterSet:
+                        /*
+                        case ProtocolKind.ErrorDataRequest:
+                            return (byte[])dummy.RSP_ErrorData.Clone();
+                        case ProtocolKind.ParameterRequest:
+                            return (byte[])dummy.RSP_ParameterRequest.Clone();
+                        case ProtocolKind.ParameterSet:
 
-                    case ProtocolKind.StartStopStatus:
-                        return (byte[])dummy.RSP_StartStopStatus.Clone();
-                    default:
-                        return (byte[])dummy.RSP_StartStopStatus.Clone();
-                    */
+                        case ProtocolKind.StartStopStatus:
+                            return (byte[])dummy.RSP_StartStopStatus.Clone();
+                        default:
+                            return (byte[])dummy.RSP_StartStopStatus.Clone();
+                        */
                 }
             }
             catch
@@ -586,7 +601,7 @@ namespace BliMonitorTest
         }
 
         private void setItems(OneChannelValueDetail item)
-        {            
+        {
             item.Item1.label.Content = "히터 온도";
             item.Item2.label.Content = "배기 온도";
             item.Item3.label.Content = "열풍히터온도";
@@ -703,7 +718,7 @@ namespace BliMonitorTest
                                 Chart.ViewModel.setSeries(index, 0, colorList[index]);
                                 Chart.setLegend(index, "열풍히터온도");
                             }
-                            
+
                             //Chart.seriesList[index].ItemsSource = channel.list3;
                             //Chart.setAxis(Chart.seriesList[index], 0);
                         }

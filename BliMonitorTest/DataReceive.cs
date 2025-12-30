@@ -8,9 +8,15 @@ using System.Threading.Tasks;
 namespace BliMonitorTest
 {
     public partial class OneChannelWindow
-    {        
+    {
         private void receiveData(byte[] data, int Length)
         {
+            log.Debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
+            log.Debug($"[receiveData] len={Length} start={data[0]:X2} cmd={data[2]:X2} size={data[3]}");
+            log.Debug($"[receiveData] len={data.Length} start={data[0]:X2} v={data[1]:X2} cmd={data[2]:X2} size={data[3]} end={data[data.Length - 1]:X2}");
+            log.Debug($"[receiveData] IsNewVersion={channel.IsNewVersion} parameterCnt={parameterCnt} paramBufCount={parameterReceived.Count} rxBufCount={receivedData.Count}");
+            log.Debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
+
             if (channel.IsNewVersion)
             {
                 if (Length > 0)
@@ -122,7 +128,7 @@ namespace BliMonitorTest
             }
             else
             {
-                if(Length > 0)
+                if (Length > 0)
                 {
                     byte[] buffer = data.Slice(Length);
                     if (parameterCnt > 0)
@@ -185,7 +191,7 @@ namespace BliMonitorTest
                             int s_idx = getStxIndex(receive);
                             if (s_idx == 0)
                             {
-                                if(receive.Length > 57)
+                                if (receive.Length > 57)
                                 {
                                     byte[] cmd = receive.Slice(57);
                                     byte[] etc = receive.Slice(57, receivedData.Count - 57);
@@ -197,15 +203,15 @@ namespace BliMonitorTest
                                 {
                                     receivedData.Clear();
                                     CheckCommand(receive);
-                                }                                
+                                }
                             }
                             else
                             {
-                                if(receive[s_idx - 1] == 0xEF)
+                                if (receive[s_idx - 1] == 0xEF)
                                 {
                                     byte[] command = receive.Slice(s_idx);
                                     byte[] etc = receive.Slice(s_idx, receive.Length - s_idx);
-                                    if(command.Length == 57)
+                                    if (command.Length == 57)
                                     {
                                         receivedData.Clear();
                                         receivedData.AddRange(etc);
@@ -232,15 +238,15 @@ namespace BliMonitorTest
 
         private int getStxIndex(byte[] data)
         {
-            for(int i = 0; i < data.Length; i++)
+            for (int i = 0; i < data.Length; i++)
             {
-                if(data[i] == 0xCC)
+                if (data[i] == 0xCC)
                 {
-                    if(i + 2 < data.Length)
+                    if (i + 2 < data.Length)
                     {
-                        if(data[i + 1] == 0x00)
+                        if (data[i + 1] == 0x00)
                         {
-                            if(data[i + 2] == 0x99 || data[i + 2] == 0xB9 || data[i + 2] == 0xA0 || data[i + 2] == 0xAA)
+                            if (data[i + 2] == 0x99 || data[i + 2] == 0xB9 || data[i + 2] == 0xA0 || data[i + 2] == 0xAA)
                             {
                                 return i;
                             }
