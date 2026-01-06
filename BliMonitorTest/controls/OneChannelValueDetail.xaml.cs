@@ -134,8 +134,8 @@ namespace BliMonitorTest.controls
         public OneChannelValueDetail()
         {
             InitializeComponent();
-            StartButton.Click += StartButton_Click;
-            StopButton.Click += StopButton_Click;
+            //StartButton.Click += StartButton_Click;
+            //StopButton.Click += StopButton_Click;
             ParameterButton.Click += ParameterButton_Click;
             ApplyNewVersion.Click += ApplyNewVersion_Click;
             list1.Add(new KeyValuePair<double, int>(0, 0));

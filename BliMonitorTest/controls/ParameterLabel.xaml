@@ -12,7 +12,7 @@
                 <ColumnDefinition Width="1.3*"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <Label FontSize="11" Padding="0" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Foreground="Black" BorderBrush="#AAA" BorderThickness="1" x:Name="label" Background="#BBB"/>
+            <Label FontSize="11" Padding="0" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Foreground="Black" BorderBrush="#AAA" BorderThickness="1" x:Name="label" Background="#652822E8"/>
             <util:EnterBox MaxLines="1" MinLines="1" HorizontalContentAlignment="Center" Padding="0" VerticalContentAlignment="Center" Background="#FFF" FontSize="10" Grid.Column="1" BorderBrush="#AAA" BorderThickness="0,1,1,1" x:Name="cont"/>
         </Grid>
     </Border>

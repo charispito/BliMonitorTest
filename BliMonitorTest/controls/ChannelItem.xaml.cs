@@ -266,8 +266,8 @@ namespace BliMonitorTest.controls
             Item14.MouseLeftButtonDown += (s, e) => {
                 typeof(System.Windows.Controls.Primitives.ButtonBase).GetMethod("OnClick", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(Item8Check, new object[0]);
             };
-            StartButton.Click += StartButton_Click;
-            StopButton.Click += StopButton_Click;
+            //StartButton.Click += StartButton_Click;
+            //StopButton.Click += StopButton_Click;
             ParameterButton.Click += ParameterButton_Click;
             ApplyNewVersion.Click += ApplyNewVersion_Click;
         }
