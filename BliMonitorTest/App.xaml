@@ -7,6 +7,15 @@
         <Style x:Key="GridStyle" TargetType="{x:Type DataGrid}">
             <Style.Resources>
                 <ResourceDictionary>
+                    <ResourceDictionary.MergedDictionaries>
+                        
+                    </ResourceDictionary.MergedDictionaries>
+
+                    <!-- 기본 폰트(선택): 윈도우 기본도 충분하지만 깔끔하게 -->
+                    <Style TargetType="{x:Type TextBlock}">
+                        <Setter Property="FontFamily" Value="Segoe UI"/>
+                    </Style>
+
                     <Style x:Key="{x:Type DataGridCell}" TargetType="{x:Type DataGridCell}">
                         <Setter Property="Background" Value="{x:Null}" />
                         <Setter Property="BorderBrush" Value="{x:Null}" />

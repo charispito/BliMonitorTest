@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="controls\pngegg.png" />
     <None Remove="Log4Net.config" />
   </ItemGroup>
 
@@ -25,6 +26,16 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="logo_re.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="controls\pngegg.png" />
+    <Resource Include="image\icons\reset.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="image\icons\reset2.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
   </ItemGroup>
 
   <ItemGroup>

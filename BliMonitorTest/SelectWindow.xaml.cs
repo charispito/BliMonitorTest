@@ -28,10 +28,7 @@ namespace BliMonitorTest
             InitializeComponent();
             OneChannelButton.Click += OneChannelButton_Click;
 
-            //멀티제품 - 미구현
             MultiChannelButton.Click += MultiChannelButton_Click;
-
-            //log.Debug($"환경: {Environment.MachineName}, 사용자: {Environment.UserName}");
         }
 
         private void OneChannelButton_Click(object sender, RoutedEventArgs e)
@@ -42,7 +39,6 @@ namespace BliMonitorTest
 
         private void MultiChannelButton_Click(object sender, RoutedEventArgs e)
         {
-            //멀티제품 - 미구현
             new MultiWindow1().Show();
             this.Close();
         }

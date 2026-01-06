@@ -1,4 +1,5 @@
 ﻿using BliMonitorTest.data;
+using OxyPlot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -83,5 +84,34 @@ namespace BliMonitorTest.controls
                     break;
             }
         }
+        private void ResetAxes_Click(object sender, RoutedEventArgs e)
+        {
+            // PlotView / Model null 방어
+            if (chart?.Model == null)
+                return;
+
+            // 줌/팬/축 범위 초기화
+            chart.Model.ResetAllAxes();
+
+            // 다시 그리기
+            chart.InvalidatePlot(true);
+        }
+
+        private void ToggleFullscreen_Click(object sender, RoutedEventArgs e)
+        {
+            PlotModel src = ViewModel?.PlotModel;
+            if (src == null) return;
+
+            // ✅ 간섭 없는 복제
+            var cloned = PlotModelCloneHelper.CloneForView(src);
+
+            var win = new FullscreenPlotWindow(cloned)
+            {
+                Owner = Window.GetWindow(this)
+            };
+
+            win.ShowDialog();
+        }
+
     }
 }
