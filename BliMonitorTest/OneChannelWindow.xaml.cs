@@ -920,5 +920,81 @@ namespace BliMonitorTest
             _useDummyCached = false;
         }
 
+        private List<byte[]> ExtractFramesFromBuffer(List<byte> buf, bool isNewVersion)
+        {
+            // NewVersion: STX=0x12, VER=0x01, ETX=0x34
+            // OldVersion: STX=0xCC, VER=0x00, ETX=0xEF
+            byte stx = isNewVersion ? (byte)0x12 : (byte)0xCC;
+            byte ver = isNewVersion ? (byte)0x01 : (byte)0x00;
+            byte etx = isNewVersion ? (byte)0x34 : (byte)0xEF;
+
+            var frames = new List<byte[]>();
+
+            while (true)
+            {
+                // 1) STX 찾기
+                int stxPos = buf.IndexOf(stx);
+                if (stxPos < 0)
+                {
+                    // STX가 없다면 전부 노이즈로 보고 비움
+                    buf.Clear();
+                    break;
+                }
+
+                // STX 앞 찌꺼기 제거
+                if (stxPos > 0)
+                    buf.RemoveRange(0, stxPos);
+
+                // 2) 최소 헤더(0..3) 확보: STX VER CMD SIZE
+                if (buf.Count < 4)
+                    break;
+
+                // VER 확인
+                if (buf[1] != ver)
+                {
+                    // STX는 맞았지만 다음 바이트가 기대 VER이 아님 → STX 1바이트 버리고 재탐색
+                    buf.RemoveAt(0);
+                    continue;
+                }
+
+                // CMD 확인(원하는 커맨드만 프레임으로 인정)
+                byte cmd = buf[2];
+                if (!_allowedCmd.Contains(cmd))
+                {
+                    buf.RemoveAt(0);
+                    continue;
+                }
+
+                // 3) SIZE 읽기
+                int size = buf[3];
+
+                // SIZE sanity 체크
+                if (size < MIN_FRAME_LEN || size > MAX_FRAME_LEN)
+                {
+                    buf.RemoveAt(0);
+                    continue;
+                }
+
+                // 아직 프레임 전체가 안 모였으면 대기
+                if (buf.Count < size)
+                    break;
+
+                // 4) ETX 확인 (프레임 끝)
+                if (buf[size - 1] != etx)
+                {
+                    // 경계가 밀렸거나 가짜 STX
+                    buf.RemoveAt(0);
+                    continue;
+                }
+
+                // 5) 프레임 추출 + 버퍼에서 소비
+                byte[] frame = buf.GetRange(0, size).ToArray();
+                frames.Add(frame);
+                buf.RemoveRange(0, size);
+            }
+
+            return frames;
+        }
+
     }
 }

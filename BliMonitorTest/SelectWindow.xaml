@@ -1,30 +1,161 @@
 ﻿<Window x:Class="BliMonitorTest.SelectWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:BliMonitorTest"
-        mc:Ignorable="d"
-        Title="BLI채널검사 선택" Height="400" Width="600">
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="20"/>
-            <ColumnDefinition/>
-            <ColumnDefinition/>
-            <ColumnDefinition Width="20"/>
-        </Grid.ColumnDefinitions>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="20"/>
-            <RowDefinition Height="40"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition/>
-            <RowDefinition Height="20"/>
-        </Grid.RowDefinitions>
-        <Label Content="BLI 채널 검사 선택" Grid.Row="2" FontSize="35" Grid.Column="1" HorizontalContentAlignment="Center" Grid.ColumnSpan="2" Background="AntiqueWhite"/>
-        <WrapPanel Margin="10, 30" VerticalAlignment="Center" HorizontalAlignment="Center" Orientation="Vertical" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2">
-            <Button Content="1채널 검사" Width="150" Height="40" Margin="10, 30" x:Name="OneChannelButton"/>
-            <Button Content="8채널 검사" Height="40" Margin="10, 10" x:Name="MultiChannelButton"/>
-        </WrapPanel>
+        Title="BLI 채널 검사 선택"
+        Width="720" Height="420"
+        WindowStartupLocation="CenterScreen"
+        Background="Transparent">
+
+    <Window.Resources>
+
+        <!-- ✅ 은은한 연한 푸른색 그라데이션 배경 -->
+        <LinearGradientBrush x:Key="AppBackgroundBrush" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#EAF4FF" Offset="0"/>
+            <GradientStop Color="#DDEEFF" Offset="1"/>
+        </LinearGradientBrush>
+
+        <!-- 카드 그림자 -->
+        <DropShadowEffect x:Key="CardShadow" Color="#000000" BlurRadius="18" ShadowDepth="2" Opacity="0.18"/>
+
+        <!-- 공통 텍스트 스타일 -->
+        <Style x:Key="TitleText" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="26"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#1F2937"/>
+        </Style>
+
+        <Style x:Key="SubText" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="#6B7280"/>
+        </Style>
+
+        <!-- 카드(패널) 스타일 -->
+        <Style x:Key="CardStyle" TargetType="Border">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="18"/>
+            <Setter Property="Padding" Value="26"/>
+            <Setter Property="Effect" Value="{StaticResource CardShadow}"/>
+        </Style>
+
+        <!-- ✅ 녹색 선택 버튼 스타일 (좌/우 공통) -->
+        <Style x:Key="SelectButtonStyle" TargetType="Button">
+            <Setter Property="Height" Value="44"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Background" Value="#16A34A"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="10">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 카드 내부 제목/본문 스타일 -->
+        <Style x:Key="CardTitleStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="20"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="#111827"/>
+        </Style>
+
+        <Style x:Key="CardBodyStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="#374151"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="LineHeight" Value="20"/>
+        </Style>
+
+    </Window.Resources>
+
+    <!-- ✅ 전체 배경 -->
+    <Grid Background="{StaticResource AppBackgroundBrush}">
+        <Grid Margin="20">
+            <Border Style="{StaticResource CardStyle}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <!-- 헤더 -->
+                        <RowDefinition Height="16"/>
+                        <RowDefinition Height="*"/>
+                        <!-- 카드 영역 -->
+                    </Grid.RowDefinitions>
+
+                    <!-- 헤더 -->
+                    <StackPanel Grid.Row="0">
+                        <TextBlock Text="BLI 채널 검사 선택" Style="{StaticResource TitleText}"/>
+                        <TextBlock Text="사용할 검사 모드를 선택하세요. (단일 또는 다채널)" Margin="0,6,0,0" Style="{StaticResource SubText}"/>
+                    </StackPanel>
+
+                    <!-- 카드 2개 -->
+                    <Grid Grid.Row="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="14"/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- 좌측 카드: 단일 채널 -->
+                        <Border Grid.Column="0" Style="{StaticResource CardStyle}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <StackPanel Grid.Row="0" Margin="0,0,0,10">
+                                    <TextBlock Text="단일 채널 검사" Style="{StaticResource CardTitleStyle}"/>
+                                    <TextBlock Text="1개 채널을 집중 모니터링합니다."
+                                               Style="{StaticResource CardBodyStyle}"
+                                               Margin="0,8,0,0"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Row="1">
+                                    <TextBlock Text="• 정밀 확인 / 점검용" Style="{StaticResource CardBodyStyle}"/>
+                                    <TextBlock Text="• 화면이 단순해 조작이 빠름" Style="{StaticResource CardBodyStyle}"/>
+                                    <TextBlock Text="• 보고서/로그 확인에 적합" Style="{StaticResource CardBodyStyle}"/>
+                                </StackPanel>
+
+                                <!-- ✅ 좌측도 녹색 선택 버튼 (항상 하단 고정) -->
+                                <Button Grid.Row="2" Content="선택" Style="{StaticResource SelectButtonStyle}" Margin="0,18,0,0" x:Name="OneChannelButton"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- 우측 카드: 다채널 -->
+                        <Border Grid.Column="2" Style="{StaticResource CardStyle}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <StackPanel Grid.Row="0" Margin="0,0,0,10">
+                                    <TextBlock Text="다채널 검사" Style="{StaticResource CardTitleStyle}"/>
+                                    <TextBlock Text="여러 채널을 동시에 모니터링합니다." Style="{StaticResource CardBodyStyle}" Margin="0,8,0,0"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Row="1">
+                                    <TextBlock Text="• 8채널 동시 모니터링" Style="{StaticResource CardBodyStyle}"/>
+                                    <TextBlock Text="• 현장 생산 라인에 적합" Style="{StaticResource CardBodyStyle}"/>
+                                    <TextBlock Text="• 전체 상태를 한눈에 확인" Style="{StaticResource CardBodyStyle}"/>
+                                </StackPanel>
+
+                                <Button Grid.Row="2" Content="선택" Style="{StaticResource SelectButtonStyle}" Margin="0,18,0,0" x:Name="MultiChannelButton"/>
+                            </Grid>
+                        </Border>
+
+                    </Grid>
+                </Grid>
+            </Border>
+
+        </Grid>
     </Grid>
 </Window>

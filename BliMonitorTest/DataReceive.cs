@@ -9,6 +9,45 @@ namespace BliMonitorTest
 {
     public partial class OneChannelWindow
     {
+        // ===== NEW: RX framing buffer (공통) =====
+        private readonly object _rxLock = new object();
+        private readonly List<byte> _rxBuffer = new List<byte>(4096);
+
+        // SIZE sanity 범위 (너무 작거나 큰 값은 노이즈로 간주)
+        private const int MIN_FRAME_LEN = 7;
+        private const int MAX_FRAME_LEN = 200;
+
+        // 허용 CMD (프로토콜에 맞게 필요 시 추가)
+        private static readonly HashSet<byte> _allowedCmd = new HashSet<byte>
+        {
+            0x99, 0xB9, 0xA0, 0xAA
+        };
+
+        private void receiveData(byte[] data, int Length)
+        {
+            // Length가 "유효 길이(새로 읽힌 바이트 수)"라는 전제 그대로 유지
+            if (data == null || Length <= 0) return;
+
+            byte[] chunk = new byte[Length];
+            Buffer.BlockCopy(data, 0, chunk, 0, Length);
+
+            List<byte[]> frames;
+
+            lock (_rxLock)
+            {
+                _rxBuffer.AddRange(chunk);
+                frames = ExtractFramesFromBuffer(_rxBuffer, channel.IsNewVersion);
+            }
+
+            // 프레임 단위로 처리 (UI 업데이트는 CheckCommand 내부에서 Dispatcher 사용)
+            foreach (var frame in frames)
+            {
+                CheckCommand(frame);
+            }
+        }
+
+
+        /*
         private void receiveData(byte[] data, int Length)
         {
             log.Debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
@@ -235,6 +274,7 @@ namespace BliMonitorTest
                 }
             }
         }
+        */
 
         private int getStxIndex(byte[] data)
         {

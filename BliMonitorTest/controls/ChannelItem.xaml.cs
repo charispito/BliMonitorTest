@@ -163,8 +163,6 @@ namespace BliMonitorTest.controls
                 streamWriter.WriteLine("날짜,모드,남은 시간,히터 온도,히터 오프타임,배기온도,FAN Speed," +
                 "열풍온도,열풍온타임,MOTOR,모터 전류,번호,오프타임합,오프평균,배기 합,배기 평균");
             }
-            //streamWriter.WriteLine("날짜,모드,남은 시간,히터 온도,히터 오프타임,배기온도,FAN Speed," +
-            //    "열풍온도,열풍온타임,MOTOR,모터 전류,번호,오프타임합,오프평균,배기 합,배기 평균");
         }
 
         public void WriteFile(ReadData data)
@@ -186,18 +184,8 @@ namespace BliMonitorTest.controls
                 }
                 else
                 {
-                    //hot_air_temp
-                    //    if (IsNewVersion)
-                    //    {
-                    //        streamWriter.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15}", data.date, data.mode, data.remain_time, data.heater_temp, data.heater_off_time,
-                    //data.air_temp, data.fan_speed, 0, data.hot_air_ontime, data.motor, data.motor_current, number, off_sum, data.hot_air_temp, air_sum, (double)(air_sum / (double)number));
-                    //    }
-                    //    else
-                    //    {
                     streamWriter.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15}", data.date, data.mode, data.remain_time, data.heater_temp, data.heater_off_time,
-            data.air_temp, data.fan_speed, data.hot_air_temp, data.hot_air_ontime, data.motor, data.motor_current, number, off_sum, (double)(off_sum / (double)number), air_sum, (double)(air_sum / (double)number));
-                    //}
-                    //streamWriter.Flush();
+                    data.air_temp, data.fan_speed, data.hot_air_temp, data.hot_air_ontime, data.motor, data.motor_current, number, off_sum, (double)(off_sum / (double)number), air_sum, (double)(air_sum / (double)number));
                 }
             }
             else
@@ -205,8 +193,8 @@ namespace BliMonitorTest.controls
                 initPath();
                 Modify = false;
             }
-
         }
+
         private void initPath()
         {
             string path = ".\\ChannelData";
@@ -216,12 +204,9 @@ namespace BliMonitorTest.controls
             }
             if (!Directory.Exists(path))
                 Directory.CreateDirectory(path);
+
             string file = FName + $"_ch{_Channel}" + ".csv";
-            //FileInfo fileInfo = new FileInfo(Path.Combine(path, file));
-            //if (!fileInfo.Exists)
-            //{
-            //    fileInfo.Create();
-            //}
+
             try
             {
                 streamWriter = new StreamWriter(Path.Combine(path, file), true, System.Text.Encoding.Default);
@@ -234,8 +219,6 @@ namespace BliMonitorTest.controls
                 initFile();
                 Console.WriteLine(ex.ToString());
             }
-
-            //streamWriter = new StreamWriter(new FileStream(Path.Combine(path, file), FileMode.OpenOrCreate), System.Text.Encoding.Default);
 
         }
 
@@ -266,8 +249,7 @@ namespace BliMonitorTest.controls
             Item14.MouseLeftButtonDown += (s, e) => {
                 typeof(System.Windows.Controls.Primitives.ButtonBase).GetMethod("OnClick", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(Item8Check, new object[0]);
             };
-            StartButton.Click += StartButton_Click;
-            StopButton.Click += StopButton_Click;
+
             ParameterButton.Click += ParameterButton_Click;
             ApplyNewVersion.Click += ApplyNewVersion_Click;
         }
@@ -363,22 +345,6 @@ namespace BliMonitorTest.controls
             }
         }
 
-        private void ClearPoints()
-        {
-            TestTime = TimeSpan.Zero;
-            int start = ItemIndex * 10;
-            int end = start + 8;
-            seriesList.Keys.ToArray().PrintInt();
-            for (int key = start; key < end; key++)
-            {
-                if (seriesList.ContainsKey(key))
-                {
-                    int index = seriesList[key];
-                    chartView.ViewModel.ClearSeries(index);
-                }
-            }
-        }
-
         private void StartButton_Click(object sender, RoutedEventArgs e)
         {
             if (client == null || !client.Connected)
@@ -412,7 +378,6 @@ namespace BliMonitorTest.controls
             //ClearPoints();
         }
 
-
         public void setHandler(RoutedEventHandler handler)
         {
             Item1Check.Click += handler;
@@ -427,8 +392,6 @@ namespace BliMonitorTest.controls
 
         public void SetView(byte[] data)
         {
-            log.Debug("$$$$$$$$$$$$$$$$$$$      ChannelItem.xaml.cs      $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
-
             if (data.Length < 57)
                 return;
             if (data[3] != 57)
@@ -451,15 +414,13 @@ namespace BliMonitorTest.controls
             bool isDummy = IsDummyEnabled;
 
             data.PrintHex(1);
-            //TestTime += TimeSpan.FromSeconds(1);
-            //PrintCommand(data);
-            //Console.WriteLine("view");
+
             int motorRun = data[5];
-            int heateroff = data[7]; //히터 오프타임
-            int heatertemp = data[6]; //히터 온도
-            int airtemp = data[8]; //배기 온도
+            int heateroff = data[7];        //히터 오프타임
+            int heatertemp = data[6];       //히터 온도
+            int airtemp = data[8];          //배기 온도
             int airaverage = data[9];
-            int airheatertemp = data[10]; //열풍 온도
+            int airheatertemp = data[10];   //열풍 온도
             Console.WriteLine("10: {0}", airheatertemp);
             int heaterduty = data[11];
             int mode = data[15];
@@ -486,12 +447,10 @@ namespace BliMonitorTest.controls
 
             if (total_second > 0)
             {
-                Console.WriteLine("22");
                 total_minute += (remain_second + remain_value * (total_second % 60));
             }
             else
             {
-                Console.WriteLine("11");
                 total_minute += remain_second;
             }
 
@@ -586,26 +545,7 @@ namespace BliMonitorTest.controls
             {
                 Item16.cont.Content = "감지";
             }
-            //if (IsNewVersion)
-            //{
-            //    ReadData read = new ReadData()
-            //    {
-            //        date = DateTime.Now.ToString("yyyy-MM-dd_HH_mm_ss"),
-            //        mode = mode + 1,
-            //        remain_time = time,
-            //        heater_temp = heatertemp,
-            //        heater_off_time = averOffTime,
-            //        air_temp = airtemp,
-            //        fan_speed = fan_duty,
-            //        hot_air_temp = airheatertemp,
-            //        hot_air_ontime = heaterduty,
-            //        motor = getMotorState(motorRun),
-            //        motor_current = currentfloat / 2.0
-            //    };
-            //    WriteFile(read);
-            //}
-            //else
-            //{
+
             ReadData read = new ReadData()
             {
                 date = DateTime.Now.ToString("yyyy-MM-dd_HH_mm_ss"),
@@ -620,10 +560,6 @@ namespace BliMonitorTest.controls
                 motor = getMotorState(motorRun),
                 motor_current = currentfloat / 2.0
             };
-
-            ByteLogHelper.LogPacket(data, "RX");
-            ByteLogHelper.ToHexWith0x(data);
-            ByteLogHelper.DumpLinesWith0x(data, 16);
 
             WriteFile(read);
             string errorStr = GetErrorName(binary0, binary1);

@@ -11,7 +11,7 @@
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="2*"/>
         </Grid.ColumnDefinitions>
-        <Label FontSize="18" Padding="0" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" BorderBrush="#AAA" BorderThickness="1" x:Name="label" Background="#EEE"/>
+        <Label FontSize="18" Padding="0" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" BorderBrush="#AAA" BorderThickness="1" x:Name="label" Background="#652822E8"/>
         <Label FontSize="38" Padding="0" FontWeight="Black" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Grid.Column="1" BorderBrush="#AAA" BorderThickness="1" x:Name="cont"/>
     </Grid>
 </UserControl>

@@ -5,730 +5,1105 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:BliMonitorTest"
         mc:Ignorable="d"
-        Title="파라미터 설정" Height="900" Width="1600" SizeToContent="WidthAndHeight">
-    <Window.Resources>
-        <Style TargetType="{x:Type Border}">
-            <Setter Property="Background" Value="Bisque" />
-            <Setter Property="TextBlock.FontSize" Value="14" />
-            <Setter Property="BorderBrush" Value="Black" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="HorizontalAlignment" Value="Stretch" />
-        </Style>
-    </Window.Resources>
-    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-        <Grid ShowGridLines="False">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="20"/>
-                <ColumnDefinition Width="1100"/>
-                <ColumnDefinition Width="20"/>
-                <ColumnDefinition Width="200"/>
-                <ColumnDefinition Width="20"/>
-                <ColumnDefinition Width="250"/>
-                <ColumnDefinition/>
-                <ColumnDefinition Width="20"/>
-            </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="20"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="30"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="30"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="20"/>
-            </Grid.RowDefinitions>
-            <Label Grid.Row="1" Grid.Column="1" Content="검사 항목 설정" FontSize="18" FontWeight="SemiBold"/>
-            <DataGrid Style="{StaticResource GridStyle}" HorizontalAlignment="Left" Width="1100" BorderThickness="2,2,0,0" Height="Auto" HeadersVisibility="None" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" Grid.Row="3" Grid.Column="1" x:Name="BliMonitorTest">
-                <DataGrid.Columns>
-                    <DataGridTextColumn IsReadOnly="True" Width="1.2*" CanUserReorder="False" CanUserSort="False" Binding="{Binding Name}">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="{x:Type TextBlock}">
-                                <Setter Property="TextAlignment" Value="Center"/>
-                                <Setter Property="Background" Value="#CCC"/>
-                                <Setter Property="FontSize" Value="13"/>
-                            </Style>
-                        </DataGridTextColumn.ElementStyle>
-                    </DataGridTextColumn>
-                    <DataGridTextColumn IsReadOnly="False" Width="*" CanUserReorder="False" CanUserSort="False" Binding="{Binding Value}">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="{x:Type TextBlock}">
-                                <Setter Property="TextAlignment" Value="Center"/>
-                                <Setter Property="Background" Value="White"/>
-                                <Setter Property="FontSize" Value="13"/>
-                            </Style>
-                        </DataGridTextColumn.ElementStyle>
-                    </DataGridTextColumn>
-                    <DataGridTextColumn IsReadOnly="True" Width="1.2*" CanUserReorder="False" CanUserSort="False" Binding="{Binding Name}">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="{x:Type TextBlock}">
-                                <Setter Property="TextAlignment" Value="Center"/>
-                                <Setter Property="Background" Value="#CCC"/>
-                                <Setter Property="FontSize" Value="13"/>
-                            </Style>
-                        </DataGridTextColumn.ElementStyle>
-                    </DataGridTextColumn>
-                    <DataGridTextColumn IsReadOnly="False" Width="*" CanUserReorder="False" CanUserSort="False" Binding="{Binding Value2}">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="{x:Type TextBlock}">
-                                <Setter Property="TextAlignment" Value="Center"/>
-                                <Setter Property="Background" Value="White"/>
-                                <Setter Property="FontSize" Value="13"/>
-                            </Style>
-                        </DataGridTextColumn.ElementStyle>
-                    </DataGridTextColumn>
-                    <DataGridTextColumn IsReadOnly="True" Width="1.2*" CanUserReorder="False" CanUserSort="False" Binding="{Binding Name}">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="{x:Type TextBlock}">
-                                <Setter Property="TextAlignment" Value="Center"/>
-                                <Setter Property="Background" Value="#CCC"/>
-                                <Setter Property="FontSize" Value="13"/>
-                            </Style>
-                        </DataGridTextColumn.ElementStyle>
-                    </DataGridTextColumn>
-                    <DataGridTextColumn IsReadOnly="False" Width="*" CanUserReorder="False" CanUserSort="False" Binding="{Binding Value3}">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="{x:Type TextBlock}">
-                                <Setter Property="TextAlignment" Value="Center"/>
-                                <Setter Property="Background" Value="White"/>
-                                <Setter Property="FontSize" Value="13"/>
-                            </Style>
-                        </DataGridTextColumn.ElementStyle>
-                    </DataGridTextColumn>
-                    <DataGridTextColumn IsReadOnly="True" Width="1.2*" CanUserReorder="False" CanUserSort="False" Binding="{Binding Name}">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="{x:Type TextBlock}">
-                                <Setter Property="TextAlignment" Value="Center"/>
-                                <Setter Property="Background" Value="#CCC"/>
-                                <Setter Property="FontSize" Value="13"/>
-                            </Style>
-                        </DataGridTextColumn.ElementStyle>
-                    </DataGridTextColumn>
-                    <DataGridTextColumn IsReadOnly="False" Width="*" CanUserReorder="False" CanUserSort="False" Binding="{Binding Value4}">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="{x:Type TextBlock}">
-                                <Setter Property="TextAlignment" Value="Center"/>
-                                <Setter Property="Background" Value="White"/>
-                                <Setter Property="FontSize" Value="13"/>
-                            </Style>
-                        </DataGridTextColumn.ElementStyle>
-                    </DataGridTextColumn>
-                    <DataGridTextColumn IsReadOnly="True" Width="1.2*" CanUserReorder="False" CanUserSort="False" Binding="{Binding Name}">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="{x:Type TextBlock}">
-                                <Setter Property="TextAlignment" Value="Center"/>
-                                <Setter Property="Background" Value="#CCC"/>
-                                <Setter Property="FontSize" Value="13"/>
-                            </Style>
-                        </DataGridTextColumn.ElementStyle>
-                    </DataGridTextColumn>
-                    <DataGridTextColumn IsReadOnly="False" Width="*" CanUserReorder="False" CanUserSort="False" Binding="{Binding Value5}">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="{x:Type TextBlock}">
-                                <Setter Property="TextAlignment" Value="Center"/>
-                                <Setter Property="Background" Value="White"/>
-                                <Setter Property="FontSize" Value="13"/>
-                            </Style>
-                        </DataGridTextColumn.ElementStyle>
-                    </DataGridTextColumn>
-                </DataGrid.Columns>
-            </DataGrid>
-            <Grid HorizontalAlignment="Left" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="5" Width="1100">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                </Grid.ColumnDefinitions>
-                <Label FontSize="14" Content="Error1" FontWeight="Black"/>
-                <Label FontSize="14" Grid.Column="1" Content="Error2" FontWeight="Black"/>
-                <Label FontSize="14" Grid.Column="2" Content="Error3" FontWeight="Black"/>
-                <Label FontSize="14" Grid.Column="3" Content="Error4" FontWeight="Black"/>
-                <Label FontSize="14" Grid.Column="4" Content="Error5" FontWeight="Black"/>
-            </Grid>
-            <Grid Grid.Row="1" Grid.Column="3" Grid.RowSpan="3" Width="200" HorizontalAlignment="Left">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="2*"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-                <Label Content="운전" FontWeight="SemiBold" FontSize="18"/>
-                <Label Grid.Row="1" Content="정상 운전" FontSize="15" Margin="0, 10" FontWeight="Black"/>
-                <Label Grid.Row="2" x:Name="RunCount" BorderThickness="1" BorderBrush="Black" FontSize="17" Content="0" Margin="5, 0" HorizontalContentAlignment="Right"/>
-                <Label Grid.Column="1" Grid.Row="2" Content="회" FontSize="17"/>
-                <Button Background="Transparent" BorderBrush="Blue" Foreground="Blue" Grid.ColumnSpan="2" Grid.Row="4" Height="30" Margin="5, 10" FontSize="17" Content="READ" x:Name="ReadErrorButton"/>
-                <Button Background="Transparent" BorderBrush="Red" Foreground="Red" Grid.ColumnSpan="2" Grid.Row="5" Height="30" Margin="5, 0" FontSize="17" Content="RESET" x:Name="ResetErrorButton"/>
-            </Grid>
-            <Label Grid.Row="1" Grid.Column="5" Content="파일" FontSize="18" FontWeight="SemiBold"/>
-            <TextBox x:Name="FileName" Grid.Row="2" Grid.Column="5" Margin="0,5" FontSize="14" BorderBrush="Black"/>
-            <ListBox x:Name="FileList" Grid.Row="3" Grid.Column="5" Grid.RowSpan="4" BorderBrush="Black">
-                <ListBox.ItemContainerStyle>
-                    <Style TargetType="ListBoxItem">
-                        <EventSetter Event="MouseDoubleClick" Handler="ListDoubleClick"/>
-                    </Style>
-                </ListBox.ItemContainerStyle>
-            </ListBox>
-            <Grid Grid.Row="7" Grid.Column="5" Margin="0, 10, 0, 0">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition/>
-                    <ColumnDefinition Width="10"/>
-                    <ColumnDefinition/>
-                    <ColumnDefinition Width="10"/>
-                    <ColumnDefinition/>
-                </Grid.ColumnDefinitions>
-                <Button Content="저장" x:Name="SaveButton"/>
-                <Button Grid.Column="2" x:Name="DeleteButton" Height="25" Content="삭제"/>
-                <Button Grid.Column="4" x:Name="RefreshButton" Content="새로고침"/>
-            </Grid>
-            <Label Grid.Row="4" Grid.Column="1" FontSize="18" FontWeight="SemiBold" Content="Micom Parameter" Margin="0, 10, 0, 0"/>
-            <Grid Grid.Row="5" Grid.Column="1" Grid.RowSpan="2" Grid.ColumnSpan="3" ShowGridLines="False">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                    <ColumnDefinition Width="90"/>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-                <Label FontSize="15" Content="Mode1" FontWeight="Black"/>
-                <Label FontSize="15" Grid.Column="1" Content="Mode2" FontWeight="Black"/>
-                <Label FontSize="15" Grid.Column="2" Content="Mode3" FontWeight="Black"/>
-                <Label FontSize="15" Grid.Row="2" Content="Mode4" FontWeight="Black"/>
-                <Label FontSize="15" Grid.Row="2" Grid.Column="1" Content="Mode5" FontWeight="Black"/>
-                <Label FontSize="15" Grid.Row="2" Grid.Column="2" Content="Motor" FontWeight="Black"/>
-                <DataGrid Style="{StaticResource GridStyle}" Grid.Row="1" BorderThickness="2,2,0,0" Height="Auto" HeadersVisibility="None" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="MicomGrid">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn IsReadOnly="True"  CanUserReorder="False" Width="2*" CanUserSort="False" Binding="{Binding Name}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="#CCC"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                        <DataGridTextColumn IsReadOnly="False"  CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="White"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                    </DataGrid.Columns>
-                </DataGrid>
-                <DataGrid Style="{StaticResource GridStyle}" Grid.Row="1" Grid.Column="1" BorderThickness="0,2,0,0" Height="Auto" HeadersVisibility="None" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="MicomGrid2">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn IsReadOnly="True"  CanUserReorder="False" Width="2*" CanUserSort="False" Binding="{Binding Name}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="#CCC"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                        <DataGridTextColumn IsReadOnly="False"  CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="White"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                    </DataGrid.Columns>
-                </DataGrid>
-                <DataGrid Style="{StaticResource GridStyle}" Grid.Row="1" Grid.Column="2" BorderThickness="0,2,0,0" Height="Auto" HeadersVisibility="None" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="MicomGrid3">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn IsReadOnly="True"  CanUserReorder="False" Width="2*" CanUserSort="False" Binding="{Binding Name}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="#CCC"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                        <DataGridTextColumn IsReadOnly="False"  CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="White"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                    </DataGrid.Columns>
-                </DataGrid>
-                <DataGrid Style="{StaticResource GridStyle}" Grid.Row="3" BorderThickness="2,2,0,0" Height="Auto" HeadersVisibility="None" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="MicomGrid4">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn IsReadOnly="True"  CanUserReorder="False" Width="2*" CanUserSort="False" Binding="{Binding Name}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="#CCC"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                        <DataGridTextColumn IsReadOnly="False"  CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="White"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                    </DataGrid.Columns>
-                </DataGrid>
-                <DataGrid Style="{StaticResource GridStyle}" Grid.Row="3" Grid.Column="1" BorderThickness="0,2,0,0" Height="Auto" HeadersVisibility="None" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="MicomGrid5">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn IsReadOnly="True"  CanUserReorder="False" Width="2*" CanUserSort="False" Binding="{Binding Name}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="#CCC"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                        <DataGridTextColumn IsReadOnly="False"  CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="White"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                    </DataGrid.Columns>
-                </DataGrid>
-                <DataGrid Background="#FFF" Style="{StaticResource GridStyle}" Grid.Row="3" Grid.Column="2" BorderThickness="0,2,0,0" Height="Auto" HeadersVisibility="None" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="MotorGrid">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn IsReadOnly="True"  CanUserReorder="False" Width="2*" CanUserSort="False" Binding="{Binding Name}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="#CCC"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                        <DataGridTextColumn IsReadOnly="False"  CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="White"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                    </DataGrid.Columns>
-                </DataGrid>
-                <Button x:Name="RightButton" Grid.Row="1" Grid.RowSpan="6" Grid.Column="3" Margin="15, 0" Content=">>" FontSize="20" FontWeight="Black" Background="Transparent" BorderThickness="2"/>
-                <Label FontSize="15" Content="Mode1" Grid.Column="4" FontWeight="Black"/>
-                <Label FontSize="15" Grid.Column="5" Content="Mode2" FontWeight="Black"/>
-                <Label FontSize="15" Grid.Column="6" Content="Mode3" FontWeight="Black"/>
-                <Label FontSize="15" Grid.Row="2" Grid.Column="4" Content="Mode4" FontWeight="Black"/>
-                <Label FontSize="15" Grid.Row="2" Grid.Column="5" Content="Mode5" FontWeight="Black"/>
-                <Label FontSize="15" Grid.Row="2" Grid.Column="6" Content="Motor" FontWeight="Black"/>
-                <DataGrid Background="#FFF" Style="{StaticResource GridStyle}" Grid.Row="1" Grid.Column="4" BorderThickness="2,2,0,0" Height="Auto" HeadersVisibility="None" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="SetGrid1">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn IsReadOnly="True"  CanUserReorder="False" Width="2*" CanUserSort="False" Binding="{Binding Name}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="#CCC"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                        <DataGridTextColumn IsReadOnly="False"  CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="White"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                    </DataGrid.Columns>
-                </DataGrid>
-                <DataGrid Background="#FFF" Style="{StaticResource GridStyle}" Grid.Row="1" Grid.Column="5" BorderThickness="0,2,0,0" Height="Auto" HeadersVisibility="None" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="SetGrid2">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn IsReadOnly="True"  CanUserReorder="False" Width="2*" CanUserSort="False" Binding="{Binding Name}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="#CCC"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                        <DataGridTextColumn IsReadOnly="False"  CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="White"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                    </DataGrid.Columns>
-                </DataGrid>
-                <DataGrid Background="#FFF" Style="{StaticResource GridStyle}" Grid.Row="1" Grid.Column="6" BorderThickness="0,2,0,0" Height="Auto" HeadersVisibility="None" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="SetGrid3">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn IsReadOnly="True"  CanUserReorder="False" Width="2*" CanUserSort="False" Binding="{Binding Name}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="#CCC"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                        <DataGridTextColumn IsReadOnly="False"  CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="White"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                    </DataGrid.Columns>
-                </DataGrid>
-                <DataGrid Background="#FFF" Style="{StaticResource GridStyle}" Grid.Row="3" Grid.Column="4" BorderThickness="2,2,0,0" Height="Auto" HeadersVisibility="None" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="SetGrid4">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn IsReadOnly="True"  CanUserReorder="False" Width="2*" CanUserSort="False" Binding="{Binding Name}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="#CCC"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                        <DataGridTextColumn IsReadOnly="False"  CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="White"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                    </DataGrid.Columns>
-                </DataGrid>
-                <DataGrid Background="#FFF" Style="{StaticResource GridStyle}" Grid.Row="3" Grid.Column="5" BorderThickness="0,2,0,0" Height="Auto" HeadersVisibility="None" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="SetGrid5">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn IsReadOnly="True"  CanUserReorder="False" Width="2*" CanUserSort="False" Binding="{Binding Name}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="#CCC"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                        <DataGridTextColumn IsReadOnly="False"  CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="White"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                    </DataGrid.Columns>
-                </DataGrid>
-                <DataGrid Background="#FFF" Style="{StaticResource GridStyle}" Grid.Row="3" Grid.Column="6" BorderThickness="0,2,0,0" Height="Auto" HeadersVisibility="None" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="SetGrid6">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn IsReadOnly="True"  CanUserReorder="False" Width="2*" CanUserSort="False" Binding="{Binding Name}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="#CCC"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                        <DataGridTextColumn IsReadOnly="False"  CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="White"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                    </DataGrid.Columns>
-                </DataGrid>
-                <Label Margin="20, 0" Grid.Row="4" Grid.Column="1" Content="열풍" FontSize="15" FontWeight="Black"/>
-                <DataGrid VerticalAlignment="Center" Style="{StaticResource GridStyle}" Background="Transparent" Grid.Row="5" BorderThickness="2,2,0,0" Height="Auto" HeadersVisibility="None" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="FanGrid">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn IsReadOnly="True"  CanUserReorder="False" Width="2*" CanUserSort="False" Binding="{Binding Name}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="#CCC"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                        <DataGridTextColumn IsReadOnly="False"  CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="White"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                    </DataGrid.Columns>
-                </DataGrid>
-                <Button x:Name="ReadParamButton" Grid.Row="6" Height="30" Content="PARAMETER READ" FontSize="15" Background="Transparent" Foreground="Blue" BorderBrush="Blue"/>
-                <DataGrid Margin="20,0,0,0" Style="{StaticResource GridStyle}" Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" BorderThickness="2,2,0,0" Height="Auto" CanUserAddRows="False" HeadersVisibility="Column" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="HeaterGrid">
-                    <DataGrid.ColumnHeaderStyle>
-                        <Style TargetType="{x:Type DataGridColumnHeader}">
-                            <Setter Property="Background" Value="#CCC"/>
-                            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-                            <Setter Property="BorderThickness" Value="0.5, 0.5"/>
-                            <Setter Property="BorderBrush" Value="Black"/>
-                            <Setter Property="FontSize" Value="13"/>
-                            <Setter Property="Padding" Value="5, 1"/>
-                        </Style>
-                    </DataGrid.ColumnHeaderStyle>
-                    <DataGrid.Columns>
-                        <DataGridTextColumn IsReadOnly="True"  CanUserReorder="False" Width="140" CanUserSort="False" Binding="{Binding Name}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="#CCC"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                        <DataGridTextColumn IsReadOnly="False"  CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}" Header="열풍 제어">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="White"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                        <DataGridTextColumn IsReadOnly="False"  CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value2}" Header="배기 온도">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="White"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                    </DataGrid.Columns>
-                </DataGrid>
-                <DataGrid VerticalAlignment="Center" Style="{StaticResource GridStyle}" Background="Transparent" Grid.ColumnSpan="2" Margin="20,0,0,0" Grid.Row="6" Grid.Column="1" BorderThickness="2,0.3,0,0" Height="Auto" HeadersVisibility="None" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="HeaterGrid2">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn IsReadOnly="True"  CanUserReorder="False" Width="140" CanUserSort="False" Binding="{Binding Name}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="#CCC"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                        <DataGridTextColumn IsReadOnly="False"  CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="White"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                    </DataGrid.Columns>
-                </DataGrid>
-                <Label Margin="20, 0" Grid.Row="4" Grid.Column="1" Content="열풍" FontSize="15" FontWeight="Black"/>
-                <DataGrid VerticalAlignment="Center" Style="{StaticResource GridStyle}" Background="Transparent" Grid.Row="5" Grid.Column="4" BorderThickness="2,2,0,0" Height="Auto" HeadersVisibility="None" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="FanGrid2">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn IsReadOnly="True"  CanUserReorder="False" Width="2*" CanUserSort="False" Binding="{Binding Name}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="#CCC"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                        <DataGridTextColumn IsReadOnly="False"  CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="White"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                    </DataGrid.Columns>
-                </DataGrid>
-                <Button x:Name="WriteParamButton" Grid.Row="6" Grid.Column="4" Height="30" Content="PARAMETER WRITE" FontSize="15" Background="Transparent" Foreground="Red" BorderBrush="Red"/>
-                <DataGrid Margin="20,0,0,0" Style="{StaticResource GridStyle}" Grid.Row="5" Grid.Column="5" Grid.ColumnSpan="2" BorderThickness="2,2,0,0" Height="Auto" CanUserAddRows="False" HeadersVisibility="Column" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="HeaterGridSetting">
-                    <DataGrid.ColumnHeaderStyle>
-                        <Style TargetType="{x:Type DataGridColumnHeader}">
-                            <Setter Property="Background" Value="#CCC"/>
-                            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-                            <Setter Property="BorderThickness" Value="0.5, 0.5"/>
-                            <Setter Property="BorderBrush" Value="Black"/>
-                            <Setter Property="FontSize" Value="13"/>
-                            <Setter Property="Padding" Value="5, 1"/>
-                        </Style>
-                    </DataGrid.ColumnHeaderStyle>
-                    <DataGrid.Columns>
-                        <DataGridTextColumn IsReadOnly="True"  CanUserReorder="False" Width="140" CanUserSort="False" Binding="{Binding Name}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="#CCC"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                        <DataGridTextColumn IsReadOnly="False"  CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}" Header="열풍 제어">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="White"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                        <DataGridTextColumn IsReadOnly="False"  CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value2}" Header="배기 온도">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="White"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                    </DataGrid.Columns>
-                </DataGrid>
-                <DataGrid VerticalAlignment="Center" Style="{StaticResource GridStyle}" Background="Transparent" Grid.ColumnSpan="2" Margin="20,0,0,0" Grid.Row="6" Grid.Column="5" BorderThickness="2,0.3,0,0" Height="Auto" HeadersVisibility="None" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="HeaterGridSetting2">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn IsReadOnly="True"  CanUserReorder="False" Width="140" CanUserSort="False" Binding="{Binding Name}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="#CCC"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                        <DataGridTextColumn IsReadOnly="False"  CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="White"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                    </DataGrid.Columns>
-                </DataGrid>
+        Title="파라미터 설정"
+        Height="900"
+        Width="1703"
+        SizeToContent="WidthAndHeight"
+        Background="Transparent">
 
+    <Window.Resources>
+
+        <!-- ✅ 배경 그라데이션 -->
+        <LinearGradientBrush x:Key="AppBackgroundBrush" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#EAF4FF" Offset="0"/>
+            <GradientStop Color="#DDEEFF" Offset="1"/>
+        </LinearGradientBrush>
+
+        <!-- ✅ 카드 그림자 -->
+        <DropShadowEffect x:Key="CardShadow"
+                          Color="#000000"
+                          BlurRadius="18"
+                          ShadowDepth="2"
+                          Opacity="0.16"/>
+
+        <!-- ✅ 카드(Border) 공통 스타일 (키 기반) -->
+        <Style x:Key="CardBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="18"/>
+            <Setter Property="Padding" Value="14"/>
+            <Setter Property="Effect" Value="{StaticResource CardShadow}"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+        </Style>
+
+        <SolidColorBrush x:Key="SoftBorderBrush" Color="#E5E7EB"/>
+
+        <!-- 섹션 타이틀 -->
+        <Style x:Key="SectionTitleStyle" TargetType="Label">
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#111827"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0,0,0,10"/>
+        </Style>
+
+        <!-- 작은 서브 타이틀 -->
+        <Style x:Key="SubTitleStyle" TargetType="Label">
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="#111827"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
+
+        <!-- 입력 컨트롤 톤 통일 -->
+        <Style x:Key="SoftTextBoxStyle" TargetType="TextBox">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="BorderBrush" Value="{StaticResource SoftBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="#FBFDFF"/>
+        </Style>
+
+        <Style x:Key="SoftListBoxStyle" TargetType="ListBox">
+            <Setter Property="BorderBrush" Value="{StaticResource SoftBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Padding" Value="6"/>
+        </Style>
+
+        <!-- 버튼 스타일: 기본(중립) -->
+        <Style x:Key="SoftButtonStyle" TargetType="Button">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Padding" Value="14,0"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#111827"/>
+            <Setter Property="Background" Value="#F3F4F6"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="{StaticResource SoftBorderBrush}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#EDEFF3"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#E5E7EB"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 버튼 스타일: Primary(파란 액션) -->
+        <Style x:Key="PrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource SoftButtonStyle}">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="#2563EB"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+
+        <!-- 버튼 스타일: Danger(빨강 액션) -->
+        <Style x:Key="DangerButtonStyle" TargetType="Button" BasedOn="{StaticResource SoftButtonStyle}">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="#DC2626"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+
+        <!-- 버튼 스타일: Outline(READ처럼 가벼운 강조) -->
+        <Style x:Key="OutlineBlueButtonStyle" TargetType="Button" BasedOn="{StaticResource SoftButtonStyle}">
+            <Setter Property="Foreground" Value="#2563EB"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#93C5FD"/>
+        </Style>
+
+        <Style x:Key="OutlineRedButtonStyle" TargetType="Button" BasedOn="{StaticResource SoftButtonStyle}">
+            <Setter Property="Foreground" Value="#DC2626"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#FCA5A5"/>
+        </Style>
+
+    </Window.Resources>
+
+    <!-- ✅ 바깥 배경 -->
+    <Grid Background="{StaticResource AppBackgroundBrush}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="1169*"/>
+            <ColumnDefinition Width="358*"/>
+            <ColumnDefinition Width="73*"/>
+        </Grid.ColumnDefinitions>
+        <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Auto" Grid.ColumnSpan="3">
+
+            <!-- 바깥 여백 -->
+            <Grid Margin="18" ShowGridLines="False">
+
+                <!-- ✅ 전체 프레임 카드 -->
+                <Border Style="{StaticResource CardBorderStyle}" Padding="18">
+                    <Grid ShowGridLines="False">
+
+                        <!-- ===== 원본 Grid 구조 유지 ===== -->
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="20"/>
+                            <ColumnDefinition Width="1100"/>
+                            <ColumnDefinition Width="20"/>
+                            <ColumnDefinition Width="200"/>
+                            <ColumnDefinition Width="20"/>
+                            <ColumnDefinition Width="250"/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="20"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="20"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="30"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="30"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="20"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- =========================
+                             좌측: 검사 항목 설정 섹션(카드)
+                        ========================== -->
+                        <Border Grid.Row="1"
+                                Grid.Column="1"
+                                Grid.RowSpan="3"
+                                Style="{StaticResource CardBorderStyle}"
+                                Margin="0,0,0,12">
+
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <Label Grid.Row="0"
+                                       Content="검사 항목 설정"
+                                       Style="{StaticResource SectionTitleStyle}"/>
+
+                                <!-- Error 라벨 줄 -->
+                                <Grid Grid.Row="1"
+                                      HorizontalAlignment="Left"
+                                      Width="1100"
+                                      Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition/>
+                                    </Grid.ColumnDefinitions>
+                                    <Label FontSize="14" Content="Error1" FontWeight="Black"/>
+                                    <Label FontSize="14" Grid.Column="1" Content="Error2" FontWeight="Black"/>
+                                    <Label FontSize="14" Grid.Column="2" Content="Error3" FontWeight="Black"/>
+                                    <Label FontSize="14" Grid.Column="3" Content="Error4" FontWeight="Black"/>
+                                    <Label FontSize="14" Grid.Column="4" Content="Error5" FontWeight="Black"/>
+                                </Grid>
+
+                                <!-- 원본 DataGrid 그대로 -->
+                                <DataGrid Grid.Row="2"
+                                          Style="{StaticResource GridStyle}"
+                                          HorizontalAlignment="Left"
+                                          Width="1100"
+                                          BorderThickness="2,2,0,0"
+                                          Height="Auto"
+                                          HeadersVisibility="None"
+                                          CanUserAddRows="False"
+                                          HorizontalScrollBarVisibility="Disabled"
+                                          AutoGenerateColumns="False"
+                                          Grid.Column="1"
+                                          x:Name="BliMonitorTest">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn IsReadOnly="True" Width="1.2*" CanUserReorder="False" CanUserSort="False" Binding="{Binding Name}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="#CCC"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn IsReadOnly="False" Width="*" CanUserReorder="False" CanUserSort="False" Binding="{Binding Value}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="White"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn IsReadOnly="True" Width="1.2*" CanUserReorder="False" CanUserSort="False" Binding="{Binding Name}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="#CCC"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn IsReadOnly="False" Width="*" CanUserReorder="False" CanUserSort="False" Binding="{Binding Value2}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="White"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn IsReadOnly="True" Width="1.2*" CanUserReorder="False" CanUserSort="False" Binding="{Binding Name}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="#CCC"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn IsReadOnly="False" Width="*" CanUserReorder="False" CanUserSort="False" Binding="{Binding Value3}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="White"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn IsReadOnly="True" Width="1.2*" CanUserReorder="False" CanUserSort="False" Binding="{Binding Name}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="#CCC"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn IsReadOnly="False" Width="*" CanUserReorder="False" CanUserSort="False" Binding="{Binding Value4}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="White"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn IsReadOnly="True" Width="1.2*" CanUserReorder="False" CanUserSort="False" Binding="{Binding Name}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="#CCC"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn IsReadOnly="False" Width="*" CanUserReorder="False" CanUserSort="False" Binding="{Binding Value5}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="White"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </Grid>
+                        </Border>
+
+                        <!-- =========================
+                             우측: 운전 패널(카드)
+                        ========================== -->
+                        <Border Grid.Row="1"
+                                Grid.Column="3"
+                                Grid.RowSpan="3"
+                                Style="{StaticResource CardBorderStyle}"
+                                Margin="0,0,0,12">
+                            <Grid Width="200" HorizontalAlignment="Left">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="2*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <Label Content="운전" Style="{StaticResource SectionTitleStyle}" Margin="0,0,0,6"/>
+
+                                <Label Grid.Row="1"
+                                       Content="정상 운전"
+                                       FontSize="15"
+                                       Margin="0,6,0,6"
+                                       FontWeight="Black"/>
+
+                                <Border Grid.Row="2"
+                                        Grid.ColumnSpan="2"
+                                        BorderBrush="{StaticResource SoftBorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="10"
+                                        Background="#FBFDFF"
+                                        Padding="2"
+                                        Margin="0,0,33,8">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Label x:Name="RunCount"
+                                               BorderThickness="0"
+                                               FontSize="17"
+                                               Content="0"
+                                               HorizontalContentAlignment="Right"
+                                               VerticalContentAlignment="Center"/>
+                                        <Label Grid.Column="1"
+                                               Content="회"
+                                               FontSize="17"
+                                               Margin="10,0,0,0"
+                                               VerticalContentAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+
+                                <Button Grid.ColumnSpan="2"
+                                        Grid.Row="4"
+                                        Height="34"
+                                        Margin="0,8,28,8"
+                                        FontSize="14"
+                                        Content="READ"
+                                        x:Name="ReadErrorButton"
+                                        Style="{StaticResource OutlineBlueButtonStyle}"/>
+
+                                <Button Grid.ColumnSpan="2"
+                                        Grid.Row="4"
+                                        Height="34"
+                                        Margin="0,50,28,0"
+                                        FontSize="14"
+                                        Content="RESET"
+                                        x:Name="ResetErrorButton"
+                                        Style="{StaticResource OutlineRedButtonStyle}" Grid.RowSpan="2"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- =========================
+                             우측: 파일 패널(카드)
+                        ========================== -->
+                        <Border Grid.Row="1"
+                                Grid.Column="5"
+                                Grid.RowSpan="7"
+                                Style="{StaticResource CardBorderStyle}"
+                                Margin="0,0,0,12">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <Label Grid.Row="0"
+                                       Content="파일"
+                                       Style="{StaticResource SectionTitleStyle}"/>
+
+                                <TextBox x:Name="FileName"
+                                         Grid.Row="1"
+                                         Margin="0,0,0,10"
+                                         Style="{StaticResource SoftTextBoxStyle}"/>
+
+                                <ListBox x:Name="FileList"
+                                         Grid.Row="2"
+                                         Style="{StaticResource SoftListBoxStyle}">
+                                    <ListBox.ItemContainerStyle>
+                                        <Style TargetType="ListBoxItem">
+                                            <EventSetter Event="MouseDoubleClick" Handler="ListDoubleClick"/>
+                                        </Style>
+                                    </ListBox.ItemContainerStyle>
+                                </ListBox>
+
+                                <Grid Grid.Row="3" Margin="0,12,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition Width="10"/>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition Width="10"/>
+                                        <ColumnDefinition/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Button Content="저장"
+                                            x:Name="SaveButton"
+                                            Style="{StaticResource PrimaryButtonStyle}"/>
+
+                                    <Button Grid.Column="2"
+                                            x:Name="DeleteButton"
+                                            Content="삭제"
+                                            Style="{StaticResource DangerButtonStyle}"/>
+
+                                    <Button Grid.Column="4"
+                                            x:Name="RefreshButton"
+                                            Content="새로고침"
+                                            Style="{StaticResource SoftButtonStyle}"/>
+                                </Grid>
+                            </Grid>
+                        </Border>
+
+                        <!-- =========================
+                             중단: Micom Parameter 섹션 타이틀(카드 밖에서 정렬 유지)
+                        ========================== -->
+                        <Label Grid.Row="4"
+                               Grid.Column="1"
+                               Content="Micom Parameter"
+                               Style="{StaticResource SectionTitleStyle}"
+                               Margin="0,6,0,10"/>
+
+                        <!-- =========================
+                             Micom Parameter 메인 그리드(카드)
+                             - 내부 컨트롤/배치는 원본 그대로 유지
+                        ========================== -->
+                        <Border Grid.Row="5"
+                                Grid.Column="1"
+                                Grid.RowSpan="2"
+                                Grid.ColumnSpan="3"
+                                Style="{StaticResource CardBorderStyle}"
+                                Margin="0,0,0,12">
+
+                            <!-- ✅ 원본 Grid 그대로 복사 -->
+                            <Grid ShowGridLines="False">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="90"/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <Label FontSize="15" Content="Mode1" FontWeight="Black"/>
+                                <Label FontSize="15" Grid.Column="1" Content="Mode2" FontWeight="Black"/>
+                                <Label FontSize="15" Grid.Column="2" Content="Mode3" FontWeight="Black"/>
+                                <Label FontSize="15" Grid.Row="2" Content="Mode4" FontWeight="Black"/>
+                                <Label FontSize="15" Grid.Row="2" Grid.Column="1" Content="Mode5" FontWeight="Black"/>
+                                <Label FontSize="15" Grid.Row="2" Grid.Column="2" Content="Motor" FontWeight="Black"/>
+
+                                <DataGrid Style="{StaticResource GridStyle}" Grid.Row="1" BorderThickness="2,2,0,0" Height="Auto" HeadersVisibility="None" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="MicomGrid">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn IsReadOnly="True" CanUserReorder="False" Width="2*" CanUserSort="False" Binding="{Binding Name}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="#CCC"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn IsReadOnly="False" CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="White"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+
+                                <DataGrid Style="{StaticResource GridStyle}" Grid.Row="1" Grid.Column="1" BorderThickness="0,2,0,0" Height="Auto" HeadersVisibility="None" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="MicomGrid2">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn IsReadOnly="True" CanUserReorder="False" Width="2*" CanUserSort="False" Binding="{Binding Name}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="#CCC"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn IsReadOnly="False" CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="White"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+
+                                <DataGrid Style="{StaticResource GridStyle}" Grid.Row="1" Grid.Column="2" BorderThickness="0,2,0,0" Height="Auto" HeadersVisibility="None" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="MicomGrid3">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn IsReadOnly="True" CanUserReorder="False" Width="2*" CanUserSort="False" Binding="{Binding Name}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="#CCC"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn IsReadOnly="False" CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="White"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+
+                                <DataGrid Style="{StaticResource GridStyle}" Grid.Row="3" BorderThickness="2,2,0,0" Height="Auto" HeadersVisibility="None" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="MicomGrid4">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn IsReadOnly="True" CanUserReorder="False" Width="2*" CanUserSort="False" Binding="{Binding Name}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="#CCC"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn IsReadOnly="False" CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="White"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+
+                                <DataGrid Style="{StaticResource GridStyle}" Grid.Row="3" Grid.Column="1" BorderThickness="0,2,0,0" Height="Auto" HeadersVisibility="None" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="MicomGrid5">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn IsReadOnly="True" CanUserReorder="False" Width="2*" CanUserSort="False" Binding="{Binding Name}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="#CCC"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn IsReadOnly="False" CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="White"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+
+                                <DataGrid Background="#FFF" Style="{StaticResource GridStyle}" Grid.Row="3" Grid.Column="2" BorderThickness="0,2,0,0" Height="Auto" HeadersVisibility="None" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="MotorGrid">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn IsReadOnly="True" CanUserReorder="False" Width="2*" CanUserSort="False" Binding="{Binding Name}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="#CCC"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn IsReadOnly="False" CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="White"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+
+                                <Button x:Name="RightButton"
+                                        Grid.Row="1"
+                                        Grid.RowSpan="6"
+                                        Grid.Column="3"
+                                        Margin="15,0"
+                                        Content=">>"
+                                        FontSize="20"
+                                        FontWeight="Black"
+                                        Background="White"
+                                        BorderThickness="1"
+                                        BorderBrush="{StaticResource SoftBorderBrush}"
+                                        Style="{StaticResource SoftButtonStyle}"/>
+
+                                <Label FontSize="15" Content="Mode1" Grid.Column="4" FontWeight="Black"/>
+                                <Label FontSize="15" Grid.Column="5" Content="Mode2" FontWeight="Black"/>
+                                <Label FontSize="15" Grid.Column="6" Content="Mode3" FontWeight="Black"/>
+                                <Label FontSize="15" Grid.Row="2" Grid.Column="4" Content="Mode4" FontWeight="Black"/>
+                                <Label FontSize="15" Grid.Row="2" Grid.Column="5" Content="Mode5" FontWeight="Black"/>
+                                <Label FontSize="15" Grid.Row="2" Grid.Column="6" Content="Motor" FontWeight="Black"/>
+
+                                <DataGrid Background="#FFF" Style="{StaticResource GridStyle}" Grid.Row="1" Grid.Column="4" BorderThickness="2,2,0,0" Height="Auto" HeadersVisibility="None" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="SetGrid1">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn IsReadOnly="True" CanUserReorder="False" Width="2*" CanUserSort="False" Binding="{Binding Name}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="#CCC"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn IsReadOnly="False" CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="White"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+
+                                <DataGrid Background="#FFF" Style="{StaticResource GridStyle}" Grid.Row="1" Grid.Column="5" BorderThickness="0,2,0,0" Height="Auto" HeadersVisibility="None" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="SetGrid2">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn IsReadOnly="True" CanUserReorder="False" Width="2*" CanUserSort="False" Binding="{Binding Name}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="#CCC"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn IsReadOnly="False" CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="White"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+
+                                <DataGrid Background="#FFF" Style="{StaticResource GridStyle}" Grid.Row="1" Grid.Column="6" BorderThickness="0,2,0,0" Height="Auto" HeadersVisibility="None" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="SetGrid3">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn IsReadOnly="True" CanUserReorder="False" Width="2*" CanUserSort="False" Binding="{Binding Name}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="#CCC"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn IsReadOnly="False" CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="White"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+
+                                <DataGrid Background="#FFF" Style="{StaticResource GridStyle}" Grid.Row="3" Grid.Column="4" BorderThickness="2,2,0,0" Height="Auto" HeadersVisibility="None" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="SetGrid4">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn IsReadOnly="True" CanUserReorder="False" Width="2*" CanUserSort="False" Binding="{Binding Name}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="#CCC"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn IsReadOnly="False" CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="White"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+
+                                <DataGrid Background="#FFF" Style="{StaticResource GridStyle}" Grid.Row="3" Grid.Column="5" BorderThickness="0,2,0,0" Height="Auto" HeadersVisibility="None" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="SetGrid5">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn IsReadOnly="True" CanUserReorder="False" Width="2*" CanUserSort="False" Binding="{Binding Name}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="#CCC"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn IsReadOnly="False" CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="White"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+
+                                <DataGrid Background="#FFF" Style="{StaticResource GridStyle}" Grid.Row="3" Grid.Column="6" BorderThickness="0,2,0,0" Height="Auto" HeadersVisibility="None" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="SetGrid6">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn IsReadOnly="True" CanUserReorder="False" Width="2*" CanUserSort="False" Binding="{Binding Name}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="#CCC"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn IsReadOnly="False" CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="White"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+
+                                <!-- 원본에 중복 Label("열풍")이 2번 있었는데, 기능상 문제는 없어서 그대로 두면 됨.
+                                     다만 시각적으로 하나만 남기고 싶으면 1개 삭제해도 무방 -->
+                                <Label Margin="20,0" Grid.Row="4" Grid.Column="1" Content="열풍" FontSize="15" FontWeight="Black"/>
+
+                                <DataGrid VerticalAlignment="Center" Style="{StaticResource GridStyle}" Background="Transparent" Grid.Row="5" BorderThickness="2,2,0,0" Height="Auto" HeadersVisibility="None" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="FanGrid">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn IsReadOnly="True" CanUserReorder="False" Width="2*" CanUserSort="False" Binding="{Binding Name}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="#CCC"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn IsReadOnly="False" CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="White"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+
+                                <Button x:Name="ReadParamButton"
+                                        Grid.Row="6"
+                                        Height="34"
+                                        Content="PARAMETER READ"
+                                        FontSize="14"
+                                        Style="{StaticResource OutlineBlueButtonStyle}"/>
+
+                                <DataGrid Margin="20,0,0,0" Style="{StaticResource GridStyle}" Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" BorderThickness="2,2,0,0" Height="Auto" CanUserAddRows="False" HeadersVisibility="Column" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="HeaterGrid">
+                                    <DataGrid.ColumnHeaderStyle>
+                                        <Style TargetType="{x:Type DataGridColumnHeader}">
+                                            <Setter Property="Background" Value="#CCC"/>
+                                            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                            <Setter Property="BorderThickness" Value="0.5,0.5"/>
+                                            <Setter Property="BorderBrush" Value="Black"/>
+                                            <Setter Property="FontSize" Value="13"/>
+                                            <Setter Property="Padding" Value="5,1"/>
+                                        </Style>
+                                    </DataGrid.ColumnHeaderStyle>
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn IsReadOnly="True" CanUserReorder="False" Width="140" CanUserSort="False" Binding="{Binding Name}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="#CCC"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn IsReadOnly="False" CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}" Header="열풍 제어">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="White"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn IsReadOnly="False" CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value2}" Header="배기 온도">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="White"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+
+                                <DataGrid VerticalAlignment="Center" Style="{StaticResource GridStyle}" Background="Transparent" Grid.ColumnSpan="2" Margin="20,0,0,0" Grid.Row="6" Grid.Column="1" BorderThickness="2,0.3,0,0" Height="Auto" HeadersVisibility="None" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="HeaterGrid2">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn IsReadOnly="True" CanUserReorder="False" Width="140" CanUserSort="False" Binding="{Binding Name}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="#CCC"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn IsReadOnly="False" CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="White"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+
+                                <Label Margin="20,0" Grid.Row="4" Grid.Column="1" Content="열풍" FontSize="15" FontWeight="Black"/>
+
+                                <DataGrid VerticalAlignment="Center" Style="{StaticResource GridStyle}" Background="Transparent" Grid.Row="5" Grid.Column="4" BorderThickness="2,2,0,0" Height="Auto" HeadersVisibility="None" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="FanGrid2">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn IsReadOnly="True" CanUserReorder="False" Width="2*" CanUserSort="False" Binding="{Binding Name}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="#CCC"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn IsReadOnly="False" CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="White"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+
+                                <Button x:Name="WriteParamButton"
+                                        Grid.Row="6"
+                                        Grid.Column="4"
+                                        Height="34"
+                                        Content="PARAMETER WRITE"
+                                        FontSize="14"
+                                        Style="{StaticResource OutlineRedButtonStyle}"/>
+
+                                <DataGrid Margin="20,0,0,0" Style="{StaticResource GridStyle}" Grid.Row="5" Grid.Column="5" Grid.ColumnSpan="2" BorderThickness="2,2,0,0" Height="Auto" CanUserAddRows="False" HeadersVisibility="Column" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="HeaterGridSetting">
+                                    <DataGrid.ColumnHeaderStyle>
+                                        <Style TargetType="{x:Type DataGridColumnHeader}">
+                                            <Setter Property="Background" Value="#CCC"/>
+                                            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                            <Setter Property="BorderThickness" Value="0.5,0.5"/>
+                                            <Setter Property="BorderBrush" Value="Black"/>
+                                            <Setter Property="FontSize" Value="13"/>
+                                            <Setter Property="Padding" Value="5,1"/>
+                                        </Style>
+                                    </DataGrid.ColumnHeaderStyle>
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn IsReadOnly="True" CanUserReorder="False" Width="140" CanUserSort="False" Binding="{Binding Name}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="#CCC"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn IsReadOnly="False" CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}" Header="열풍 제어">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="White"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn IsReadOnly="False" CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value2}" Header="배기 온도">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="White"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+
+                                <DataGrid VerticalAlignment="Center" Style="{StaticResource GridStyle}" Background="Transparent" Grid.ColumnSpan="2" Margin="20,0,0,0" Grid.Row="6" Grid.Column="5" BorderThickness="2,0.3,0,0" Height="Auto" HeadersVisibility="None" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="HeaterGridSetting2">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn IsReadOnly="True" CanUserReorder="False" Width="140" CanUserSort="False" Binding="{Binding Name}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="#CCC"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn IsReadOnly="False" CanUserReorder="False" Width="*" CanUserSort="False" Binding="{Binding Value}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="Background" Value="White"/>
+                                                    <Setter Property="FontSize" Value="13"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+
+                            </Grid>
+                        </Border>
+
+                        <!-- =========================
+                             하단(숨김 영역): 그대로 유지
+                        ========================== -->
+                        <Grid Grid.Row="7"
+                              Grid.RowSpan="2"
+                              Grid.Column="1"
+                              ShowGridLines="False"
+                              Width="630"
+                              HorizontalAlignment="Left">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition/>
+                                <RowDefinition/>
+                                <RowDefinition/>
+                            </Grid.RowDefinitions>
+
+                            <Label Visibility="Collapsed" Content="Micom 정보" Grid.Column="1" FontSize="15" FontWeight="Black"/>
+                            <Label Visibility="Collapsed" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Grid.Row="1" Grid.RowSpan="2" Content="컴파일 정보" Grid.Column="1" Background="#CCC" BorderBrush="Black" BorderThickness="0.5"/>
+
+                            <DataGrid Visibility="Collapsed"
+                                      VerticalAlignment="Center"
+                                      Style="{StaticResource GridStyle}"
+                                      HeadersVisibility="Column"
+                                      Background="Transparent"
+                                      Grid.Row="1"
+                                      Grid.Column="2"
+                                      Grid.ColumnSpan="2"
+                                      BorderThickness="2,2,0,0"
+                                      Height="Auto"
+                                      CanUserAddRows="False"
+                                      HorizontalScrollBarVisibility="Disabled"
+                                      AutoGenerateColumns="False"
+                                      x:Name="ComplieGrid">
+                                <DataGrid.ColumnHeaderStyle>
+                                    <Style TargetType="{x:Type DataGridColumnHeader}">
+                                        <Setter Property="Background" Value="#CCC"/>
+                                        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                        <Setter Property="BorderThickness" Value="0.5,0.5"/>
+                                        <Setter Property="BorderBrush" Value="Black"/>
+                                        <Setter Property="FontSize" Value="13"/>
+                                        <Setter Property="Padding" Value="5,1"/>
+                                    </Style>
+                                </DataGrid.ColumnHeaderStyle>
+
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn IsReadOnly="True" CanUserReorder="False" Width="*" CanUserSort="False" Header="년" Binding="{Binding Year}">
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="{x:Type TextBlock}">
+                                                <Setter Property="TextAlignment" Value="Center"/>
+                                                <Setter Property="Background" Value="White"/>
+                                                <Setter Property="FontSize" Value="13"/>
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTextColumn IsReadOnly="False" CanUserReorder="False" Width="*" CanUserSort="False" Header="월" Binding="{Binding Month}">
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="{x:Type TextBlock}">
+                                                <Setter Property="TextAlignment" Value="Center"/>
+                                                <Setter Property="Background" Value="White"/>
+                                                <Setter Property="FontSize" Value="13"/>
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTextColumn IsReadOnly="False" CanUserReorder="False" Width="*" CanUserSort="False" Header="일" Binding="{Binding Day}">
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="{x:Type TextBlock}">
+                                                <Setter Property="TextAlignment" Value="Center"/>
+                                                <Setter Property="Background" Value="White"/>
+                                                <Setter Property="FontSize" Value="13"/>
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTextColumn IsReadOnly="False" CanUserReorder="False" Width="*" CanUserSort="False" Header="ver." Binding="{Binding Ver}">
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="{x:Type TextBlock}">
+                                                <Setter Property="TextAlignment" Value="Center"/>
+                                                <Setter Property="Background" Value="White"/>
+                                                <Setter Property="FontSize" Value="13"/>
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Grid>
+
+                    </Grid>
+                </Border>
             </Grid>
-            <Grid Grid.Row="7" Grid.RowSpan="2" Grid.Column="1" ShowGridLines="False" Width="630" HorizontalAlignment="Left">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                </Grid.RowDefinitions>
-                <Label Visibility="Collapsed" Content="Micom 정보" Grid.Column="1" FontSize="15" FontWeight="Black"/>
-                <Label Visibility="Collapsed" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Grid.Row="1" Grid.RowSpan="2" Content="컴파일 정보" Grid.Column="1" Background="#CCC" BorderBrush="Black" BorderThickness="0.5"/>
-                <DataGrid Visibility="Collapsed" VerticalAlignment="Center" Style="{StaticResource GridStyle}" HeadersVisibility="Column" Background="Transparent" Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="2" BorderThickness="2,2,0,0" Height="Auto" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="ComplieGrid">
-                    <DataGrid.ColumnHeaderStyle>
-                        <Style TargetType="{x:Type DataGridColumnHeader}">
-                            <Setter Property="Background" Value="#CCC"/>
-                            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-                            <Setter Property="BorderThickness" Value="0.5, 0.5"/>
-                            <Setter Property="BorderBrush" Value="Black"/>
-                            <Setter Property="FontSize" Value="13"/>
-                            <Setter Property="Padding" Value="5, 1"/>
-                        </Style>
-                    </DataGrid.ColumnHeaderStyle>
-                    <DataGrid.Columns>
-                        <DataGridTextColumn IsReadOnly="True"  CanUserReorder="False" Width="*" CanUserSort="False" Header="년" Binding="{Binding Year}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="White"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                        <DataGridTextColumn IsReadOnly="False"  CanUserReorder="False" Width="*" CanUserSort="False" Header="월" Binding="{Binding Month}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="White"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                        <DataGridTextColumn IsReadOnly="False"  CanUserReorder="False" Width="*" CanUserSort="False" Header="일" Binding="{Binding Day}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="White"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                        <DataGridTextColumn IsReadOnly="False"  CanUserReorder="False" Width="*" CanUserSort="False" Header="ver." Binding="{Binding Ver}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="Background" Value="White"/>
-                                    <Setter Property="FontSize" Value="13"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                    </DataGrid.Columns>
-                </DataGrid>
-            </Grid>
-        </Grid>
-    </ScrollViewer>
+        </ScrollViewer>
+    </Grid>
 </Window>

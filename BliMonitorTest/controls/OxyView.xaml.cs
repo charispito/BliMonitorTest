@@ -1,4 +1,5 @@
 ﻿using BliMonitorTest.data;
+using OxyPlot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -57,31 +58,36 @@ namespace BliMonitorTest.controls
         {
             switch (index)
             {
-                case 0:
-                    series1Legend.Content = label;
-                    break;
-                case 1:
-                    series2Legend.Content = label;
-                    break;
-                case 2:
-                    series3Legend.Content = label;
-                    break;
-                case 3:
-                    series4Legend.Content = label;
-                    break;
-                case 4:
-                    series5Legend.Content = label;
-                    break;
-                case 5:
-                    series6Legend.Content = label;
-                    break;
-                case 6:
-                    series7Legend.Content = label;
-                    break;
-                case 7:
-                    series8Legend.Content = label;
-                    break;
+                case 0: series1Legend.Content = label; break;
+                case 1: series2Legend.Content = label; break;
+                case 2: series3Legend.Content = label; break;
+                case 3: series4Legend.Content = label; break;
+                case 4: series5Legend.Content = label; break;
+                case 5: series6Legend.Content = label; break;
+                case 6: series7Legend.Content = label; break;
+                case 7: series8Legend.Content = label; break;
             }
+        }
+
+        private void ResetAxes_Click(object sender, RoutedEventArgs e)
+        {
+            if (chart == null || chart.Model == null) return;
+
+            chart.Model.ResetAllAxes();
+            chart.InvalidatePlot(true);
+        }
+
+        private void ToggleFullscreen_Click(object sender, RoutedEventArgs e)
+        {
+            MainViewModel vm = ViewModel;
+            if (vm == null || vm.PlotModel == null) return;
+
+            PlotModel src = vm.PlotModel;
+            PlotModel cloned = PlotModelCloneHelper.CloneForView(src);
+
+            var win = new FullscreenPlotWindow(cloned);
+            win.Owner = Window.GetWindow(this);
+            win.ShowDialog();
         }
     }
 }

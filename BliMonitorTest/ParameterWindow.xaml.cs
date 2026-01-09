@@ -134,7 +134,7 @@ namespace BliMonitorTest
             if (port != null)
             {
                 Loaded += ParameterWindow_Loaded1;
-                Closed += ParameterWindow_Closed1; ;
+                Closed += ParameterWindow_Closed1;
                 RightButton.Click += RightButton_Click;
                 ReadParamButton.Click += ReadParamButton_Click;
                 ReadErrorButton.Click += (s, e) =>
@@ -155,6 +155,9 @@ namespace BliMonitorTest
                 ResetErrorButton.Click += ResetErrorButton_Click;
             }
 
+
+            this.Closing += (_, __) => log.Debug("ParameterWindow Closing");
+            this.Closed += (_, __) => log.Debug("ParameterWindow Closed");
         }
 
         private void RefreshButton_Click(object sender, RoutedEventArgs e)
@@ -165,7 +168,7 @@ namespace BliMonitorTest
         private void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
             Console.WriteLine("delete");
-            if(FileList.SelectedIndex == -1)
+            if (FileList.SelectedIndex == -1)
             {
                 MessageBox.Show("파일이 선택 되지 않았습니다.");
             }
@@ -199,6 +202,7 @@ namespace BliMonitorTest
             heater11.Clear();
             heater12.Clear();
             RightSet = true;
+
             foreach (SectionItem section in setting.mode1)
             {
                 mode11.Add(new SettingData() { Name = section.Name, Value = section.Value1, Value2 = section.Value2 });
@@ -227,7 +231,7 @@ namespace BliMonitorTest
             {
                 fan1.Add(new SettingData() { Name = section.Name, Value = section.Value1, Value2 = section.Value2 });
             }
-            foreach(SectionItem section in setting.heater1)
+            foreach (SectionItem section in setting.heater1)
             {
                 heater11.Add(new SettingData() { Name = section.Name, Value = section.Value1, Value2 = section.Value2 });
             }
@@ -236,8 +240,6 @@ namespace BliMonitorTest
                 heater12.Add(new SettingData() { Name = section.Name, Value = section.Value1, Value2 = section.Value2 });
             }
         }
-
-
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
@@ -348,7 +350,7 @@ namespace BliMonitorTest
                 MessageBox.Show("값이 설정 되지 않았습니다.");
                 return;
             }
-            
+
             byte[] command = GetParameterSettingData();
 
             log.Debug("============        LOG DATA ParameterWindow.cs [WriteParamButton_Click] RESPONSE START       ==================");
@@ -365,7 +367,6 @@ namespace BliMonitorTest
         private void ParameterWindow_Closed1(object sender, EventArgs e)
         {
             oneChannel.ParameterMode = false;
-
         }
 
         private void ParameterWindow_Loaded1(object sender, RoutedEventArgs e)
@@ -374,7 +375,6 @@ namespace BliMonitorTest
             byte[] command = Protocol.GetParameter(oneChannel.IsNewVersion);
             port.Write(command, 0, command.Length);
         }
-
 
         private string GetErrorName(int[] errors0, int[] errors1)
         {
@@ -392,35 +392,35 @@ namespace BliMonitorTest
                         {
                             case 0:
                                 return "모터 과부하";
-                                //builder.AppendLine("모터 과부하", true);
-                                //break;
+                            //builder.AppendLine("모터 과부하", true);
+                            //break;
                             case 1:
                                 return "모터 단선";
-                                //builder.AppendLine("모터 단선", true);
-                                //break;
+                            //builder.AppendLine("모터 단선", true);
+                            //break;
                             case 2:
                                 return "히터 동작 이상";
-                                //builder.AppendLine("히터 동작 이상", true);
-                                //break;
+                            //builder.AppendLine("히터 동작 이상", true);
+                            //break;
                             case 3:
                                 return "히터 동작 이상";
-                                //if (errors0[2] != 1)
-                                //    builder.AppendLine("히터 동작 이상", true);
-                                //else
-                                //    cnt--;
-                                //break;
+                            //if (errors0[2] != 1)
+                            //    builder.AppendLine("히터 동작 이상", true);
+                            //else
+                            //    cnt--;
+                            //break;
                             case 4:
                                 return "히터 센서 이상";
-                                //builder.AppendLine("히터 센서 이상", true);
-                                //break;
+                            //builder.AppendLine("히터 센서 이상", true);
+                            //break;
                             case 5:
                                 return "배기 온도 이상";
-                                //builder.AppendLine("배기 온도 이상", true);
-                                //break;
+                            //builder.AppendLine("배기 온도 이상", true);
+                            //break;
                             case 6:
                                 return "배기 센서 이상";
-                                //builder.AppendLine("배기 센서 이상", true);
-                                //break;
+                            //builder.AppendLine("배기 센서 이상", true);
+                            //break;
                             case 7:
                                 return "배기 팬 이상";
                                 //builder.AppendLine("배기 팬 이상", true);
@@ -438,35 +438,35 @@ namespace BliMonitorTest
                         {
                             case 0:
                                 return "이물질감지";
-                                //builder.AppendLine("이물질감지", true);
-                                //break;
+                            //builder.AppendLine("이물질감지", true);
+                            //break;
                             case 1:
                                 return "도어 열림";
-                                //builder.AppendLine("도어 열림", true);
-                                //break;
+                            //builder.AppendLine("도어 열림", true);
+                            //break;
                             case 2:
                                 return "도어 열림";
-                                //if (errors1[1] != 1)
-                                //    builder.AppendLine("도어 열림", true);
-                                //else
-                                //    cnt--;
-                                //break;
+                            //if (errors1[1] != 1)
+                            //    builder.AppendLine("도어 열림", true);
+                            //else
+                            //    cnt--;
+                            //break;
                             case 3:
                                 return "열풍 팬 에러";
-                                //builder.AppendLine("열풍 팬 에러", true);
-                                //break;
+                            //builder.AppendLine("열풍 팬 에러", true);
+                            //break;
                             case 4:
                                 return "열풍 히터 과열";
-                                //builder.AppendLine("열풍 히터 과열", true);
-                                //break;
+                            //builder.AppendLine("열풍 히터 과열", true);
+                            //break;
                             case 5:
                                 return "열풍 히터 오픈";
-                                //builder.AppendLine("열풍 히터 오픈", true);
-                                //break;
+                            //builder.AppendLine("열풍 히터 오픈", true);
+                            //break;
                             case 6:
                                 return "만수, 워터센서 오픈";
-                                //builder.AppendLine("만수, 워터센서 오픈", true);
-                                //break;
+                            //builder.AppendLine("만수, 워터센서 오픈", true);
+                            //break;
                             case 7:
                                 return "열풍 히터 저온";
                                 //builder.AppendLine("열풍 히터 저온", true);
@@ -555,7 +555,7 @@ namespace BliMonitorTest
             HeaterGridSetting.ItemsSource = heater11;
             HeaterGridSetting2.ItemsSource = heater12;
         }
-        
+
         public void setParameter(byte[] data)
         {
             log.Debug("parameterwindow  data.Length 537 : " + data.Length);
@@ -574,7 +574,6 @@ namespace BliMonitorTest
             int VentileTemp1 = data[10];
             int OperateTime1 = data[11];
             int ExhaustFanWaitMode = data[12];
-            
 
             int onTimeCW2 = data[14];
             int offTimeCW2 = data[15];
@@ -586,8 +585,6 @@ namespace BliMonitorTest
             int OperateTime2 = data[21];
             int ExhaustFanOperateMode = data[22];
 
-            
-
             int onTimeCW3 = data[24];
             int offTimeCW3 = data[25];
             int onTimeCCW3 = data[26];
@@ -596,8 +593,6 @@ namespace BliMonitorTest
             int HeaterOffTime3 = data[29];
             int VentileTemp3 = data[30];
             int OperateTime3 = data[31];
-
-            
 
             int onTimeCW4 = data[34];
             int offTimeCW4 = data[35];
@@ -608,8 +603,6 @@ namespace BliMonitorTest
             int VentileTemp4 = data[40];
             int OperateTime4 = data[41];
 
-            
-
             int onTimeCW5 = data[44];
             int offTimeCW5 = data[45];
             int onTimeCCW5 = data[46];
@@ -618,8 +611,6 @@ namespace BliMonitorTest
             int HeaterOffTime5 = data[49];
             int VentileTemp5 = data[50];
             int OperateTime5 = data[51];
-
-            
 
             int motor1 = data[54];
             int motor2 = data[55];
@@ -641,7 +632,7 @@ namespace BliMonitorTest
             int air_heater_temp = data[65];
             int air_control6 = data[66];
 
-            
+
             Dispatcher.BeginInvoke(new Action(() =>
             {
                 if (mode1 == null)
@@ -768,7 +759,6 @@ namespace BliMonitorTest
                 MotorGrid.ItemsSource = null;
                 FanGrid.ItemsSource = null;
 
-
                 MicomGrid.ItemsSource = mode1;
                 MicomGrid2.ItemsSource = mode2;
                 MicomGrid3.ItemsSource = mode3;
@@ -788,7 +778,7 @@ namespace BliMonitorTest
             command[0] = 0xCC;
 
             log.Debug(command);
-            log.Debug(" parameterwindow command 773 :  " + command);    
+            log.Debug(" parameterwindow command 773 :  " + command);
             log.Debug(" parameterwindow command 773 :  " + command[0]);
             log.Debug(" parameterwindow command 773 :  " + command[1]);
             log.Debug(" parameterwindow command 773 :  " + command);
@@ -870,18 +860,6 @@ namespace BliMonitorTest
             command[66] = (byte)heater11[5].Value;
             command[67] = 0x00;
             command[68] = Protocol.GetCheckSum(command, 1, 67);
-            //if (oneChannel.IsNewVersion)
-            //{
-            //    command[68] = (byte)(command[68] ^ 0xFF);
-            //}
-            //CC 01 96 46
-            //28 1C 28 1C 7D 00 5F 04 28 01
-            //32 05 32 05 7D 3A 5F 05 50 04
-            //55 05 55 05 7D 3C 5F 06 00 05
-            //46 02 46 02 7D 3E 5F 07 00 06
-            //46 02 46 02 7D 00 5F 08 00 07
-            //14 07 05 09 14 01 01 03 04 06 03 36 02
-            //00 87 EF
 
             command[69] = 0xEF;
             if (oneChannel.IsNewVersion)
@@ -903,8 +881,6 @@ namespace BliMonitorTest
             byte[] times1 = new byte[] { data[13], data[12] };
             int intTimes1 = BitConverter.ToInt16(times1, 0);
 
-            Console.WriteLine("{0} {1} {2}", runmode0, heaterTemp0, heaterofftime0);
-
             int runmode1 = data[16] + 1;
             int heaterTemp1 = data[17];
             int heaterofftime1 = data[18];
@@ -913,7 +889,6 @@ namespace BliMonitorTest
             int hotWindOnTime1 = data[21];
             byte[] times2 = new byte[] { data[23], data[22] };
             int intTimes2 = BitConverter.ToInt16(times2, 0);
-
 
             int runmode2 = data[26] + 1;
             int heaterTemp2 = data[27];
@@ -924,7 +899,6 @@ namespace BliMonitorTest
             byte[] times3 = new byte[] { data[33], data[32] };
             int intTimes3 = BitConverter.ToInt16(times3, 0);
 
-
             int runmode3 = data[36] + 1;
             int heaterTemp3 = data[37];
             int heaterofftime3 = data[38];
@@ -933,7 +907,6 @@ namespace BliMonitorTest
             int hotWindOnTime3 = data[41];
             byte[] times4 = new byte[] { data[43], data[42] };
             int intTimes4 = BitConverter.ToInt16(times4, 0);
-
 
             int runmode4 = data[46] + 1;
             int heaterTemp4 = data[47];
