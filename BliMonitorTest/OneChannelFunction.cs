@@ -8,11 +8,29 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using OxyPlot.Axes;
+using OxyPlot.Series;
+using OxyPlot.Annotations;
+
 namespace BliMonitorTest
 {
     partial class OneChannelWindow
     {
         private DateTime? _dummyStartTime;
+
+        // ===== 차트 UI 튜닝용(기준선 + 이상치 표시) =====
+        private ScatterSeries _anomalySeries;
+        private LineAnnotation _warnHighLine;
+        private LineAnnotation _warnLowLine;
+        private double? _prevY = null;
+
+        // 기본 옵션(원하면 UI에서 제어)
+        private bool _enableWarnLine = true;
+        private bool _enableAnomaly = true;
+        private double _warnLow = double.NaN;
+        private double _warnHigh = double.NaN;
+        private double _spikeDelta = 15;
+        private int _maxPoints = 360; // 10초*360 = 1시간
 
         public string GetDateTime()
         {
@@ -344,6 +362,24 @@ namespace BliMonitorTest
                 //channel.list8.Add(new KeyValuePair<double, double>(total_minute, currnetDouble / 2.0));
             }
 
+            /*
+            EnsureChartEnhancements();
+            
+            double x = total_minute;                // x축이 total_minute를 쓰고 있다면:
+            double y = heatertemp;                  // y는 "현재 선택된 항목의 값"으로 (예: heater temp)
+            var line = GetFirstLineSeriesOrNull();  // 기존 라인 시리즈 찾아서 trim (선택)
+
+            AddAnomalyPointIfNeeded(x, y);
+            TrimIfNeeded(line);
+
+            _warnLow = 150;
+            _warnHigh = 185;
+            //_spikeDelta = 2;
+            ApplyWarnLinesVisibility();
+
+            GetPlotModelOrNull()?.InvalidatePlot(true);
+            */
+
             log.Debug($"isDummy={IsDummyEnabled} total_second={total_second} total_minute={total_minute:F3} start={_dummyStartTime:HH:mm:ss.fff}");
             channel.chartView.ViewModel.panXAxis(total_minute);
         }
@@ -509,6 +545,133 @@ namespace BliMonitorTest
                 default:
                     return "";
             }
+        }
+
+        private PlotModel GetPlotModelOrNull()
+        {
+            // 단일채널에서 Chart(또는 chartView)에 접근하는 실제 객체명을 여기에 맞춰주세요.
+            // 예: Chart가 PlotView면 Chart.Model
+            return channel.chartView.ViewModel.PlotModel; 
+            //return Chart?.Model;
+        }
+
+        private void EnsureChartEnhancements()
+        {
+            var model = GetPlotModelOrNull();
+            if (model == null) return;
+
+            if (_anomalySeries == null)
+            {
+                _anomalySeries = new ScatterSeries
+                {
+                    Title = "이상치",
+                    MarkerType = MarkerType.Circle,
+                    MarkerFill = OxyColors.Red,
+                    MarkerStroke = OxyColors.Transparent,
+                    MarkerSize = 3.5
+                };
+                model.Series.Add(_anomalySeries);
+            }
+
+            if (_warnHighLine == null)
+            {
+                _warnHighLine = new LineAnnotation
+                {
+                    Type = LineAnnotationType.Horizontal,
+                    Color = OxyColors.OrangeRed,
+                    LineStyle = LineStyle.Dash,
+                    Text = "상한",
+                    TextHorizontalAlignment = OxyPlot.HorizontalAlignment.Left,
+                    StrokeThickness = 1
+                };
+                model.Annotations.Add(_warnHighLine);
+            }
+
+            if (_warnLowLine == null)
+            {
+                _warnLowLine = new LineAnnotation
+                {
+                    Type = LineAnnotationType.Horizontal,
+                    Color = OxyColors.OrangeRed,
+                    LineStyle = LineStyle.Dash,
+                    Text = "하한",
+                    TextHorizontalAlignment = OxyPlot.HorizontalAlignment.Left,
+                    StrokeThickness = 1
+                };
+                model.Annotations.Add(_warnLowLine);
+            }
+
+            ApplyWarnLinesVisibility();
+        }
+
+        private void ApplyWarnLinesVisibility()
+        {
+            if (_warnHighLine == null || _warnLowLine == null) return;
+
+            if (!_enableWarnLine || double.IsNaN(_warnHigh))
+            {
+                _warnHighLine.Color = OxyColors.Transparent;
+                _warnHighLine.Text = "";
+            }
+            else
+            {
+                _warnHighLine.Color = OxyColors.OrangeRed;
+                _warnHighLine.Y = _warnHigh;
+                _warnHighLine.Text = $"상한 {_warnHigh}";
+            }
+
+            if (!_enableWarnLine || double.IsNaN(_warnLow))
+            {
+                _warnLowLine.Color = OxyColors.Transparent;
+                _warnLowLine.Text = "";
+            }
+            else
+            {
+                _warnLowLine.Color = OxyColors.OrangeRed;
+                _warnLowLine.Y = _warnLow;
+                _warnLowLine.Text = $"하한 {_warnLow}";
+            }
+        }
+
+        private void AddAnomalyPointIfNeeded(double x, double y)
+        {
+            if (!_enableAnomaly) return;
+            if (_anomalySeries == null) return;
+
+            bool outOfRange =
+                (!double.IsNaN(_warnHigh) && y > _warnHigh) ||
+                (!double.IsNaN(_warnLow) && y < _warnLow);
+
+            bool spike = false;
+            if (_prevY.HasValue)
+                spike = Math.Abs(y - _prevY.Value) >= _spikeDelta;
+
+            if (outOfRange || spike)
+                _anomalySeries.Points.Add(new ScatterPoint(x, y));
+
+            _prevY = y;
+        }
+
+        private void TrimIfNeeded(LineSeries line)
+        {
+            if (line == null) return;
+            if (_maxPoints <= 0) return;
+
+            while (line.Points.Count > _maxPoints)
+                line.Points.RemoveAt(0);
+
+            if (_anomalySeries != null)
+            {
+                while (_anomalySeries.Points.Count > _maxPoints)
+                    _anomalySeries.Points.RemoveAt(0);
+            }
+        }
+
+        private LineSeries GetFirstLineSeriesOrNull()
+        {
+            var model = GetPlotModelOrNull();
+            if (model == null) return null;
+            return model.Series.OfType<LineSeries>().FirstOrDefault();
         }
     }
 }
