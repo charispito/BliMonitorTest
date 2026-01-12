@@ -1039,7 +1039,7 @@ namespace BliMonitorTest
         {
             channelItem.ParameterMode = true;
             byte[] command = Protocol.GetParameter(channelItem.IsNewVersion);
-            channelItem.client.GetStream().Write(command, 0, command.Length);
+            //channelItem.client.GetStream().Write(command, 0, command.Length);
         }
 
         private void ResetErrorButton_Click(object sender, RoutedEventArgs e)

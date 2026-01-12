@@ -36,7 +36,7 @@ namespace BliMonitorTest.controls
                 if (_ParameterMode)
                 {
                     Console.WriteLine("load");
-                    OnParameterLoadAction(0);
+                    OnParameterLoadAction?.Invoke(0);
                 }
             }
         }
@@ -290,10 +290,14 @@ namespace BliMonitorTest.controls
 
         private void ParameterButton_Click(object sender, RoutedEventArgs e)
         {
-            if (client == null || !client.Connected)
+            // 1) 더미가 아니면 연결 체크
+            if (!IsDummyEnabled)
             {
-                MessageBox.Show("연결 되지 않았습니다.");
-                return;
+                if (client == null || !client.Connected)
+                {
+                    MessageBox.Show("연결 되지 않았습니다.");
+                    return;
+                }
             }
             Task.Delay(200).ContinueWith(_ =>
             {
@@ -301,6 +305,9 @@ namespace BliMonitorTest.controls
                     ParameterWindow = new MultiParameterWindow(this);
                     ParameterWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                     ParameterWindow.Show();
+
+                    if (IsDummyEnabled)
+                        return;
                 }));
             });
         }

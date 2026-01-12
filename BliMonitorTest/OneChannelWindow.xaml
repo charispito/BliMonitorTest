@@ -13,7 +13,6 @@
         Background="Transparent">
 
     <Window.Resources>
-
         <!-- ComboBox 텍스트/항목 센터 정렬 -->
         <Style x:Key="CenterAlignedComboBox" TargetType="ComboBox">
             <Setter Property="HorizontalContentAlignment" Value="Center"/>

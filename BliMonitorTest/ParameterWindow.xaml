@@ -5,13 +5,50 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:BliMonitorTest"
         mc:Ignorable="d"
-        Title="파라미터 설정"
+        Title="BLI 모니터링 프로그램 - 파라미터 설정"
         Height="900"
         Width="1703"
         SizeToContent="WidthAndHeight"
         Background="Transparent">
 
     <Window.Resources>
+
+        <!-- ComboBox 텍스트/항목 센터 정렬 (OneChannel과 동일) -->
+        <Style x:Key="CenterAlignedComboBox" TargetType="ComboBox">
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="ItemContainerStyle">
+                <Setter.Value>
+                    <Style TargetType="ComboBoxItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                        <Setter Property="VerticalContentAlignment" Value="Center"/>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 상단 액션 버튼(연결/갱신) (OneChannel과 동일) -->
+        <Style x:Key="TopActionButtonStyle" TargetType="Button">
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Padding" Value="12,0"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="#2563EB"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="9">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
         <!-- ✅ 배경 그라데이션 -->
         <LinearGradientBrush x:Key="AppBackgroundBrush" StartPoint="0,0" EndPoint="1,1">
@@ -133,6 +170,54 @@
             <Setter Property="Foreground" Value="#DC2626"/>
             <Setter Property="Background" Value="White"/>
             <Setter Property="BorderBrush" Value="#FCA5A5"/>
+        </Style>
+
+        <!-- DataGrid 공통 스타일 (ParameterWindow에서 사용하는 GridStyle 키 제공) -->
+        <Style x:Key="GridStyle" TargetType="DataGrid">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="RowBackground" Value="White"/>
+            <Setter Property="AlternatingRowBackground" Value="#FBFDFF"/>
+
+            <Setter Property="GridLinesVisibility" Value="All"/>
+            <Setter Property="HorizontalGridLinesBrush" Value="{StaticResource SoftBorderBrush}"/>
+            <Setter Property="VerticalGridLinesBrush" Value="{StaticResource SoftBorderBrush}"/>
+
+            <Setter Property="BorderBrush" Value="{StaticResource SoftBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+
+            <Setter Property="HeadersVisibility" Value="None"/>
+            <Setter Property="CanUserAddRows" Value="False"/>
+            <Setter Property="CanUserResizeRows" Value="False"/>
+            <Setter Property="SelectionUnit" Value="FullRow"/>
+            <Setter Property="SelectionMode" Value="Single"/>
+
+            <Setter Property="CellStyle">
+                <Setter.Value>
+                    <Style TargetType="DataGridCell">
+                        <Setter Property="BorderBrush" Value="{StaticResource SoftBorderBrush}"/>
+                        <Setter Property="BorderThickness" Value="0.5"/>
+                        <Setter Property="Padding" Value="6,4"/>
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="VerticalContentAlignment" Value="Center"/>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+
+            <Setter Property="RowStyle">
+                <Setter.Value>
+                    <Style TargetType="DataGridRow">
+                        <Setter Property="MinHeight" Value="28"/>
+                        <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource Self}, Path=Background}"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="#EAF4FF"/>
+                                <Setter Property="Foreground" Value="#111827"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Setter.Value>
+            </Setter>
         </Style>
 
     </Window.Resources>
