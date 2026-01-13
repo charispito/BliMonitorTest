@@ -673,5 +673,68 @@ namespace BliMonitorTest
             if (model == null) return null;
             return model.Series.OfType<LineSeries>().FirstOrDefault();
         }
+
+        public void ClearChartDataAndResetTime()
+        {
+            // 1) 더미 시작시간 리셋 (요구사항 핵심)
+            _dummyStartTime = null;
+
+            // 2) 이상치/기준선 로직 상태도 같이 리셋(있으면)
+            _prevY = null;
+
+            if (_anomalySeries != null && _anomalySeries.Points != null)
+            {
+                _anomalySeries.Points.Clear();
+            }
+
+            // 3) 실제 라인 시리즈들 데이터 삭제 (PlotModel 기준)
+            PlotModel model = GetPlotModelOrNull();
+            if (model != null)
+            {
+                if (model.Series != null)
+                {
+                    for (int i = 0; i < model.Series.Count; i++)
+                    {
+                        Series s = model.Series[i];
+
+                        LineSeries ls = s as LineSeries;
+                        if (ls != null)
+                        {
+                            if (ls.Points != null) ls.Points.Clear();
+                            continue;
+                        }
+
+                        ScatterSeries ss = s as ScatterSeries;
+                        if (ss != null)
+                        {
+                            if (ss.Points != null) ss.Points.Clear();
+                            continue;
+                        }
+
+                        AreaSeries ars = s as AreaSeries;
+                        if (ars != null)
+                        {
+                            if (ars.Points != null) ars.Points.Clear();
+                            if (ars.Points2 != null) ars.Points2.Clear();
+                            continue;
+                        }
+
+                        StemSeries sts = s as StemSeries;
+                        if (sts != null)
+                        {
+                            if (sts.Points != null) sts.Points.Clear();
+                            continue;
+                        }
+                    }
+                }
+
+                // 축도 같이 원복하고 싶으면(선택)
+                model.ResetAllAxes();
+
+                // 화면 갱신
+                model.InvalidatePlot(true);
+            }
+        }
+
     }
 }

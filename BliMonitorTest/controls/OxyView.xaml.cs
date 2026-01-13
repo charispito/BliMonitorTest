@@ -1,5 +1,6 @@
 ﻿using BliMonitorTest.data;
 using OxyPlot;
+using OxyPlot.Series;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -89,5 +90,30 @@ namespace BliMonitorTest.controls
             win.Owner = Window.GetWindow(this);
             win.ShowDialog();
         }
+
+        private void ClearChart_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBoxResult result = MessageBox.Show(
+                "현재 차트 데이터를 모두 삭제하고 초기화할까요?\n(이 작업은 되돌릴 수 없습니다.)",
+                "차트 초기화 확인",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning
+            );
+
+            if (result != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            // ✅ OneChannelWindow 찾아서 초기화 + 더미시간 리셋 호출
+            Window win = Window.GetWindow(this);
+            BliMonitorTest.OneChannelWindow oneChannel = win as BliMonitorTest.OneChannelWindow;
+            if (oneChannel != null)
+            {
+                // private이면 호출 불가 -> 아래 3)처럼 접근 레벨만 조정하면 됨
+                oneChannel.ClearChartDataAndResetTime();
+            }
+        }
+
     }
 }

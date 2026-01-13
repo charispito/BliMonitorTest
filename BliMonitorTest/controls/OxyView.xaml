@@ -99,9 +99,8 @@
                     <ColumnDefinition/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition/>
-                    <!-- 리셋 버튼 자리 -->
                     <ColumnDefinition Width="Auto"/>
-                    <!-- 전체 버튼 자리 -->
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
@@ -140,8 +139,19 @@
                     <TextBlock Style="{StaticResource IconGlyphStyle}" Text=""/>
                 </Button>
 
-                <!-- ✅ 예쁜 전체 버튼 (아이콘) -->
+                <!-- ✅ 여기 추가: 차트 초기화 버튼 -->
                 <Button Grid.Column="17"
+                    Margin="4,0,4,0"
+                    VerticalAlignment="Center"
+                    Click="ClearChart_Click"
+                    Style="{StaticResource MiniIconButtonStyle}"
+                    ToolTip="차트 초기화(데이터 삭제)">
+                    <!-- 아이콘은 원하는 걸로 변경 가능 -->
+                    <TextBlock Style="{StaticResource IconGlyphStyle}" Text="&#xE107;"/>
+                </Button>
+
+                <!-- ✅ 예쁜 전체 버튼 (아이콘) -->
+                <Button Grid.Column="18"
                         Margin="4,0,0,0"
                         VerticalAlignment="Center"
                         Click="ToggleFullscreen_Click"
