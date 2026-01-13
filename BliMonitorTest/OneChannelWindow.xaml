@@ -74,18 +74,13 @@
                 </Setter.Value>
             </Setter>
         </Style>
-
     </Window.Resources>
 
     <!-- 바깥: 그라데이션 배경 -->
     <Grid Background="{StaticResource AppBackgroundBrush}">
-
-        <ScrollViewer HorizontalScrollBarVisibility="Auto"
-                      VerticalScrollBarVisibility="Auto">
-
+        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
             <!-- 바깥 여백 -->
             <Grid Margin="18" ShowGridLines="False">
-
                 <!-- 전체를 큰 카드로 감싸서 "앱 프레임" 느낌 -->
                 <Border Style="{StaticResource CardBorderStyle}" Padding="18">
                     <Grid ShowGridLines="False">

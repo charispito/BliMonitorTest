@@ -33,18 +33,10 @@ namespace BliMonitorTest
         public AsyncServer(MultiWindow1 window)
         {
             this.window = window;
-
-            log.Debug("!!!!!!!!!!!!!!!!!!!        AsyncServer START      !!!!!!!!!!!!!!!!!!!");
-            log.Debug("asyncReadAsync 38 this.window : " + this.window);
-            log.Debug("!!!!!!!!!!!!!!!!!!!        AsyncServer END      !!!!!!!!!!!!!!!!!!!");
         }
         
         public void Start()
         {
-            log.Debug("!!!!!!!!!!!!!!!!!!!        AsyncServer START      !!!!!!!!!!!!!!!!!!!");
-            log.Debug("asyncReadAsync 45 this.window : ");
-            log.Debug("!!!!!!!!!!!!!!!!!!!        AsyncServer END      !!!!!!!!!!!!!!!!!!!");
-
             run = true;
             _clientManager = new ClientManager();
             _clientManager.OnConnected += OnConnected;
@@ -65,8 +57,6 @@ namespace BliMonitorTest
             //CheckThread = new Thread(StateCheckLoop);
             //CheckThread.Start();
         }        
-
-        
 
         private void StateCheckLoop()
         {
@@ -110,31 +100,16 @@ namespace BliMonitorTest
             }
         }
 
-
         private void AsycnServerStart()
         {
-
-            log.Debug("!!!!!!!!!!!!!!!!!!!        AsycnServerStart START 1111111     !!!!!!!!!!!!!!!!!!!");
-            log.Debug("asyncReadAsync 115 AddClient CALL  ~~~~~~ : ");
-            log.Debug(run);
-            log.Debug("!!!!!!!!!!!!!!!!!!!        AsycnServerStart END   1111111111   !!!!!!!!!!!!!!!!!!!");
-
             Console.WriteLine("Start");
             while (run)
             {
                 try
                 {
-                    log.Debug("!!!!!!!!!!!!!!!!!!!        AsycnServerStart START  222222222222    !!!!!!!!!!!!!!!!!!!");
-                    log.Debug("asyncReadAsync 128 AddClient CALL  ~~~~~~ : ");
-                    log.Debug("!!!!!!!!!!!!!!!!!!!        AsycnServerStart END   222222222222222   !!!!!!!!!!!!!!!!!!!");
-
                     Task<TcpClient> acceptTask = listener.AcceptTcpClientAsync();
                     acceptTask.Wait();
                     TcpClient newClient = acceptTask.Result;
-
-                    log.Debug("!!!!!!!!!!!!!!!!!!!        AsycnServerStart START  222222222222    !!!!!!!!!!!!!!!!!!!");
-                    log.Debug("asyncReadAsync 136 AddClient CALL  ~~~~~~ : ");
-                    log.Debug("!!!!!!!!!!!!!!!!!!!        AsycnServerStart END   222222222222222   !!!!!!!!!!!!!!!!!!!");
 
                     _clientManager.AddClient(newClient);
                 }
@@ -153,6 +128,7 @@ namespace BliMonitorTest
             Console.WriteLine("connected");
             int index = window.GetChannelIndex();
             Console.WriteLine("Channel {0}", index);
+
             if (index > -1)
             {
                 ChannelItem channel = window.GetChannelItem(index);
@@ -289,6 +265,4 @@ namespace BliMonitorTest
             }));
         }
     }
-
-
 }

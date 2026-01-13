@@ -5,8 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:BliMonitorTest" xmlns:controls="clr-namespace:BliMonitorTest.controls"
         mc:Ignorable="d"
-        Title="BLI 모니터링 프로그램" Height="900" Width="1850" WindowStartupLocation="CenterScreen">
-
+        Title="BLI 모니터링 프로그램" Height="900" Width="1915" WindowStartupLocation="CenterScreen" Background="Transparent">
     <Window.Resources>
         <!-- ComboBox 텍스트/항목 센터 정렬 -->
         <Style x:Key="CenterAlignedComboBox" TargetType="ComboBox">
@@ -69,62 +68,74 @@
                 </Setter.Value>
             </Setter>
         </Style>
-
     </Window.Resources>
 
-    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="20"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="205"/>
-                <RowDefinition Height="205"/>
-                <RowDefinition/>
-                <RowDefinition/>
-                <RowDefinition Height="20"/>
-            </Grid.RowDefinitions>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="20"/>
-                <ColumnDefinition Width="900"/>
-                <ColumnDefinition Width="900"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="20"/>
-            </Grid.ColumnDefinitions>
-            <Grid Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Height="30">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition/>
-                </Grid.ColumnDefinitions>
-                <WrapPanel Grid.Column="1" Grid.ColumnSpan="2">
-                    <Label Content="Save File Name " FontSize="17" VerticalContentAlignment="Center" FontWeight="Black"/>
-                    <TextBox FontSize="18" FontWeight="Black" Width="678" VerticalContentAlignment="Center" x:Name="FileName"/>
-                </WrapPanel>
-                <CheckBox Content="바탕화면 저장" FontSize="17" VerticalContentAlignment="Center" HorizontalAlignment="Right" Margin="10, 0" x:Name="SaveCheck"/>
-                <Label Grid.Column="5" x:Name="VersionText" FontSize="17" HorizontalContentAlignment="Right" Margin="0, 0, 20, 0"/>
+    <!-- 바깥: 그라데이션 배경 -->
+    <Grid Background="{StaticResource AppBackgroundBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition Height="0*"/>
+        </Grid.RowDefinitions>
+        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+            <!-- 바깥 여백 -->
+            <Grid Margin="18" ShowGridLines="False">
+                <!-- 전체를 큰 카드로 감싸서 "앱 프레임" 느낌 -->
+                <Border Style="{StaticResource CardBorderStyle}" Padding="18">
+                    <Grid ShowGridLines="False">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="20"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="205"/>
+                            <RowDefinition Height="205"/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition Height="20"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="20"/>
+                            <ColumnDefinition Width="900"/>
+                            <ColumnDefinition Width="900"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="20"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Height="30">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+                            <WrapPanel Grid.Column="1" Grid.ColumnSpan="2">
+                                <Label Content="Save File Name " FontSize="17" VerticalContentAlignment="Center" FontWeight="Black"/>
+                                <TextBox FontSize="18" FontWeight="Black" Width="678" VerticalContentAlignment="Center" x:Name="FileName"/>
+                            </WrapPanel>
+                            <CheckBox Content="바탕화면 저장" FontSize="17" VerticalContentAlignment="Center" HorizontalAlignment="Right" Margin="10, 0" x:Name="SaveCheck"/>
+                            <Label Grid.Column="5" x:Name="VersionText" FontSize="17" HorizontalContentAlignment="Right" Margin="0, 0, 20, 0"/>
 
-                <Button Grid.Column="3" Content="시작" Width="86" Margin="10,0"
+                            <Button Grid.Column="3" Content="시작" Width="86" Margin="10,0"
                                         x:Name="StartButton"
                                         Style="{StaticResource TopActionButtonStyle}"
                                         Background="#0EA5E9"
                                         Padding="0"/>
-                <Button Grid.Column="4"
+                            <Button Grid.Column="4"
                                         Content="정지"
                                         Width="86"
                                         x:Name="StopButton"
                                         Style="{StaticResource TopActionButtonStyle}"
                                         Padding="0"/>
-                <TextBox Visibility="Hidden" x:Name="FileNameBox" VerticalContentAlignment="Center" Grid.Column="2" Width="700" BorderBrush="Black" BorderThickness="1" Margin="10, 0"/>
-                <Label Visibility="Hidden" Grid.Column="1" Content="Save File Name" FontSize="16"/>
+                            <TextBox Visibility="Hidden" x:Name="FileNameBox" VerticalContentAlignment="Center" Grid.Column="2" Width="700" BorderBrush="Black" BorderThickness="1" Margin="10, 0"/>
+                            <Label Visibility="Hidden" Grid.Column="1" Content="Save File Name" FontSize="16"/>
+                        </Grid>
+                        <controls:ChannelItem Grid.Row="2" Grid.Column="1" x:Name="Item1"/>
+                        <controls:ChannelItem Grid.Row="2" Grid.Column="2" x:Name="Item2"/>
+                        <controls:ChannelItem Grid.Row="3" Grid.Column="1" x:Name="Item3"/>
+                        <controls:ChannelItem Grid.Row="3" Grid.Column="2" x:Name="Item4"/>
+                        <controls:OxyView  x:Name="Chart" Grid.Row="4" Grid.RowSpan="2" Grid.Column="1" Grid.ColumnSpan="3"/>
+                    </Grid>
+                </Border>
             </Grid>
-            <controls:ChannelItem Grid.Row="2" Grid.Column="1" x:Name="Item1"/>
-            <controls:ChannelItem Grid.Row="2" Grid.Column="2" x:Name="Item2"/>
-            <controls:ChannelItem Grid.Row="3" Grid.Column="1" x:Name="Item3"/>
-            <controls:ChannelItem Grid.Row="3" Grid.Column="2" x:Name="Item4"/>
-            <controls:OxyView  x:Name="Chart" Grid.Row="4" Grid.RowSpan="2" Grid.Column="1" Grid.ColumnSpan="3"/>
-        </Grid>
-    </ScrollViewer>
+        </ScrollViewer>
+    </Grid>
 </Window>

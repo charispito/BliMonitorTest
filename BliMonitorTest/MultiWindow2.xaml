@@ -5,41 +5,114 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:BliMonitorTest" xmlns:controls="clr-namespace:BliMonitorTest.controls"
         mc:Ignorable="d"
-        Title="BLI 모니터링 프로그램" Height="900" Width="1850" WindowStartupLocation="CenterOwner">
-    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="20"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="205"/>
-                <RowDefinition Height="205"/>
-                <RowDefinition/>
-                <RowDefinition/>
-                <RowDefinition Height="20"/>
-            </Grid.RowDefinitions>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="20"/>
-                <ColumnDefinition Width="900"/>
-                <ColumnDefinition Width="900"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="20"/>
-            </Grid.ColumnDefinitions>
-            <Grid Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Height="30">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                    <ColumnDefinition Width="150"/>
-                </Grid.ColumnDefinitions>
-                <Button Grid.Column="5" x:Name="Version" FontSize="16" Content="Exit" Visibility="Collapsed"/>
+        Title="BLI 모니터링 프로그램" Height="900" Width="1915" WindowStartupLocation="CenterOwner" Background="Transparent">
+    <Window.Resources>
+        <!-- ComboBox 텍스트/항목 센터 정렬 -->
+        <Style x:Key="CenterAlignedComboBox" TargetType="ComboBox">
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="ItemContainerStyle">
+                <Setter.Value>
+                    <Style TargetType="ComboBoxItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                        <Setter Property="VerticalContentAlignment" Value="Center"/>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 배경 그라데이션 -->
+        <LinearGradientBrush x:Key="AppBackgroundBrush" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#EAF4FF" Offset="0"/>
+            <GradientStop Color="#DDEEFF" Offset="1"/>
+        </LinearGradientBrush>
+
+        <!-- 카드 그림자 -->
+        <DropShadowEffect x:Key="CardShadow"
+                          Color="#000000"
+                          BlurRadius="18"
+                          ShadowDepth="2"
+                          Opacity="0.16"/>
+
+        <!-- 카드(Border) 공통 -->
+        <Style x:Key="CardBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="18"/>
+            <Setter Property="Padding" Value="14"/>
+            <Setter Property="Effect" Value="{StaticResource CardShadow}"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+        </Style>
+
+        <!-- 얇은 테두리(입력 박스 영역 등) -->
+        <SolidColorBrush x:Key="SoftBorderBrush" Color="#E5E7EB"/>
+
+        <!-- ✅ 상단 액션 버튼(연결/갱신) - 높이 줄인 버전 -->
+        <Style x:Key="TopActionButtonStyle" TargetType="Button">
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Padding" Value="12,0"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="#2563EB"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="9">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <!-- 바깥: 그라데이션 배경 -->
+    <Grid Background="{StaticResource AppBackgroundBrush}">
+        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+            <!-- 바깥 여백 -->
+            <Grid Margin="18" ShowGridLines="False">
+                <!-- 전체를 큰 카드로 감싸서 "앱 프레임" 느낌 -->
+                <Border Style="{StaticResource CardBorderStyle}" Padding="18">
+                    <Grid ShowGridLines="False">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="20"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="205"/>
+                            <RowDefinition Height="205"/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition Height="20"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="20"/>
+                            <ColumnDefinition Width="900"/>
+                            <ColumnDefinition Width="900"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="20"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Height="30">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="150"/>
+                            </Grid.ColumnDefinitions>
+                            <Button Grid.Column="5" x:Name="Version" FontSize="16" Content="Exit" Visibility="Collapsed"/>
+                        </Grid>
+                        <controls:ChannelItem Grid.Row="2" Grid.Column="1" x:Name="Item1"/>
+                        <controls:ChannelItem Grid.Row="2" Grid.Column="2" x:Name="Item2"/>
+                        <controls:ChannelItem Grid.Row="3" Grid.Column="1" x:Name="Item3"/>
+                        <controls:ChannelItem Grid.Row="3" Grid.Column="2" x:Name="Item4"/>
+                        <controls:OxyView x:Name="Chart" Grid.Row="4" Grid.RowSpan="2" Grid.Column="1" Grid.ColumnSpan="3"/>
+                    </Grid>
+                </Border>
             </Grid>
-            <controls:ChannelItem Grid.Row="2" Grid.Column="1" x:Name="Item1"/>
-            <controls:ChannelItem Grid.Row="2" Grid.Column="2" x:Name="Item2"/>
-            <controls:ChannelItem Grid.Row="3" Grid.Column="1" x:Name="Item3"/>
-            <controls:ChannelItem Grid.Row="3" Grid.Column="2" x:Name="Item4"/>
-            <controls:OxyView x:Name="Chart" Grid.Row="4" Grid.RowSpan="2" Grid.Column="1" Grid.ColumnSpan="3"/>
-        </Grid>
-    </ScrollViewer>
+        </ScrollViewer>
+    </Grid>
 </Window>
