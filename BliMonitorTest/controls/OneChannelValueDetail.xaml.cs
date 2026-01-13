@@ -1,6 +1,7 @@
 ﻿using BliMonitorTest.data;
 using BliMonitorTest.util;
 using log4net;
+using Microsoft.Data.Sqlite;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -19,6 +20,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Xml.Linq;
 using Path = System.IO.Path;
 
 namespace BliMonitorTest.controls
@@ -30,23 +32,24 @@ namespace BliMonitorTest.controls
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(OneChannelValueDetail));
 
+        // Database 관련 변수
+        private SqliteConnection _db;
+        private SqliteTransaction _tx;
+        private string _dbPath;
+        private string _csvPath;
+        private bool _csvHeaderWritten;
+        private bool _dbReady;
+
         private int _ConnectState = 0;
         private bool _ParameterMode = false;
         public bool ParameterMode {
             get
             {
-                log.Debug("============        OneChannelValueDetail ParameterMode       ==================");
-                log.Debug("OneChannelValueDetail ParameterMode 39 : " + _ParameterMode);
-                log.Debug("============        OneChannelValueDetail ParameterMode       ==================");
-
                 return _ParameterMode;
             }
             set
             {
                 _ParameterMode = value;
-                log.Debug("============        OneChannelValueDetail ParameterMode       ==================");
-                log.Debug("OneChannelValueDetail ParameterMode 49 value : " + _ParameterMode);
-                log.Debug("============        OneChannelValueDetail ParameterMode       ==================");
 
                 if (_ParameterMode)
                 {
@@ -194,11 +197,6 @@ namespace BliMonitorTest.controls
 
         private void ParameterButton_Click(object sender, RoutedEventArgs e)
         {
-            //if(port != null && port.IsOpen && !run)
-            //{
-            //    parameterWindow = new ParameterWindow(port, this);
-            //    parameterWindow.Show();
-            //}
             if (port != null && port.IsOpen)
             {
                 parameterWindow = new ParameterWindow(port, this);
@@ -224,6 +222,7 @@ namespace BliMonitorTest.controls
             }
         }
 
+        /*
         public void WriteFile(ReadData data)
         {
             number++;
@@ -232,7 +231,6 @@ namespace BliMonitorTest.controls
 
             if (streamWriter != null)
             {
-                Console.WriteLine("check2");
                 if (Modify)
                 {
                     streamWriter.Close();
@@ -241,69 +239,119 @@ namespace BliMonitorTest.controls
                 }else if(streamWriter.BaseStream == null)
                 {
                     initPath();
-                    Console.WriteLine("check3");
                 }
                 else
                 {
-                    Console.WriteLine("check4");
-
-                //    if (IsNewVersion)
-                //    {
-                //        streamWriter.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15}", data.date, data.mode, data.remain_time, data.heater_temp, data.heater_off_time,
-                //data.air_temp, data.fan_speed, data.hot_air_temp, data.hot_air_ontime, data.motor, data.motor_current, number, off_sum, data.hot_air_temp, air_sum, (double)(air_sum / (double)number));
-                //    }
-                //    else
-                //    {
-                        streamWriter.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15}", data.date, data.mode, data.remain_time, data.heater_temp, data.heater_off_time,
-                data.air_temp, data.fan_speed, data.hot_air_temp, data.hot_air_ontime, data.motor, data.motor_current, number, off_sum, (double)(off_sum / (double)number), air_sum, (double)(air_sum / (double)number));
-                    //}
-
-                //    streamWriter.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15}", data.date, data.mode, data.remain_time, data.heater_temp, data.heater_off_time,
-                //data.air_temp, data.fan_speed, data.hot_air_temp, data.hot_air_ontime, data.motor, data.motor_current, number, off_sum, (double)(off_sum / (double)number), air_sum, (double)(air_sum / (double)number));
+                    streamWriter.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15}", data.date, data.mode, data.remain_time, data.heater_temp, data.heater_off_time,
+                    data.air_temp, data.fan_speed, data.hot_air_temp, data.hot_air_ontime, data.motor, data.motor_current, number, off_sum, (double)(off_sum / (double)number), air_sum, (double)(air_sum / (double)number));
                 }                
             }
             else
             {
-                Console.WriteLine("check1");
                 initPath();
                 Modify=false;
             }
 
         }
+        */
+
+        public void WriteFile(ReadData data)
+        {
+            number++;
+            air_sum += data.air_temp;
+            off_sum += data.heater_off_time;
+
+            if (streamWriter != null)
+            {
+                if (Modify)
+                {
+                    streamWriter.Close();
+                    initPath();
+                    Modify = false;
+                }
+                else if (streamWriter.BaseStream == null)
+                {
+                    initPath();
+                }
+                else
+                {
+                    // ✅ 데이터 검증
+                    if (!ValidateData(data, out var reason))
+                    {
+                        log.Warn("Skip write: " + reason);
+                        return;
+                    }
+
+                    // 1) CSV 기록 (기존 라인 그대로)
+                    streamWriter.WriteLine(
+                        "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15}",
+                        data.date, data.mode, data.remain_time, data.heater_temp, data.heater_off_time,
+                        data.air_temp, data.fan_speed, data.hot_air_temp, data.hot_air_ontime,
+                        data.motor, data.motor_current, number, off_sum, (double)(off_sum / (double)number),
+                        air_sum, (double)(air_sum / (double)number)
+                    );
+                    streamWriter.Flush();
+
+                    // 2) SQLite 기록
+                    MonitoringDb.InsertDb( ref _db, _dbPath, ref _dbReady, IsNewVersion, data, number, off_sum, air_sum );
+                }
+            }
+            else
+            {
+                initPath();
+                Modify = false;
+            }
+        }
 
         private void initPath()
         {
-            string path = ".\\ChannelData";
-            Console.WriteLine("check5");
+            string dir = @".\ChannelData";
+            string dbDir = AppDomain.CurrentDomain.BaseDirectory;
+            
             if (_SaveInDesktop)
-            {
-                path = Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + "\\ChannelData";
-            }
-            
-            if (!Directory.Exists(path))
-                Directory.CreateDirectory(path);
-            string file = FName + "_ch1" + ".csv";
-            FileInfo fileInfo = new FileInfo(Path.Combine(path, file));
-            //if (!fileInfo.Exists)
-            //{
-            //    fileInfo.Create();
-            //}
-            //if (fileInfo.Exists)
-            //{
-                streamWriter = new StreamWriter(Path.Combine(path, file), true, System.Text.Encoding.Default);
-            //}
-            //else
-            //{
-            //    streamWriter = new StreamWriter(new FileStream(Path.Combine(path, file), FileMode.Append), System.Text.Encoding.Default);
-            //}
-            //streamWriter = File.AppendText(Path.Combine(path, file));
+                dir = System.IO.Path.Combine( AppDomain.CurrentDomain.BaseDirectory, "ChannelData" );
 
-            
-            //Console.WriteLine("check6");
-            //streamWriter = new StreamWriter(Path.Combine(path, file), true, System.Text.Encoding.Default);
-            //Console.WriteLine("check7");
-            //streamWriter = new StreamWriter(new FileStream(Path.Combine(path, file), FileMode.OpenOrCreate), System.Text.Encoding.Default);
-            initFile();
+            if (!Directory.Exists(dir))
+                Directory.CreateDirectory(dir);
+
+            string baseName = FName + "_ch1";
+
+            _csvPath = System.IO.Path.Combine(dir, baseName + ".csv");
+            _dbPath = util.StoragePathUtil.GetDbPath();
+
+            // 1) CSV 열기
+            bool fileExists = File.Exists(_csvPath);
+            long fileLen = fileExists ? new FileInfo(_csvPath).Length : 0;
+
+            streamWriter = new StreamWriter(_csvPath, append: true, Encoding.Default);
+
+            // 헤더는 비어있는 파일일 때만
+            if (fileLen == 0)
+            {
+                initFile();
+                _csvHeaderWritten = true;
+                streamWriter.Flush();
+            }
+            else
+            {
+                // "이미 있다"의 의미로 true
+                _csvHeaderWritten = true;
+            }
+
+            // 2) DB 준비
+            MonitoringDb.EnsureDb(ref _db, _dbPath, ref _dbReady);
+        }
+        private bool ValidateData(ReadData data, out string reason)
+        {
+            reason = null;
+
+            if (data == null) { reason = "data is null"; return false; }
+            if (string.IsNullOrWhiteSpace(data.date)) { reason = "date is empty"; return false; }
+
+            if (double.IsNaN(data.heater_temp) || double.IsInfinity(data.heater_temp))
+            { reason = "heater_temp NaN/Inf"; return false; }
+
+            return true;
         }
 
         public void setHandler(RoutedEventHandler handler)
@@ -322,25 +370,16 @@ namespace BliMonitorTest.controls
         {
             if (!port.IsOpen)
             {
-                log.Debug("OneChannelValueDetail StartButton_Click 328 : " + port);
-                log.Debug("============        OneChannelValueDetail  StartButton_Click 연결 되지 않았습니다        ==================");
                 MessageBox.Show("연결 되지 않았습니다.");
                 return;
             }
             if (run)
             {
-                log.Debug("OneChannelValueDetail StartButton_Click 335 : " + run);
-                log.Debug("============        OneChannelValueDetail  StartButton_Click 이미 운전중입니다        ==================");
                 MessageBox.Show("이미 운전중입니다.");
                 return;
             }
             OnTestStart();
-            //string path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ChannelData";
-            //if(!Directory.Exists(path))
-            //    Directory.CreateDirectory(path);
-            //string file = DateTime.Now.ToString("싱글yyyy년MM월dd일_HH시mm분ss초") + ".csv";
-            //streamWriter = new StreamWriter(new FileStream(Path.Combine(path, file), FileMode.CreateNew), System.Text.Encoding.Default);
-            //initFile();
+
             if (IsNewVersion)
             {
                 byte[] command = Protocol.GetNewCommand(2);
@@ -351,29 +390,7 @@ namespace BliMonitorTest.controls
                 byte[] command = Protocol.GetCommand(2);
                 port.Write(command, 0, command.Length);
             }
-
-            //chartView.ViewModel.ClearPoints();
-
-            //list1.Clear();
-            //list2.Clear();
-            //list3.Clear();
-            //list4.Clear();
-            //list5.Clear();
-            //list6.Clear();
-            //list7.Clear();
-            //list8.Clear();
-
-            //if (chartView != null)
-            //{
-            //    chartView.initXAxis();
-            //    chartView.ItemRun[0] = true;
-            //}
         }
-        //SMARTCARA-IPTIME1
-        //SMARTCARA-IPTIME2
-        //SMARTCARA-IPTIME3
-
-        
 
         private void StopButton_Click(object sender, RoutedEventArgs e)
         {
@@ -406,7 +423,6 @@ namespace BliMonitorTest.controls
                 ByteLogHelper.DumpLinesWith0x(command, 16);
                 log.Debug("============        LOG DATA END       ==================");
             }
-            //client.GetStream().Write(command, 0, command.Length);
         }
     }
 }
