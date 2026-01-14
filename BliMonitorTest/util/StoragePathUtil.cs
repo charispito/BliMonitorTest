@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace BliMonitorTest.util
+namespace BliMonitorTest.util.StoragePathUtil
 {
     internal static class StoragePathUtil
     {

@@ -1,0 +1,285 @@
+<Window x:Class="BliMonitorTest.ReceiveDataQueryWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="수신 데이터 조회 (receive_data)"
+        Width="1705" Height="720"
+        WindowStartupLocation="CenterScreen"
+        Background="Transparent">
+
+    <Window.Resources>
+        <!-- 배경 그라데이션 (OneChannelWindow 느낌) -->
+        <LinearGradientBrush x:Key="AppBackgroundBrush" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#EAF4FF" Offset="0"/>
+            <GradientStop Color="#DDEEFF" Offset="1"/>
+        </LinearGradientBrush>
+
+        <!-- 카드 그림자 -->
+        <DropShadowEffect x:Key="CardShadow" Color="#000000" BlurRadius="18" ShadowDepth="2" Opacity="0.16" />
+
+        <!-- 카드 공통 스타일 -->
+        <Style x:Key="CardBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="16"/>
+            <Setter Property="Padding" Value="14"/>
+            <Setter Property="Effect" Value="{StaticResource CardShadow}"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+        </Style>
+
+        <SolidColorBrush x:Key="SoftBorderBrush" Color="#E5E7EB"/>
+        <SolidColorBrush x:Key="PrimaryBrush" Color="#2563EB"/>
+        <SolidColorBrush x:Key="PrimaryBrushHover" Color="#1D4ED8"/>
+        <SolidColorBrush x:Key="PrimaryBrushPressed" Color="#1E40AF"/>
+        <SolidColorBrush x:Key="SecondaryBrush" Color="#EEF2FF"/>
+        <SolidColorBrush x:Key="SecondaryBrushHover" Color="#E0E7FF"/>
+        <SolidColorBrush x:Key="SecondaryBrushPressed" Color="#C7D2FE"/>
+        <SolidColorBrush x:Key="TextDark" Color="#0F172A"/>
+        <SolidColorBrush x:Key="TextMute" Color="#475569"/>
+
+        <!-- 기본 텍스트 -->
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextDark}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <!-- 입력박스 공통 -->
+        <Style TargetType="TextBox">
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Padding" Value="8,0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="BorderBrush" Value="{StaticResource SoftBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="#FFFFFF"/>
+        </Style>
+
+        <Style TargetType="DatePicker">
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="BorderBrush" Value="{StaticResource SoftBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="#FFFFFF"/>
+        </Style>
+
+        <Style TargetType="ComboBox">
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Padding" Value="6,0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="BorderBrush" Value="{StaticResource SoftBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="#FFFFFF"/>
+        </Style>
+
+        <!-- 버튼 템플릿(라운드) - Primary -->
+        <Style x:Key="PrimaryButtonStyle" TargetType="Button">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Padding" Value="14,0"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="10"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{StaticResource PrimaryBrushHover}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{StaticResource PrimaryBrushPressed}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="bd" Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 버튼 템플릿(라운드) - Secondary -->
+        <Style x:Key="SecondaryButtonStyle" TargetType="Button">
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="MinWidth" Value="64"/>
+            <Setter Property="Padding" Value="12,0"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{StaticResource PrimaryBrushPressed}"/>
+            <Setter Property="Background" Value="{StaticResource SecondaryBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#C7D2FE"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="10" SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{StaticResource SecondaryBrushHover}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{StaticResource SecondaryBrushPressed}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="bd" Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <!-- 섹션 헤더(검색 조건/조회 결과 같은 제목) -->
+        <Style x:Key="SectionTitleStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="{StaticResource TextDark}"/>
+        </Style>
+
+        <!-- 라벨(기간/Mode/Heater 등) -->
+        <Style x:Key="FieldLabelStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextMute}"/>
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+        </Style>
+    </Window.Resources>
+
+    <!-- 바깥 배경 -->
+    <Grid Background="{StaticResource AppBackgroundBrush}">
+        <Grid Margin="16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="12"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="12"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- 검색조건 카드 -->
+            <Border Grid.Row="0" Style="{StaticResource CardBorderStyle}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="검색 조건" Style="{StaticResource SectionTitleStyle}" Margin="0,0,0,10"/>
+                        <WrapPanel VerticalAlignment="Center">
+
+                            <TextBlock Text="기간 :" Style="{StaticResource FieldLabelStyle}" Margin="0,5,0,0"/>
+                            <DatePicker x:Name="dpFrom" Width="140" Margin="10,0,0,0" KeyDown="SearchBox_KeyDown"/>
+                            <TextBlock Text="~" Margin="6,0"/>
+                            <DatePicker x:Name="dpTo" Width="140" Margin="0,0,10,0" KeyDown="SearchBox_KeyDown"/>
+
+                            <TextBlock Text="Mode :" Style="{StaticResource FieldLabelStyle}" Margin="0,5,0,0"/>
+                            <TextBox x:Name="tbMode" Width="90" Margin="10,0,10,0" KeyDown="SearchBox_KeyDown"/>
+
+                            <TextBlock Text="Heater : ≥" Margin="0,5,0,0" Style="{StaticResource FieldLabelStyle}"/>
+                            <TextBox x:Name="tbHeaterMin" Width="90" Margin="10,0,10,0" KeyDown="SearchBox_KeyDown"/>
+                            <TextBlock Text="≤" Margin="0,5,0,0" Style="{StaticResource FieldLabelStyle}"/>
+                            <TextBox x:Name="tbHeaterMax" Width="90" Margin="10,0,10,0" KeyDown="SearchBox_KeyDown"/>
+
+                            <TextBlock Text="Air : ≥" Margin="0,5,0,0" Style="{StaticResource FieldLabelStyle}"/>
+                            <TextBox x:Name="tbAirMin" Width="90" Margin="10,0,10,0" KeyDown="SearchBox_KeyDown"/>
+                            <TextBlock Text="≤" Margin="0,5,0,0" Style="{StaticResource FieldLabelStyle}"/>
+                            <TextBox x:Name="tbAirMax" Width="90" Margin="10,0,10,0" KeyDown="SearchBox_KeyDown"/>
+
+                            <TextBlock Text="Motor:" Margin="0,5,0,0" Style="{StaticResource FieldLabelStyle}"/>
+                            <TextBox x:Name="tbMotor" Width="90" Margin="10,0,10,0" KeyDown="SearchBox_KeyDown"/>
+
+                            <TextBlock Text="Fan:" Margin="0,5,0,0" Style="{StaticResource FieldLabelStyle}"/>
+                            <TextBox x:Name="tbFanSpeed" Width="90" Margin="10,0,10,0" KeyDown="SearchBox_KeyDown"/>
+
+                            <TextBlock Text="MotorCurrent ≥" Margin="0,5,0,0" Style="{StaticResource FieldLabelStyle}"/>
+                            <TextBox x:Name="tbMotorCurrentMin" Width="90" Margin="10,0,10,0" KeyDown="SearchBox_KeyDown"/>
+                        </WrapPanel>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" VerticalAlignment="Top" HorizontalAlignment="Right">
+                        <Button Content="조회" Width="80" Height="25" Margin="0,2,2,2" Style="{StaticResource PrimaryButtonStyle}" Click="Search_Click"/>
+                        <Button Content="엑셀"  Width="80" Height="25" Margin="0,2,2,2" Style="{StaticResource SecondaryButtonStyle}" Click="ExcelDownload_Click"/>
+                    </StackPanel>
+
+                </Grid>
+            </Border>
+
+            <!-- 결과 그리드 카드 -->
+            <Border Grid.Row="2" Style="{StaticResource CardBorderStyle}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="10"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <DockPanel Grid.Row="0" LastChildFill="True">
+                        <TextBlock Text="조회 결과"
+                                   FontSize="15"
+                                   FontWeight="Bold"
+                                   DockPanel.Dock="Left"/>
+
+                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+                            <TextBlock Text="PageSize :" Style="{StaticResource FieldLabelStyle}" Margin="20,5,20,0"/>
+                            <ComboBox x:Name="cbPageSize"
+                                      Width="110"
+                                      SelectionChanged="PageSize_Changed">
+                                <ComboBoxItem Content="10"/>
+                                <ComboBoxItem Content="20"/>
+                                <ComboBoxItem Content="50" IsSelected="True"/>
+                                <ComboBoxItem Content="100"/>
+                            </ComboBox>
+                        </StackPanel>
+                    </DockPanel>
+
+                    <DataGrid x:Name="grid"
+                              Grid.Row="2"
+                              AutoGenerateColumns="True"
+                              CanUserAddRows="False"
+                              IsReadOnly="True"
+                              HeadersVisibility="Column"
+                              GridLinesVisibility="Horizontal"
+                              RowHeight="28"
+                              BorderBrush="{StaticResource SoftBorderBrush}"
+                              BorderThickness="1"
+                              Background="White"
+                              AlternatingRowBackground="#F8FAFC"/>
+                </Grid>
+            </Border>
+
+            <!-- 하단 페이징 카드 -->
+            <Border Grid.Row="4" Style="{StaticResource CardBorderStyle}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock x:Name="txtPageInfo"
+                               Grid.Column="0"
+                               Text="총 0건 / 0 / 0 페이지"
+                               Foreground="{StaticResource TextMute}"
+                               FontSize="13"
+                               VerticalAlignment="Center"/>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Content="⏮ 처음" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0" Click="First_Click"/>
+                        <Button Content="◀ 이전" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0" Click="Prev_Click"/>
+                        <Button Content="다음 ▶" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0" Click="Next_Click"/>
+                        <Button Content="끝 ⏭" Style="{StaticResource SecondaryButtonStyle}" Click="Last_Click"/>
+                    </StackPanel>
+
+                </Grid>
+            </Border>
+
+        </Grid>
+    </Grid>
+</Window>

@@ -22,6 +22,8 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Xml.Linq;
 using Path = System.IO.Path;
+using BliMonitorTest.util.MonitoringDb;
+using BliMonitorTest.util.StoragePathUtil;
 
 namespace BliMonitorTest.controls
 {
@@ -317,7 +319,7 @@ namespace BliMonitorTest.controls
             string baseName = FName + "_ch1";
 
             _csvPath = System.IO.Path.Combine(dir, baseName + ".csv");
-            _dbPath = util.StoragePathUtil.GetDbPath();
+            _dbPath = StoragePathUtil.GetDbPath();
 
             // 1) CSV 열기
             bool fileExists = File.Exists(_csvPath);

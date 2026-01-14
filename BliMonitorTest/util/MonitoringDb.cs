@@ -1,7 +1,10 @@
-﻿using System;
-using Microsoft.Data.Sqlite;
+﻿using Microsoft.Data.Sqlite;
+using System;
+using System.Globalization;
+using System.Linq;
+using System.Text;
 
-namespace BliMonitorTest.util
+namespace BliMonitorTest.util.MonitoringDb
 {
     internal static class MonitoringDb
     {
@@ -115,5 +118,155 @@ namespace BliMonitorTest.util
                 cmd.ExecuteNonQuery();
             }
         }
+
+        public static string ToSqlLiteral(object value)
+        {
+            if (value == null || value == DBNull.Value) return "NULL";
+
+            // 문자열
+            var s = value as string;
+            if (s != null)
+                return "'" + s.Replace("'", "''") + "'";
+
+            // char
+            if (value is char)
+            {
+                var c = (char)value;
+                return "'" + (c == '\'' ? "''" : c.ToString()) + "'";
+            }
+
+            // bool (SQLite는 보통 0/1로 표현)
+            if (value is bool)
+                return ((bool)value) ? "1" : "0";
+
+            // 정수 계열
+            if (value is byte || value is sbyte ||
+                value is short || value is ushort ||
+                value is int || value is uint ||
+                value is long || value is ulong)
+                return Convert.ToString(value, CultureInfo.InvariantCulture);
+
+            // 실수/decimal
+            if (value is float || value is double || value is decimal)
+                return Convert.ToString(value, CultureInfo.InvariantCulture);
+
+            // DateTime
+            if (value is DateTime)
+            {
+                var dt = (DateTime)value;
+                // 현재 코드가 created_at TEXT 비교(ISO 문자열)이므로 이 포맷이 가장 안전
+                return "'" + dt.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) + "'";
+            }
+
+            // DateTimeOffset
+            if (value is DateTimeOffset)
+            {
+                var dto = (DateTimeOffset)value;
+                return "'" + dto.ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.InvariantCulture) + "'";
+            }
+
+            // byte[] (BLOB)
+            var bytes = value as byte[];
+            if (bytes != null)
+                return "X'" + BitConverter.ToString(bytes).Replace("-", "") + "'";
+
+            // 기타: 문자열로 변환 후 따옴표 처리
+            return "'" + Convert.ToString(value, CultureInfo.InvariantCulture).Replace("'", "''") + "'";
+        }
+
+        public static string RenderFinalSqlForLog(Microsoft.Data.Sqlite.SqliteCommand cmd)
+        {
+            // 이름 긴 것부터 치환 (@id, @id2 충돌 방지)
+            var parameters = cmd.Parameters
+                .Cast<Microsoft.Data.Sqlite.SqliteParameter>()
+                .OrderByDescending(p => p.ParameterName == null ? 0 : p.ParameterName.Length)
+                .ToList();
+
+            string sql = cmd.CommandText ?? "";
+
+            for (int i = 0; i < parameters.Count; i++)
+            {
+                var p = parameters[i];
+                var name = p.ParameterName;
+
+                if (string.IsNullOrWhiteSpace(name))
+                    continue;
+
+                sql = sql.Replace(name, ToSqlLiteral(p.Value));
+            }
+
+            return sql;
+        }
+
+        public static string FormatSqlLog(Microsoft.Data.Sqlite.SqliteCommand cmd, string title)
+        {
+            var sb = new StringBuilder();
+
+            sb.AppendLine("================================================================================");
+            sb.AppendLine(string.Format("[{0}]  at {1:yyyy-MM-dd HH:mm:ss.fff}", title ?? "SQL", DateTime.Now));
+            sb.AppendLine("--------------------------------------------------------------------------------");
+            sb.AppendLine("[CommandText]");
+            sb.AppendLine((cmd.CommandText ?? "").TrimEnd());
+            sb.AppendLine("--------------------------------------------------------------------------------");
+            sb.AppendLine("[Params]");
+
+            if (cmd.Parameters.Count == 0)
+            {
+                sb.AppendLine("(none)");
+            }
+            else
+            {
+                foreach (Microsoft.Data.Sqlite.SqliteParameter p in cmd.Parameters)
+                {
+                    object v = p.Value;
+                    string raw = (v == null || v == DBNull.Value) ? "NULL" : v.ToString();
+                    string lit = ToSqlLiteral(v);
+
+                    sb.AppendLine(string.Format(
+                        "- {0} = {1}  | literal={2}  | DbType={3}",
+                        p.ParameterName, raw, lit, p.DbType));
+                }
+            }
+
+            sb.AppendLine("--------------------------------------------------------------------------------");
+            sb.AppendLine("[FinalSqlForLog]  (rendered from CommandText + Params)");
+            sb.AppendLine(RenderFinalSqlForLog(cmd));
+            sb.AppendLine("================================================================================");
+
+            return sb.ToString();
+        }
+
+        public static string DumpCommand(SqliteCommand cmd)
+        {
+            var sb = new System.Text.StringBuilder();
+
+            sb.AppendLine("---- SQL ----");
+            sb.AppendLine(cmd.CommandText);
+
+            sb.AppendLine("---- PARAMS ----");
+            foreach (SqliteParameter p in cmd.Parameters)
+            {
+                // Value가 null/DBNull이면 깔끔하게 표시
+                object v = p.Value;
+                string vs = (v == null || v == DBNull.Value) ? "NULL" : v.ToString();
+
+                sb.AppendLine($"{p.ParameterName} = {vs} (DbType={p.DbType})");
+            }
+
+            return sb.ToString();
+        }
+
+        public static string DumpParamsOneLine(SqliteCommand cmd)
+        {
+            var parts = new System.Collections.Generic.List<string>();
+            foreach (SqliteParameter p in cmd.Parameters)
+            {
+                object v = p.Value;
+                string vs = (v == null || v == DBNull.Value) ? "NULL" : v.ToString();
+                parts.Add($"{p.ParameterName}={vs}");
+            }
+            return string.Join(", ", parts);
+        }
+
     }
 }

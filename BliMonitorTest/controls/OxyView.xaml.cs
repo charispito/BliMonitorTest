@@ -19,9 +19,6 @@ using System.Windows.Shapes;
 
 namespace BliMonitorTest.controls
 {
-    /// <summary>
-    /// OxyView.xaml에 대한 상호 작용 논리
-    /// </summary>
     public partial class OxyView : UserControl
     {
         public MainViewModel ViewModel = new MainViewModel();
@@ -113,6 +110,14 @@ namespace BliMonitorTest.controls
                 // private이면 호출 불가 -> 아래 3)처럼 접근 레벨만 조정하면 됨
                 oneChannel.ClearChartDataAndResetTime();
             }
+        }
+
+        private void BtnOpenDb_Click(object sender, RoutedEventArgs e)
+        {
+            var receiveDataQueryWindow = new ReceiveDataQueryWindow();
+            receiveDataQueryWindow.Owner = Window.GetWindow(this);
+            receiveDataQueryWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            receiveDataQueryWindow.Show();
         }
 
     }
