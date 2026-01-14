@@ -13,35 +13,6 @@
             <Style TargetType="{x:Type TextBlock}">
                 <Setter Property="FontFamily" Value="Segoe UI"/>
             </Style>
-
-            <Style x:Key="GridStyle" TargetType="{x:Type DataGrid}">
-                <Style.Resources>
-                    <!-- DataGrid 셀 및 행 선택 시 배경/테두리 제거 -->
-                    <Style x:Key="{x:Type DataGridCell}" TargetType="{x:Type DataGridCell}">
-                        <Setter Property="Background" Value="{x:Null}" />
-                        <Setter Property="BorderBrush" Value="{x:Null}" />
-                        <Style.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="Background" Value="{x:Null}" />
-                                <Setter Property="BorderBrush" Value="{x:Null}" />
-                                <Setter Property="Foreground" Value="Black"/>
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
-
-                    <Style TargetType="{x:Type DataGridRow}">
-                        <Setter Property="Background" Value="{x:Null}" />
-                        <Setter Property="BorderBrush" Value="{x:Null}" />
-                        <Style.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="Background" Value="{x:Null}" />
-                                <Setter Property="BorderBrush" Value="{x:Null}" />
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
-                </Style.Resources>
-            </Style>
-
         </ResourceDictionary>
     </Application.Resources>
 </Application>

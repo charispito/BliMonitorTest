@@ -461,7 +461,6 @@ namespace BliMonitorTest
                 try
                 {
                     ExportAllToExcelOpenXml( dbPath, tmpPath, fromText, toText, mode, heaterMin, heaterMax, airMin, airMax, motor, fanSpeed, motorCurrentMin, progress, token);
-
                     token.ThrowIfCancellationRequested();
 
                     if (File.Exists(finalTempPath)) File.Delete(finalTempPath);

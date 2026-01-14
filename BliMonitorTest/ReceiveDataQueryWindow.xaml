@@ -141,6 +141,87 @@
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Margin" Value="0,5,0,0"/>
         </Style>
+
+        <!-- DataGrid 헤더 -->
+        <Style x:Key="PrettyDataGridColumnHeaderStyle" TargetType="{x:Type DataGridColumnHeader}">
+            <Setter Property="Background" Value="#F3F6FF"/>
+            <Setter Property="Foreground" Value="{StaticResource TextMute}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="12,10"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="BorderBrush" Value="{StaticResource SoftBorderBrush}"/>
+        </Style>
+
+        <!-- DataGrid 셀 -->
+        <Style x:Key="PrettyDataGridCellStyle" TargetType="{x:Type DataGridCell}">
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextDark}"/>
+            <Style.Triggers>
+                <!-- 선택 시 WPF 기본 테두리/강한 하이라이트 느낌 완화 -->
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="BorderThickness" Value="0"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- DataGrid 행 -->
+        <Style x:Key="PrettyDataGridRowStyle" TargetType="{x:Type DataGridRow}">
+            <Setter Property="MinHeight" Value="34"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="{StaticResource TextDark}"/>
+            <Style.Triggers>
+                <!-- Hover -->
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#EEF2FF"/>
+                </Trigger>
+
+                <!-- Selected -->
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#DDE7FF"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- DataGrid 전체 -->
+        <Style x:Key="PrettyDataGridStyle" TargetType="{x:Type DataGrid}">
+            <!-- 동작 -->
+            <Setter Property="AutoGenerateColumns" Value="False"/>
+            <Setter Property="CanUserAddRows" Value="False"/>
+            <Setter Property="CanUserDeleteRows" Value="False"/>
+            <Setter Property="CanUserResizeRows" Value="False"/>
+            <Setter Property="IsReadOnly" Value="True"/>
+            <Setter Property="SelectionUnit" Value="FullRow"/>
+            <Setter Property="SelectionMode" Value="Extended"/>
+
+            <!-- 외형 -->
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="{StaticResource SoftBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="GridLinesVisibility" Value="None"/>
+            <Setter Property="HeadersVisibility" Value="Column"/>
+            <Setter Property="RowHeaderWidth" Value="0"/>
+
+            <!-- 줄무늬 -->
+            <Setter Property="AlternationCount" Value="2"/>
+            <Setter Property="RowBackground" Value="White"/>
+            <Setter Property="AlternatingRowBackground" Value="#FAFAFB"/>
+
+            <!-- 스크롤 부드럽게 -->
+            <Setter Property="ScrollViewer.CanContentScroll" Value="True"/>
+            <Setter Property="ScrollViewer.PanningMode" Value="Both"/>
+
+            <!-- 연결 -->
+            <Setter Property="ColumnHeaderStyle" Value="{StaticResource PrettyDataGridColumnHeaderStyle}"/>
+            <Setter Property="RowStyle" Value="{StaticResource PrettyDataGridRowStyle}"/>
+            <Setter Property="CellStyle" Value="{StaticResource PrettyDataGridCellStyle}"/>
+        </Style>
     </Window.Resources>
 
     <!-- 바깥 배경 -->
@@ -227,18 +308,9 @@
                         </StackPanel>
                     </DockPanel>
 
-                    <DataGrid x:Name="grid"
-                              Grid.Row="2"
-                              AutoGenerateColumns="True"
-                              CanUserAddRows="False"
-                              IsReadOnly="True"
-                              HeadersVisibility="Column"
-                              GridLinesVisibility="Horizontal"
-                              RowHeight="28"
-                              BorderBrush="{StaticResource SoftBorderBrush}"
-                              BorderThickness="1"
-                              Background="White"
-                              AlternatingRowBackground="#F8FAFC"/>
+                    <Border Grid.Row="2" BorderBrush="{StaticResource SoftBorderBrush}" BorderThickness="1" CornerRadius="10" Background="White" SnapsToDevicePixels="True">
+                        <DataGrid x:Name="grid" Style="{StaticResource PrettyDataGridStyle}" AutoGenerateColumns="True" CanUserAddRows="False" IsReadOnly="True" HeadersVisibility="Column" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto"/>
+                    </Border>
                 </Grid>
             </Border>
 
@@ -250,20 +322,13 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <TextBlock x:Name="txtPageInfo"
-                               Grid.Column="0"
-                               Text="총 0건 / 0 / 0 페이지"
-                               Foreground="{StaticResource TextMute}"
-                               FontSize="13"
-                               VerticalAlignment="Center"/>
-
+                    <TextBlock x:Name="txtPageInfo" Grid.Column="0" Text="총 0건 / 0 / 0 페이지" Foreground="{StaticResource TextMute}" FontSize="13" VerticalAlignment="Center"/>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button Content="⏮ 처음" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0" Click="First_Click"/>
                         <Button Content="◀ 이전" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0" Click="Prev_Click"/>
                         <Button Content="다음 ▶" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0" Click="Next_Click"/>
                         <Button Content="끝 ⏭" Style="{StaticResource SecondaryButtonStyle}" Click="Last_Click"/>
                     </StackPanel>
-
                 </Grid>
             </Border>
 
