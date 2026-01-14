@@ -132,117 +132,6 @@ namespace BliMonitorTest
             return Math.Max(1, (int)Math.Ceiling(_totalCount / (double)_pageSize));
         }
 
-        /*
-        private void RefreshGridAsync()
-        {
-            if (!IsLoaded) return;  // ✅ Loaded 이전에는 아무 것도 하지 않음
-            if (grid == null || txtPageInfo == null) return; // (원하면 throw 대신 return)
-
-            DateTime from = (dpFrom.SelectedDate ?? DateTime.Today).Date;
-            DateTime to = (dpTo.SelectedDate ?? DateTime.Today).Date;
-
-            DateTime toExclusive = to.AddDays(1);
-
-            if (toExclusive <= from)
-            {
-                MessageBox.Show("기간이 올바르지 않습니다.");
-                return;
-            }
-
-            // ✅ 최대 1달 제한 (현재는 31일)
-            if ((toExclusive - from).TotalDays > 31)
-            {
-                MessageBox.Show("기간 조회는 최대 1달(31일)까지만 가능합니다.");
-                return;
-            }
-
-            int? mode = TryParseNullableInt(tbMode.Text);
-            double? heaterMin = TryParseNullableDouble(tbHeaterMin.Text);
-            double? heaterMax = TryParseNullableDouble(tbHeaterMax.Text);
-            double? airMin = TryParseNullableDouble(tbAirMin.Text);
-            double? airMax = TryParseNullableDouble(tbAirMax.Text);
-            int? motor = TryParseNullableInt(tbMotor.Text);
-            int? fanSpeed = TryParseNullableInt(tbFanSpeed.Text);
-            double? motorCurrentMin = TryParseNullableDouble(tbMotorCurrentMin.Text);
-
-            try
-            {
-                // ✅ DB 경로: "실행 폴더 기준"
-                string dbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Monitoring.db");
-                if (!File.Exists(dbPath))
-                {
-                    MessageBox.Show($"DB 파일을 찾을 수 없습니다.\n{dbPath}");
-                    return;
-                }
-
-                string cs = $"Data Source={dbPath};";
-
-                using (var con = new SqliteConnection(cs))
-                {
-                    con.Open();
-
-                    // WHERE 동적 구성
-                    string where = "WHERE created_at >= @from AND created_at < @to";
-                    if (mode.HasValue) where += " AND mode = @mode";
-                    if (heaterMin.HasValue) where += " AND heater_temp >= @heaterMin";
-                    if (heaterMax.HasValue) where += " AND heater_temp <= @heaterMax";
-                    if (airMin.HasValue) where += " AND air_temp >= @airMin";
-                    if (airMax.HasValue) where += " AND air_temp <= @airMax";
-                    if (motor.HasValue) where += " AND motor = @motor";
-                    if (fanSpeed.HasValue) where += " AND fan_speed = @fanSpeed";
-                    if (motorCurrentMin.HasValue) where += " AND motor_current >= @motorCurrentMin";
-
-                    // created_at TEXT 비교를 위해 ISO 문자열로 파라미터 전달
-                    string fromText = from.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
-                    string toText = toExclusive.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
-
-                    // 1) total count
-                    using (var cmdCount = con.CreateCommand())
-                    {
-                        cmdCount.CommandText = $"SELECT COUNT(1) FROM receive_data {where};";
-                        BindParams(cmdCount, fromText, toText, mode, heaterMin, heaterMax, airMin, airMax, motor, fanSpeed, motorCurrentMin);
-                        _totalCount = Convert.ToInt32(cmdCount.ExecuteScalar());
-                    }
-
-                    int lastPage = GetLastPage();
-                    if (_page > lastPage) _page = lastPage;
-
-                    int offset = (_page - 1) * _pageSize;
-
-                    // 2) page rows
-                    using (var cmd = con.CreateCommand())
-                    {
-                        cmd.CommandText =
-                            "SELECT * FROM receive_data " +
-                            where +
-                            " ORDER BY datetime(created_at) DESC " +
-                            " LIMIT @limit OFFSET @offset;";
-
-                        BindParams(cmd, fromText, toText, mode, heaterMin, heaterMax, airMin, airMax, motor, fanSpeed, motorCurrentMin);
-                        cmd.Parameters.AddWithValue("@limit", _pageSize);
-                        cmd.Parameters.AddWithValue("@offset", offset);
-
-                        // SQL로그 출력 (디버깅용)
-                        log.Debug(" FormatSqlLog : " + MonitoringDb.FormatSqlLog(cmd, "SQL : "));
-
-                        var dt = new DataTable();
-                        using (var r = cmd.ExecuteReader())
-                        {
-                            dt.Load(r);
-                        }
-
-                        grid.ItemsSource = dt.DefaultView;
-                        txtPageInfo.Text = $"총 {_totalCount:N0}건 / {_page:N0} / {lastPage:N0} 페이지";
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.ToString(), "조회 오류", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-        */
-
         private async Task RefreshGridAsync()
         {
             if (!IsLoaded) return;
@@ -363,7 +252,7 @@ namespace BliMonitorTest
                 _page = result.AppliedPage;
 
                 grid.ItemsSource = result.Table.DefaultView;
-                txtPageInfo.Text = $"총 {_totalCount:N0}건 / {_page:N0} / {result.LastPage:N0} 페이지";
+                txtPageInfo.Text = $"총 {_totalCount:N0}건        {_page:N0} / {result.LastPage:N0} 페이지";
             }
             catch (Exception ex)
             {

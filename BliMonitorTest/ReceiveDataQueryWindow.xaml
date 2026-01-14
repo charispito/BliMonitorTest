@@ -58,15 +58,6 @@
             <Setter Property="Background" Value="#FFFFFF"/>
         </Style>
 
-        <Style TargetType="ComboBox">
-            <Setter Property="Height" Value="28"/>
-            <Setter Property="Padding" Value="6,0"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="BorderBrush" Value="{StaticResource SoftBorderBrush}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Background" Value="#FFFFFF"/>
-        </Style>
-
         <!-- 버튼 템플릿(라운드) - Primary -->
         <Style x:Key="PrimaryButtonStyle" TargetType="Button">
             <Setter Property="Height" Value="28"/>
@@ -207,7 +198,7 @@
                     <StackPanel Grid.Column="1" VerticalAlignment="Top" HorizontalAlignment="Right" Orientation="Horizontal">
                         <Button Content="조회" Width="90" Style="{StaticResource PrimaryButtonStyle}" Click="Search_Click"/>
                         <Button x:Name="btnExcel" Content="엑셀" Width="80" Margin="5,0,0,0" Style="{StaticResource SecondaryButtonStyle}" Click="ExcelDownload_Click"/>
-                        <Button x:Name="btnCancelBusy" Content="취소" Width="80" Margin="5,0,0,0" Style="{StaticResource SecondaryButtonStyle}" Click="CancelBusy_Click" Visibility="Collapsed"/>
+                        <Button x:Name="btnCancelBusy" Content="취소" Width="80" Margin="5,0,0,0" Style="{StaticResource SecondaryButtonStyle}" Click="CancelBusy_Click" Background="#0EA5E9" Visibility="Collapsed"/>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -222,13 +213,10 @@
                     </Grid.RowDefinitions>
 
                     <DockPanel Grid.Row="0" LastChildFill="True">
-                        <TextBlock Text="조회 결과"
-                                   FontSize="15"
-                                   FontWeight="Bold"
-                                   DockPanel.Dock="Left"/>
-
+                        <TextBlock Text="조회 결과" FontSize="15" FontWeight="Bold" DockPanel.Dock="Left"/>
                         <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
-                            <ComboBox x:Name="cbPageSize" Width="110" SelectionChanged="PageSize_Changed" Margin="50,0,0,0">
+                            <TextBlock Text="데이터 건  :" Style="{StaticResource FieldLabelStyle}" Margin="50,5,0,0" FontWeight="Bold"/>
+                            <ComboBox x:Name="cbPageSize" Width="110" Style="{StaticResource PrettyComboBoxStyle}" SelectionChanged="PageSize_Changed" Margin="10,0,0,0">
                                 <ComboBoxItem Content="10"/>
                                 <ComboBoxItem Content="30"/>
                                 <ComboBoxItem Content="50" IsSelected="True"/>
