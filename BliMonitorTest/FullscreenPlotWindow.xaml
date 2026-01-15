@@ -9,11 +9,10 @@
         Background="White"
         KeyDown="Window_KeyDown">
 
-	<Grid>
-		<oxy:PlotView x:Name="FullscreenChart"
+    <Grid>
+        <oxy:PlotView x:Name="FullscreenChart"
                      Background="White"
-                     Model="{Binding}"
                      Padding="5"
                      BorderThickness="0" />
-	</Grid>
+    </Grid>
 </Window>

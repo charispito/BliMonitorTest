@@ -4,19 +4,17 @@ using OxyPlot.Legends;
 using OxyPlot.Series;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Timers;
 
 namespace BliMonitorTest.data
 {
     public class MainViewModel : IDisposable
     {
         private bool disposed;
-        private IList<LineSeries> series = new List<LineSeries>();
+
+        // === 메인용 ===
+        private readonly IList<LineSeries> _seriesMain = new List<LineSeries>();
+        private LinearAxis _xAxisMain;
 
         public PlotModel PlotModel { get; private set; }
 
@@ -28,280 +26,344 @@ namespace BliMonitorTest.data
         public LineSeries LineSeries6 { get; private set; }
         public LineSeries LineSeries7 { get; private set; }
         public LineSeries LineSeries8 { get; private set; }
-        private LinearAxis xAxis;
 
+        // === 전체화면용(신규) ===
+        private readonly IList<LineSeries> _seriesFullscreen = new List<LineSeries>();
+        private LinearAxis _xAxisFullscreen;
+
+        public PlotModel FullscreenPlotModel { get; private set; }
 
         public MainViewModel()
         {
-            // Create a plot model
-            this.PlotModel = new PlotModel();
-            this.LineSeries1 = new LineSeries();
-            this.LineSeries2 = new LineSeries();
-            this.LineSeries3 = new LineSeries();
-            this.LineSeries4 = new LineSeries();
-            this.LineSeries5 = new LineSeries();
-            this.LineSeries6 = new LineSeries();
-            this.LineSeries7 = new LineSeries();
-            this.LineSeries8 = new LineSeries();
-            series.Add(this.LineSeries1);
-            series.Add(this.LineSeries2);
-            series.Add(this.LineSeries3);
-            series.Add(this.LineSeries4);
-            series.Add(this.LineSeries5);
-            series.Add(this.LineSeries6);
-            series.Add(this.LineSeries7);
-            series.Add(this.LineSeries8);
-            this.PlotModel.Series.Add(this.LineSeries1);
-            this.PlotModel.Series.Add(this.LineSeries2);
-            this.PlotModel.Series.Add(this.LineSeries3);
-            this.PlotModel.Series.Add(this.LineSeries4);
-            this.PlotModel.Series.Add(this.LineSeries5);
-            this.PlotModel.Series.Add(this.LineSeries6);
-            this.PlotModel.Series.Add(this.LineSeries7);
-            this.PlotModel.Series.Add(this.LineSeries8);
-            LineSeries1.Color = OxyColor.FromRgb(12, 34, 13);
-            LineSeries2.Color = OxyColor.FromRgb(255, 34, 13);
-            LinearAxis axis = new LinearAxis();
-            axis.Key = "first";
-            axis.Minimum = 0;
-            axis.Maximum = 200;
-            axis.IsPanEnabled = false;
-            axis.IsZoomEnabled = false;
-            axis.MinorGridlineThickness = 0;
-            axis.MajorGridlineThickness = 0.8;
-            axis.MajorGridlineColor = OxyColor.FromArgb(50, 0, 0, 0);
-            axis.MajorGridlineStyle = LineStyle.Dash;
-            axis.MinorTickSize = 0;
-            axis.MajorTickSize = 0;
-            axis.TextColor = OxyColor.FromRgb(255, 0, 0);
-            axis.MajorStep = 20;
-            axis.AxisDistance = 10;
-            axis.Position = AxisPosition.Left;
-            PlotModel.Axes.Add(axis);
-            LinearAxis axis2 = new LinearAxis();
-            axis2.Key = "second";
-            axis2.Minimum = 0;
-            axis2.IsPanEnabled = false;
-            axis2.IsZoomEnabled = false;
-            axis2.Maximum = 100;
-            axis2.MajorStep = 10;
-            axis2.AxisDistance = 42;
-            axis2.MinorGridlineThickness = 0;
-            axis2.TextColor = OxyColor.FromRgb(0, 0, 255);
-            axis2.MajorTickSize = 0;
-            axis2.MinorTickSize = 0;
-            axis2.Position = AxisPosition.Left;
-            PlotModel.Axes.Add(axis2);
-            LinearAxis axis3 = new LinearAxis();
-            axis3.Key = "third";
-            axis3.Minimum = 0;
-            axis3.Maximum = 2.0;
-            axis3.TextColor = OxyColor.FromRgb(255, 0, 255);
-            axis3.IsPanEnabled = false;
-            axis3.IsZoomEnabled = false;
-            axis3.AxisDistance = 66;
-            axis3.MinorGridlineThickness = 0;
-            axis3.LabelFormatter = v => string.Format("{0:0.#}", v);
-            //axis3.StringFormat = "0.#";
-            axis3.MajorTickSize = 0;
-            axis3.MinorTickSize = 0;
-            axis3.MajorStep = 0.2;
-            axis3.Position = AxisPosition.Left;
-            PlotModel.Axes.Add(axis3);
-            xAxis = new LinearAxis();
-            xAxis.Key = "time";
-            xAxis.Minimum = 0;
-            xAxis.Maximum = 140;
-            //xAxis.MinorTickSize = 0;
-            xAxis.MinorStep = 1;
-            xAxis.MajorStep = 5;
-            xAxis.LabelFormatter = v => string.Format("{0}분", (int)v);
-            //xAxis.StringFormat = "0분";
-            xAxis.Position = AxisPosition.Bottom;
-            xAxis.AbsoluteMinimum = 0;
-            PlotModel.Axes.Add(xAxis);
+            // 1) 메인 모델 생성
+            PlotModel = CreatePlotModel();
+            (_xAxisMain, LineSeries1, LineSeries2, LineSeries3, LineSeries4, LineSeries5, LineSeries6, LineSeries7, LineSeries8) =
+                CreateAxesAndSeriesAndAttach(PlotModel, _seriesMain);
 
-            ApplyChartTheme();
+            ApplyChartTheme(PlotModel, _seriesMain);
+
+            // 2) 전체화면 모델 생성(완전히 별도 인스턴스)
+            FullscreenPlotModel = CreatePlotModel();
+            (_xAxisFullscreen, _, _, _, _, _, _, _, _) =
+                CreateAxesAndSeriesAndAttach(FullscreenPlotModel, _seriesFullscreen);
+
+            ApplyChartTheme(FullscreenPlotModel, _seriesFullscreen);
         }
+
+        // --------------------------------------------------------------------
+        // 기존 코드에서 호출하던 메서드들: 내부에서 "메인 + 전체화면" 둘 다 갱신
+        // --------------------------------------------------------------------
 
         public void initPan()
         {
-
+            // 필요 시 구현
         }
 
         public void setSeries(int index, int axeIndex, OxyColor color)
         {
-            series[index].StrokeThickness = 1.3;
-            series[index].Points.Clear();
-            series[index].Color = color;
-            series[index].XAxisKey = PlotModel.Axes[3].Key;
-            series[index].YAxisKey = PlotModel.Axes[axeIndex].Key;
-            series[index].Selectable = false;
-            series[index].MinimumSegmentLength = 0.01;
+            // 메인 적용
+            ApplySeriesSetting(PlotModel, _seriesMain, index, axeIndex, color);
+
+            // 전체화면도 동일 적용
+            ApplySeriesSetting(FullscreenPlotModel, _seriesFullscreen, index, axeIndex, color);
         }
 
         public void unSetSeries(int index)
         {
-            series[index].Points.Clear();
-            //PlotModel.InvalidatePlot(true);
+            if (index < 0 || index >= _seriesMain.Count) return;
+
+            _seriesMain[index].Points.Clear();
+            _seriesFullscreen[index].Points.Clear();
         }
 
         public void ClearPoints()
         {
-            foreach(var s in series)
-            {
-                s.Points.Clear();
-            }
-            //PlotModel.InvalidatePlot(true);
+            foreach (var s in _seriesMain) s.Points.Clear();
+            foreach (var s in _seriesFullscreen) s.Points.Clear();
         }
 
         public void ClearSeries(int index)
         {
-            series[index].Points.Clear();
+            if (index < 0 || index >= _seriesMain.Count) return;
+
+            _seriesMain[index].Points.Clear();
+            _seriesFullscreen[index].Points.Clear();
         }
+
+        public void panXAxis(double time)
+        {
+            // 메인
+            PanXAxisInternal(PlotModel, _xAxisMain, time);
+
+            // 전체화면
+            PanXAxisInternal(FullscreenPlotModel, _xAxisFullscreen, time);
+        }
+
+        public void AddData(int index, DataPoint point)
+        {
+            if (index < 0 || index >= _seriesMain.Count) return;
+
+            // 메인 + 전체화면에 동일 포인트 추가
+            _seriesMain[index].Points.Add(point);
+            _seriesFullscreen[index].Points.Add(point);
+        }
+
+        // 필요하다면 기존 로직처럼 외부에서 호출하게 두셔도 됩니다.
+        public void InvalidateBoth(bool updateData = true)
+        {
+            PlotModel?.InvalidatePlot(updateData);
+            FullscreenPlotModel?.InvalidatePlot(updateData);
+        }
+
+        // --------------------------------------------------------------------
+        // IDisposable
+        // --------------------------------------------------------------------
 
         public void Dispose()
         {
-            this.Dispose(true);
+            Dispose(true);
             GC.SuppressFinalize(this);
         }
 
         public void Closing()
         {
-            // cancel the worker tasks
             Dispose();
         }
 
-        public void panXAxis(double time)
+        private void Dispose(bool disposing)
         {
-            double actualMax = PlotModel.Axes.Last().ActualMaximum;
+            if (disposed) return;
+            disposed = true;
+        }
+
+        // --------------------------------------------------------------------
+        // 내부 헬퍼들(생성/스타일/팬)
+        // --------------------------------------------------------------------
+
+        private static PlotModel CreatePlotModel()
+        {
+            return new PlotModel();
+        }
+
+        private static (LinearAxis xAxis,
+                        LineSeries s1, LineSeries s2, LineSeries s3, LineSeries s4,
+                        LineSeries s5, LineSeries s6, LineSeries s7, LineSeries s8)
+            CreateAxesAndSeriesAndAttach(PlotModel model, IList<LineSeries> targetSeriesList)
+        {
+            // Series 8개 생성
+            var s1 = new LineSeries();
+            var s2 = new LineSeries();
+            var s3 = new LineSeries();
+            var s4 = new LineSeries();
+            var s5 = new LineSeries();
+            var s6 = new LineSeries();
+            var s7 = new LineSeries();
+            var s8 = new LineSeries();
+
+            targetSeriesList.Add(s1);
+            targetSeriesList.Add(s2);
+            targetSeriesList.Add(s3);
+            targetSeriesList.Add(s4);
+            targetSeriesList.Add(s5);
+            targetSeriesList.Add(s6);
+            targetSeriesList.Add(s7);
+            targetSeriesList.Add(s8);
+
+            // PlotModel.Series에 추가
+            model.Series.Add(s1);
+            model.Series.Add(s2);
+            model.Series.Add(s3);
+            model.Series.Add(s4);
+            model.Series.Add(s5);
+            model.Series.Add(s6);
+            model.Series.Add(s7);
+            model.Series.Add(s8);
+
+            // (사용자 코드 일부 반영) 기본 색 예시
+            s1.Color = OxyColor.FromRgb(12, 34, 13);
+            s2.Color = OxyColor.FromRgb(255, 34, 13);
+
+            // Y축들(원본 코드의 Key/범위 일부를 그대로 옮김)
+            var axis1 = new LinearAxis
+            {
+                Key = "first",
+                Minimum = 0,
+                Maximum = 200,
+                IsPanEnabled = false,
+                IsZoomEnabled = false,
+                MinorGridlineThickness = 0,
+                MajorGridlineThickness = 0.8,
+                MajorGridlineColor = OxyColor.FromArgb(50, 0, 0, 0),
+                MajorGridlineStyle = LineStyle.Dash,
+                MinorTickSize = 0,
+                MajorTickSize = 0,
+                TextColor = OxyColor.FromRgb(255, 0, 0),
+                MajorStep = 20,
+                AxisDistance = 10,
+                Position = AxisPosition.Left
+            };
+            model.Axes.Add(axis1);
+
+            var axis2 = new LinearAxis
+            {
+                Key = "second",
+                Minimum = 0,
+                Maximum = 100,
+                IsPanEnabled = false,
+                IsZoomEnabled = false,
+                MajorStep = 10,
+                AxisDistance = 42,
+                MinorGridlineThickness = 0,
+                TextColor = OxyColor.FromRgb(0, 0, 255),
+                MajorTickSize = 0,
+                MinorTickSize = 0,
+                Position = AxisPosition.Left
+            };
+            model.Axes.Add(axis2);
+
+            var axis3 = new LinearAxis
+            {
+                Key = "third",
+                Minimum = 0,
+                Maximum = 2.0,
+                TextColor = OxyColor.FromRgb(255, 0, 255),
+                IsPanEnabled = false,
+                IsZoomEnabled = false,
+                AxisDistance = 66,
+                MinorGridlineThickness = 0,
+                LabelFormatter = v => string.Format("{0:0.#}", v),
+                MajorTickSize = 0,
+                MinorTickSize = 0,
+                MajorStep = 0.2,
+                Position = AxisPosition.Left
+            };
+            model.Axes.Add(axis3);
+
+            // X축(time)
+            var xAxis = new LinearAxis
+            {
+                Key = "time",
+                Minimum = 0,
+                Maximum = 140,
+                MinorStep = 1,
+                MajorStep = 5,
+                LabelFormatter = v => string.Format("{0}분", (int)v),
+                Position = AxisPosition.Bottom,
+                AbsoluteMinimum = 0
+            };
+            model.Axes.Add(xAxis);
+
+            return (xAxis, s1, s2, s3, s4, s5, s6, s7, s8);
+        }
+
+        private static void ApplySeriesSetting(PlotModel model, IList<LineSeries> series, int index, int axeIndex, OxyColor color)
+        {
+            if (model == null) return;
+            if (index < 0 || index >= series.Count) return;
+            if (axeIndex < 0 || axeIndex >= model.Axes.Count) return;
+
+            series[index].StrokeThickness = 1.3;
+            series[index].Points.Clear();
+            series[index].Color = color;
+
+            // 원본 코드: X축은 Axes[3], Y축은 axeIndex
+            if (model.Axes.Count > 3)
+                series[index].XAxisKey = model.Axes[3].Key;
+
+            series[index].YAxisKey = model.Axes[axeIndex].Key;
+
+            series[index].Selectable = false;
+            series[index].MinimumSegmentLength = 0.01;
+        }
+
+        private static void PanXAxisInternal(PlotModel model, LinearAxis xAxis, double time)
+        {
+            if (model == null || xAxis == null) return;
+
+            double actualMax = model.Axes.Last().ActualMaximum;
             if (time > actualMax)
             {
                 double panStep = xAxis.Transform(-1 + xAxis.Offset);
-                Console.WriteLine("panStep: {0}", panStep);
                 panStep = panStep / 54;
                 xAxis.Pan(panStep);
             }
         }
 
-        public void AddData(int index, DataPoint point)
+        private static void ApplyChartTheme(PlotModel model, IEnumerable<LineSeries> series)
         {
-            series[index].Points.Add(point);            
-        }
+            // 1) 기본 톤
+            model.Background = OxyColor.FromRgb(250, 250, 252);
+            model.PlotAreaBackground = OxyColor.FromRgb(255, 255, 255);
+            model.PlotAreaBorderColor = OxyColor.FromRgb(220, 220, 230);
+            model.PlotAreaBorderThickness = new OxyThickness(1);
 
-        private void Dispose(bool disposing)
-        {
-            if (!this.disposed)
+            model.DefaultFont = "Segoe UI";
+            model.DefaultFontSize = 11;
+            model.TextColor = OxyColor.FromRgb(40, 40, 55);
+            model.TitleColor = OxyColor.FromRgb(40, 40, 55);
+
+            // 2) Legend
+            model.Legends.Clear();
+            model.Legends.Add(new Legend
             {
-                if (disposing)
-                {
-                    this.Closing();
-                }
-            }
-
-            this.disposed = true;
-        }
-
-        private void ApplyChartTheme()
-        {
-            // 1) 전체 기본 톤 (배경/폰트/테두리)
-            PlotModel.Background = OxyColor.FromRgb(250, 250, 252);            // 컨트롤 배경
-            PlotModel.PlotAreaBackground = OxyColor.FromRgb(255, 255, 255);    // 플롯 영역 배경
-            PlotModel.PlotAreaBorderColor = OxyColor.FromRgb(220, 220, 230);
-            PlotModel.PlotAreaBorderThickness = new OxyThickness(1);
-
-            PlotModel.DefaultFont = "Segoe UI";
-            PlotModel.DefaultFontSize = 11;
-            PlotModel.TextColor = OxyColor.FromRgb(40, 40, 55);
-            PlotModel.TitleColor = OxyColor.FromRgb(40, 40, 55);
-
-            // ✅ Legend 객체 방식 (현재 프로젝트의 OxyPlot API와 일치)
-            var legend = new Legend
-            {
-                // 위치/배치
                 LegendPlacement = LegendPlacement.Outside,
                 LegendPosition = LegendPosition.TopCenter,
                 LegendOrientation = LegendOrientation.Horizontal,
-
-                // 스타일
                 LegendBackground = OxyColor.FromAColor(210, OxyColors.White),
                 LegendBorder = OxyColor.FromRgb(220, 220, 230),
                 LegendBorderThickness = 1,
-
                 LegendFont = "Segoe UI",
                 LegendFontSize = 11,
-
-                // 여백 조금 주면 더 깔끔
                 LegendPadding = 6,
                 LegendItemSpacing = 10
-            };
+            });
 
-            // 3) 축 스타일 통일(가독성 개선)
-            for (int i = 0; i < PlotModel.Axes.Count; i++)
-            {
-                Axis a = PlotModel.Axes[i];
+            // 3) 축 통일
+            foreach (var a in model.Axes)
                 ApplyAxisTheme(a);
-            }
 
-            // 4) 라인 시리즈 스타일 통일(두께/마커/안티앨리어싱 느낌)
-            //    색은 기존에 이미 지정한 걸 존중하고, '선만' 다듬음
+            // 4) 라인 시리즈 스타일
             foreach (var s in series)
-            {
                 ApplyLineTheme(s);
-            }
 
-            PlotModel.InvalidatePlot(false);
+            model.InvalidatePlot(false);
         }
 
-        private void ApplyAxisTheme(Axis axis)
+        private static void ApplyAxisTheme(Axis axis)
         {
-            // 축 라인/눈금
             axis.AxislineColor = OxyColor.FromRgb(160, 160, 175);
             axis.AxislineThickness = 1;
             axis.TicklineColor = OxyColor.FromRgb(160, 160, 175);
 
-            // 그리드: "연한 실선"이 가장 깔끔하고 현대적으로 보임
             axis.MajorGridlineStyle = LineStyle.Solid;
             axis.MajorGridlineColor = OxyColor.FromRgb(235, 235, 242);
             axis.MajorGridlineThickness = 1;
 
-            axis.MinorGridlineStyle = LineStyle.None;  // 화면이 복잡해지면 Minor는 끄는 게 대체로 예쁨
+            axis.MinorGridlineStyle = LineStyle.None;
 
-            // 글자
-            axis.TextColor = axis.TextColor.IsUndefined() ? OxyColor.FromRgb(60, 60, 80) : axis.TextColor;
+            if (axis.AxisDistance < 6)
+                axis.AxisDistance = 8;
+
+            if (axis.MajorTickSize == 0) axis.MajorTickSize = 3;
+            if (axis.MinorTickSize == 0) axis.MinorTickSize = 0;
+
             axis.TitleColor = OxyColor.FromRgb(60, 60, 80);
+            if (axis.TextColor.IsUndefined())
+                axis.TextColor = OxyColor.FromRgb(60, 60, 80);
+
             axis.FontSize = 11;
             axis.TitleFontSize = 12;
-
-            // 축 바깥 여백(너무 붙어 보이면 답답함)
-            if (axis.AxisDistance < 6)
-            {
-                axis.AxisDistance = 8;
-            }
-
-            // 기존 코드에서 TickSize를 0으로 다 꺼놨는데,
-            // 아주 작게라도 주면 “차트 툴 느낌”이 좋아짐 (원치 않으면 주석 처리)
-            if (axis.MajorTickSize == 0) axis.MajorTickSize = 3;
-            if (axis.MinorTickSize == 0) axis.MinorTickSize = 0; // minor는 계속 0
         }
 
-        private void ApplyLineTheme(LineSeries s)
+        private static void ApplyLineTheme(LineSeries s)
         {
-            // 굵기: 1.3은 살짝 얇은 편이라 1.6~2.0 사이가 보기 좋음
             if (s.StrokeThickness < 1.6)
-            {
                 s.StrokeThickness = 1.8;
-            }
 
-            // 데이터 포인트가 많을 때 마커는 보통 꺼두는 게 예쁨 + 성능 좋음
             s.MarkerType = MarkerType.None;
 
-            // 선이 꺾여 보이면 이 값이 도움되는 경우가 있음(이미 사용 중이면 유지)
             if (s.MinimumSegmentLength <= 0)
-            {
                 s.MinimumSegmentLength = 0.01;
-            }
         }
-
     }
 }

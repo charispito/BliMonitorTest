@@ -1,21 +1,8 @@
 ﻿using BliMonitorTest.data;
-using OxyPlot;
-using OxyPlot.Series;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Timers;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace BliMonitorTest.controls
 {
@@ -23,13 +10,20 @@ namespace BliMonitorTest.controls
     {
         public MainViewModel ViewModel = new MainViewModel();
         private Timer timer;
+
+        // ✅ 전체화면 창 1개만 관리
+        private FullscreenPlotWindow _fullscreenWin;
+
         public OxyView()
         {
             InitializeComponent();
+
             this.DataContext = ViewModel;
+
             timer = new Timer();
             timer.Interval = 1000;
             timer.Elapsed += Timer_Elapsed;
+
             Loaded += OxyView_Loaded;
         }
 
@@ -40,8 +34,16 @@ namespace BliMonitorTest.controls
 
         private void Timer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            Dispatcher.BeginInvoke(new Action(() => {
-                ViewModel.PlotModel.InvalidatePlot(true);
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (ViewModel != null)
+                {
+                    if (ViewModel.PlotModel != null)
+                        ViewModel.PlotModel.InvalidatePlot(true);
+
+                    if (ViewModel.FullscreenPlotModel != null)
+                        ViewModel.FullscreenPlotModel.InvalidatePlot(true);
+                }
             }));
         }
 
@@ -78,14 +80,27 @@ namespace BliMonitorTest.controls
         private void ToggleFullscreen_Click(object sender, RoutedEventArgs e)
         {
             MainViewModel vm = ViewModel;
-            if (vm == null || vm.PlotModel == null) return;
+            if (vm == null) return;
+            if (vm.FullscreenPlotModel == null) return;
 
-            PlotModel src = vm.PlotModel;
-            PlotModel cloned = PlotModelCloneHelper.CloneForView(src);
+            // ✅ 이미 열려있으면 재사용
+            if (_fullscreenWin != null)
+            {
+                _fullscreenWin.Activate();
+                return;
+            }
 
-            var win = new FullscreenPlotWindow(cloned);
-            win.Owner = Window.GetWindow(this);
-            win.ShowDialog();
+            _fullscreenWin = new FullscreenPlotWindow(vm.FullscreenPlotModel);
+            _fullscreenWin.Owner = Window.GetWindow(this);
+
+            // ✅ 닫히면 참조 제거 (다음 클릭에서 새로 열 수 있게)
+            _fullscreenWin.Closed += (_, __) =>
+            {
+                _fullscreenWin = null;
+            };
+
+            // ShowDialog() 대신 Show()가 더 안전한 경우가 많습니다(타이머/이벤트 얽힘 줄어듦)
+            _fullscreenWin.Show();
         }
 
         private void ClearChart_Click(object sender, RoutedEventArgs e)
@@ -97,17 +112,12 @@ namespace BliMonitorTest.controls
                 MessageBoxImage.Warning
             );
 
-            if (result != MessageBoxResult.Yes)
-            {
-                return;
-            }
+            if (result != MessageBoxResult.Yes) return;
 
-            // ✅ OneChannelWindow 찾아서 초기화 + 더미시간 리셋 호출
             Window win = Window.GetWindow(this);
             BliMonitorTest.OneChannelWindow oneChannel = win as BliMonitorTest.OneChannelWindow;
             if (oneChannel != null)
             {
-                // private이면 호출 불가 -> 아래 3)처럼 접근 레벨만 조정하면 됨
                 oneChannel.ClearChartDataAndResetTime();
             }
         }
@@ -119,6 +129,5 @@ namespace BliMonitorTest.controls
             receiveDataQueryWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;
             receiveDataQueryWindow.Show();
         }
-
     }
 }
