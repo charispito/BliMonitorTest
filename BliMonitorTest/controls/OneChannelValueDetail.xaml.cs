@@ -44,6 +44,7 @@ namespace BliMonitorTest.controls
 
         private int _ConnectState = 0;
         private bool _ParameterMode = false;
+
         public bool ParameterMode {
             get
             {
@@ -224,39 +225,6 @@ namespace BliMonitorTest.controls
             }
         }
 
-        /*
-        public void WriteFile(ReadData data)
-        {
-            number++;
-            air_sum += data.air_temp;
-            off_sum += data.heater_off_time;
-
-            if (streamWriter != null)
-            {
-                if (Modify)
-                {
-                    streamWriter.Close();
-                    initPath();
-                    Modify = false;
-                }else if(streamWriter.BaseStream == null)
-                {
-                    initPath();
-                }
-                else
-                {
-                    streamWriter.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15}", data.date, data.mode, data.remain_time, data.heater_temp, data.heater_off_time,
-                    data.air_temp, data.fan_speed, data.hot_air_temp, data.hot_air_ontime, data.motor, data.motor_current, number, off_sum, (double)(off_sum / (double)number), air_sum, (double)(air_sum / (double)number));
-                }                
-            }
-            else
-            {
-                initPath();
-                Modify=false;
-            }
-
-        }
-        */
-
         public void WriteFile(ReadData data)
         {
             number++;
@@ -295,7 +263,7 @@ namespace BliMonitorTest.controls
                     streamWriter.Flush();
 
                     // 2) SQLite 기록
-                    MonitoringDb.InsertDb( ref _db, _dbPath, ref _dbReady, IsNewVersion, data, number, off_sum, air_sum );
+                    MonitoringDb.InsertDb( ref _db, _dbPath, ref _dbReady, IsNewVersion, data, number, off_sum, air_sum, channelNo: 1, sourceType: MonitoringDb.SOURCE_SINGLE );
                 }
             }
             else
@@ -343,6 +311,7 @@ namespace BliMonitorTest.controls
             // 2) DB 준비
             MonitoringDb.EnsureDb(ref _db, _dbPath, ref _dbReady);
         }
+
         private bool ValidateData(ReadData data, out string reason)
         {
             reason = null;

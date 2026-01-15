@@ -1,6 +1,9 @@
 ﻿using BliMonitorTest.data;
 using BliMonitorTest.util;
+using BliMonitorTest.util.MonitoringDb;
+using BliMonitorTest.util.StoragePathUtil;
 using log4net;
+using Microsoft.Data.Sqlite;
 using OxyPlot;
 using System;
 using System.Collections.Generic;
@@ -24,6 +27,15 @@ namespace BliMonitorTest.controls
 
         public StreamWriter streamWriter;
         private bool _ParameterMode = false;
+
+        // Database 관련 변수
+        private SqliteConnection _db;
+        private SqliteTransaction _tx;
+        private string _dbPath;
+        private string _csvPath;
+        private bool _csvHeaderWritten;
+        private bool _dbReady;
+
         public bool ParameterMode
         {
             get
@@ -170,6 +182,7 @@ namespace BliMonitorTest.controls
             number++;
             air_sum += data.air_temp;
             off_sum += data.heater_off_time;
+
             if (streamWriter != null)
             {
                 if (Modify)
@@ -184,8 +197,25 @@ namespace BliMonitorTest.controls
                 }
                 else
                 {
-                    streamWriter.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15}", data.date, data.mode, data.remain_time, data.heater_temp, data.heater_off_time,
-                    data.air_temp, data.fan_speed, data.hot_air_temp, data.hot_air_ontime, data.motor, data.motor_current, number, off_sum, (double)(off_sum / (double)number), air_sum, (double)(air_sum / (double)number));
+                    // ✅ 데이터 검증
+                    if (!ValidateData(data, out var reason))
+                    {
+                        log.Warn("Skip write: " + reason);
+                        return;
+                    }
+
+                    // 1) CSV 기록 (기존 라인 그대로)
+                    streamWriter.WriteLine(
+                        "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15}",
+                        data.date, data.mode, data.remain_time, data.heater_temp, data.heater_off_time,
+                        data.air_temp, data.fan_speed, data.hot_air_temp, data.hot_air_ontime,
+                        data.motor, data.motor_current, number, off_sum, (double)(off_sum / (double)number),
+                        air_sum, (double)(air_sum / (double)number)
+                    );
+                    streamWriter.Flush();
+
+                    // 2) SQLite 기록
+                    //MonitoringDb.InsertDb(ref _db, _dbPath, ref _dbReady, IsNewVersion, data, number, off_sum, air_sum, channelNo: _Channel, sourceType: MonitoringDb.SOURCE_MULTI);
                 }
             }
             else
@@ -197,29 +227,41 @@ namespace BliMonitorTest.controls
 
         private void initPath()
         {
-            string path = ".\\ChannelData";
+            string dir = @".\ChannelData";
+            string dbDir = AppDomain.CurrentDomain.BaseDirectory;
+
             if (_SaveInDesktop)
-            {
-                path = Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + "\\ChannelData";
-            }
-            if (!Directory.Exists(path))
-                Directory.CreateDirectory(path);
+                dir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ChannelData");
 
-            string file = FName + $"_ch{_Channel}" + ".csv";
+            if (!Directory.Exists(dir))
+                Directory.CreateDirectory(dir);
 
-            try
+            string baseName = FName + $"_ch{_Channel}" + ".csv";
+
+            _csvPath = System.IO.Path.Combine(dir, baseName + ".csv");
+            _dbPath = StoragePathUtil.GetDbPath();
+
+            // 1) CSV 열기
+            bool fileExists = File.Exists(_csvPath);
+            long fileLen = fileExists ? new FileInfo(_csvPath).Length : 0;
+
+            streamWriter = new StreamWriter(_csvPath, append: true, Encoding.Default);
+
+            // 헤더는 비어있는 파일일 때만
+            if (fileLen == 0)
             {
-                streamWriter = new StreamWriter(Path.Combine(path, file), true, System.Text.Encoding.Default);
                 initFile();
+                _csvHeaderWritten = true;
+                streamWriter.Flush();
             }
-            catch (Exception ex)
+            else
             {
-                file = FName + $"_ch{_Channel}_2" + ".csv";
-                streamWriter = new StreamWriter(Path.Combine(path, file), true, System.Text.Encoding.Default);
-                initFile();
-                Console.WriteLine(ex.ToString());
+                // "이미 있다"의 의미로 true
+                _csvHeaderWritten = true;
             }
 
+            // 2) DB 준비
+            //MonitoringDb.EnsureDb(ref _db, _dbPath, ref _dbReady);
         }
 
         public ChannelItem()
@@ -568,7 +610,9 @@ namespace BliMonitorTest.controls
                 motor_current = currentfloat / 2.0
             };
 
+            // 엑셀파일 생성
             WriteFile(read);
+
             string errorStr = GetErrorName(binary0, binary1);
             StateContent.Content = errorStr;
             VersionBox.cont.Content = getModelName(model);
@@ -632,7 +676,7 @@ namespace BliMonitorTest.controls
 
             lock (chartView.ViewModel)
             {
-                log.Debug($"isDummy={IsDummyEnabled} total_second={total_second} total_minute={total_minute:F3} start={_dummyStartTime:HH:mm:ss.fff}");
+                //log.Debug($"isDummy={IsDummyEnabled} total_second={total_second} total_minute={total_minute:F3} start={_dummyStartTime:HH:mm:ss.fff}");
                 chartView.ViewModel.panXAxis(total_minute);
             }
         }
@@ -787,6 +831,19 @@ namespace BliMonitorTest.controls
                     }
                 }
             return builder.ToString();
+        }
+
+        private bool ValidateData(ReadData data, out string reason)
+        {
+            reason = null;
+
+            if (data == null) { reason = "data is null"; return false; }
+            if (string.IsNullOrWhiteSpace(data.date)) { reason = "date is empty"; return false; }
+
+            if (double.IsNaN(data.heater_temp) || double.IsInfinity(data.heater_temp))
+            { reason = "heater_temp NaN/Inf"; return false; }
+
+            return true;
         }
     }
 }

@@ -150,7 +150,6 @@ namespace BliMonitorTest
 
         private void Timer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
-                     // 타이머 스레드에서 예외로 멈추지 않도록 try-catch
             try
             {
                 DoPeriodicTickCore();
@@ -163,10 +162,8 @@ namespace BliMonitorTest
 
         private void DoPeriodicTickCore()
         {
-                     // ConnectState=1일 때만 수행
             if (channel.ConnectState != 1) return;
 
-                     // 더미/실기구 스냅샷
             bool useDummy = UseDummy;
 
             try
@@ -205,10 +202,6 @@ namespace BliMonitorTest
                 }
                 else
                 {
-                                     //  더미: 동일 데이터 지속 응답 주입
-                     // var rsp = GetSimulatedResponse(_dummyPort, ProtocolKind.StartStopStatus);
-                                    // 상태 응답(57바이트) 프레임을 하나 만들고, 그 안에 더미 값을 심어서
-                                    // 실기와 동일하게 receiveData(...) 경로로 흘려보낸다.
                     var rsp = GetSimulatedResponse(_dummyPort, DummySerialPortNs.ProtocolKind.StartStopStatus);
 
                     if (rsp != null && rsp.Length > 0)
@@ -216,14 +209,11 @@ namespace BliMonitorTest
                         {
                             var sample = _dummyGen.Next();
 
-                                                 // 엑셀 정의서 기준 오프셋에 값 세팅 + 체크섬 갱신
                             DummyFramePatcher.PatchStatusResponse57(rsp, sample);
 
                             _dummyLastBuffer = rsp;
                             ByteLogHelper.LogPacket(rsp, "RX");
-                            //ByteLogHelper.LogPacket(rsp, "RX(DUMMY)");
 
-                                                  // 실기 수신과 동일 루트로 주입
                             InvokePortDataReceivedWith(rsp);
                         }
                 }

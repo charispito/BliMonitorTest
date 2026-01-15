@@ -1,6 +1,8 @@
 ﻿using BliMonitorTest.controls;
 using BliMonitorTest.util.MonitoringDb;
 using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml.Bibliography;
+using DocumentFormat.OpenXml.InkML;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
 using log4net;
@@ -139,17 +141,17 @@ namespace BliMonitorTest
             if (grid == null || txtPageInfo == null) return;
 
             // ✅ UI 컨트롤 값은 "여기(UI 스레드)"에서만 읽고
-            DateTime from = (dpFrom.SelectedDate ?? DateTime.Today).Date;
-            DateTime to = (dpTo.SelectedDate ?? DateTime.Today).Date;
-            DateTime toExclusive = to.AddDays(1);
+            DateTime fromDate = (dpFrom.SelectedDate ?? DateTime.Today).Date;
+            DateTime toDate = (dpTo.SelectedDate ?? DateTime.Today).Date;
+            DateTime toExclusive = toDate.AddDays(1);
 
-            if (toExclusive <= from)
+            if (toExclusive <= fromDate)
             {
                 MessageBox.Show("기간이 올바르지 않습니다.");
                 return;
             }
 
-            if ((toExclusive - from).TotalDays > 31)
+            if ((toExclusive - fromDate).TotalDays > 31)
             {
                 MessageBox.Show("기간 조회는 최대 1달(31일)까지만 가능합니다.");
                 return;
@@ -163,9 +165,16 @@ namespace BliMonitorTest
             int? motor = TryParseNullableInt(tbMotor.Text);
             int? fanSpeed = TryParseNullableInt(tbFanSpeed.Text);
             double? motorCurrentMin = TryParseNullableDouble(tbMotorCurrentMin.Text);
+            
+            int sourceType = 0; // 0=전체, 1=단일, 2=다채널
+            if (cbSourceType?.SelectedItem is ComboBoxItem srcItem && srcItem.Tag != null)
+                int.TryParse(srcItem.Tag.ToString(), out sourceType);
 
-            string fromText = from.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
-            string toText = toExclusive.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+            int? channelNo = TryParseNullableInt(tbChannelNo.Text);
+
+            // ✅ created_at_ms 범위 검색용 파라미터
+            long fromMs = new DateTimeOffset(fromDate).ToUnixTimeMilliseconds();
+            long toMs = new DateTimeOffset(toExclusive).ToUnixTimeMilliseconds();
 
             string dbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Monitoring.db");
             if (!File.Exists(dbPath))
@@ -190,23 +199,14 @@ namespace BliMonitorTest
                     {
                         con.Open();
 
-                        // WHERE 동적 구성
-                        string where = "WHERE created_at >= @from AND created_at < @to";
-                        if (mode.HasValue) where += " AND mode = @mode";
-                        if (heaterMin.HasValue) where += " AND heater_temp >= @heaterMin";
-                        if (heaterMax.HasValue) where += " AND heater_temp <= @heaterMax";
-                        if (airMin.HasValue) where += " AND air_temp >= @airMin";
-                        if (airMax.HasValue) where += " AND air_temp <= @airMax";
-                        if (motor.HasValue) where += " AND motor = @motor";
-                        if (fanSpeed.HasValue) where += " AND fan_speed = @fanSpeed";
-                        if (motorCurrentMin.HasValue) where += " AND motor_current >= @motorCurrentMin";
+                        string where = BuildWhere( mode, heaterMin, heaterMax, airMin, airMax, motor, fanSpeed, motorCurrentMin, sourceType, channelNo );
 
                         // 1) COUNT
                         int totalCount;
                         using (var cmdCount = con.CreateCommand())
                         {
                             cmdCount.CommandText = "SELECT COUNT(1) FROM receive_data " + where + ";";
-                            BindParams(cmdCount, fromText, toText, mode, heaterMin, heaterMax, airMin, airMax, motor, fanSpeed, motorCurrentMin);
+                            BindParams(cmdCount, fromMs, toMs, mode, heaterMin, heaterMax, airMin, airMax, motor, fanSpeed, motorCurrentMin, sourceType, channelNo);
                             totalCount = Convert.ToInt32(cmdCount.ExecuteScalar());
                         }
 
@@ -221,14 +221,13 @@ namespace BliMonitorTest
                             cmd.CommandText =
                                 "SELECT * FROM receive_data " +
                                 where +
-                                " ORDER BY datetime(created_at) DESC " +
+                                " ORDER BY created_at_ms DESC " +
                                 " LIMIT @limit OFFSET @offset;";
 
-                            BindParams(cmd, fromText, toText, mode, heaterMin, heaterMax, airMin, airMax, motor, fanSpeed, motorCurrentMin);
+                            BindParams(cmd, fromMs, toMs, mode, heaterMin, heaterMax, airMin, airMax, motor, fanSpeed, motorCurrentMin, sourceType, channelNo);
                             cmd.Parameters.AddWithValue("@limit", pageSize);
                             cmd.Parameters.AddWithValue("@offset", offset);
 
-                            // 로그(백그라운드에서 찍어도 OK)
                             log.Debug(MonitoringDb.FormatSqlLog(cmd, "SELECT >> "));
 
                             using (var r = cmd.ExecuteReader())
@@ -263,20 +262,30 @@ namespace BliMonitorTest
                 SetBusy(false);
             }
         }
-        private static void BindParams( SqliteCommand cmd, string fromText, string toText, int? mode, double? heaterMin, double? heaterMax, double? airMin, double? airMax, int? motor, int? fanSpeed, double? motorCurrentMin)
+        private static void BindParams( SqliteCommand cmd, long fromMs, long toMs, int? mode, double? heaterMin, double? heaterMax, double? airMin, double? airMax, int? motorCode, int? fanSpeed, double? motorCurrentMin, int sourceType, int? channelNo )
         {
-            cmd.Parameters.AddWithValue("@from", fromText);
-            cmd.Parameters.AddWithValue("@to", toText);
+            cmd.Parameters.AddWithValue("@fromMs", fromMs);
+            cmd.Parameters.AddWithValue("@toMs", toMs);
+
+            // 0=전체
+            cmd.Parameters.AddWithValue("@sourceType", sourceType);
+
+            // channelNo: null 또는 0이면 전체
+            int ch = (channelNo.HasValue ? channelNo.Value : 0);
+            cmd.Parameters.AddWithValue("@channelNo", ch);
 
             if (mode.HasValue) cmd.Parameters.AddWithValue("@mode", mode.Value);
             if (heaterMin.HasValue) cmd.Parameters.AddWithValue("@heaterMin", heaterMin.Value);
             if (heaterMax.HasValue) cmd.Parameters.AddWithValue("@heaterMax", heaterMax.Value);
             if (airMin.HasValue) cmd.Parameters.AddWithValue("@airMin", airMin.Value);
             if (airMax.HasValue) cmd.Parameters.AddWithValue("@airMax", airMax.Value);
-            if (motor.HasValue) cmd.Parameters.AddWithValue("@motor", motor.Value);
+
+            if (motorCode.HasValue) cmd.Parameters.AddWithValue("@motorCode", motorCode.Value);
+
             if (fanSpeed.HasValue) cmd.Parameters.AddWithValue("@fanSpeed", fanSpeed.Value);
             if (motorCurrentMin.HasValue) cmd.Parameters.AddWithValue("@motorCurrentMin", motorCurrentMin.Value);
         }
+
 
         private int? TryParseNullableInt(string s)
         {
@@ -332,9 +341,9 @@ namespace BliMonitorTest
             }
 
             // ✅ UI에서 검색조건 캡처 (백그라운드에서 UI 접근 금지)
-            DateTime from = (dpFrom.SelectedDate ?? DateTime.Today).Date;
-            DateTime to = (dpTo.SelectedDate ?? DateTime.Today).Date;
-            DateTime toExclusive = to.AddDays(1);
+            DateTime fromDate = (dpFrom.SelectedDate ?? DateTime.Today).Date;
+            DateTime toDate = (dpTo.SelectedDate ?? DateTime.Today).Date;
+            DateTime toExclusive = toDate.AddDays(1);
 
             int? mode = TryParseNullableInt(tbMode.Text);
             double? heaterMin = TryParseNullableDouble(tbHeaterMin.Text);
@@ -345,8 +354,15 @@ namespace BliMonitorTest
             int? fanSpeed = TryParseNullableInt(tbFanSpeed.Text);
             double? motorCurrentMin = TryParseNullableDouble(tbMotorCurrentMin.Text);
 
-            string fromText = from.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
-            string toText = toExclusive.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+            int sourceType = 0;
+            if (cbSourceType?.SelectedItem is ComboBoxItem srcItem && srcItem.Tag != null)
+                int.TryParse(srcItem.Tag.ToString(), out sourceType);
+
+            int? channelNo = TryParseNullableInt(tbChannelNo.Text);
+
+            // ms 범위
+            long fromMs = new DateTimeOffset(fromDate).ToUnixTimeMilliseconds();
+            long toMs = new DateTimeOffset(toExclusive).ToUnixTimeMilliseconds();
 
             string dbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Monitoring.db");
             if (!File.Exists(dbPath))
@@ -362,12 +378,12 @@ namespace BliMonitorTest
                 using (var con = new SqliteConnection(cs))
                 {
                     con.Open();
-                    string where = BuildWhere(mode, heaterMin, heaterMax, airMin, airMax, motor, fanSpeed, motorCurrentMin);
+                    string where = BuildWhere(mode, heaterMin, heaterMax, airMin, airMax, motor, fanSpeed, motorCurrentMin, sourceType, channelNo);
 
                     using (var cmd = con.CreateCommand())
                     {
                         cmd.CommandText = "SELECT COUNT(1) FROM receive_data " + where + ";";
-                        BindParams(cmd, fromText, toText, mode, heaterMin, heaterMax, airMin, airMax, motor, fanSpeed, motorCurrentMin);
+                        BindParams(cmd, fromMs, toMs, mode, heaterMin, heaterMax, airMin, airMax, motor, fanSpeed, motorCurrentMin, sourceType, channelNo);
                         return Convert.ToInt64(cmd.ExecuteScalar());
                     }
                 }
@@ -387,7 +403,7 @@ namespace BliMonitorTest
                 if (res != MessageBoxResult.Yes) return;
 
                 // 3) TEMP에 백그라운드 생성 시작
-                StartLargeExcelBuildInBackground( dbPath, fromText, toText, mode, heaterMin, heaterMax, airMin, airMax, motor, fanSpeed, motorCurrentMin, totalCount);
+                StartLargeExcelBuildInBackground( dbPath, fromMs, toMs, mode, heaterMin, heaterMax, airMin, airMax, motor, fanSpeed, motorCurrentMin, sourceType, channelNo, totalCount );
 
                 return;
             }
@@ -408,7 +424,7 @@ namespace BliMonitorTest
                 {
                     // ✅ 저용량이면 ClosedXML로 예쁘게 / 또는 OpenXML로 통일도 가능
                     // (여기서는 “대용량용 OpenXML 스트리밍 함수”를 재사용하는 게 단순)
-                    ExportAllToExcelOpenXml( dbPath, sfd.FileName, fromText, toText, mode, heaterMin, heaterMax, airMin, airMax, motor, fanSpeed, motorCurrentMin, progress: null, token: CancellationToken.None);
+                    ExportAllToExcelOpenXml( dbPath, sfd.FileName, fromMs, toMs, mode, heaterMin, heaterMax, airMin, airMax, motor, fanSpeed, motorCurrentMin, sourceType, channelNo, progress: null, token: CancellationToken.None );
                 });
 
                 MessageBox.Show("엑셀 다운로드가 완료되었습니다.");
@@ -419,12 +435,7 @@ namespace BliMonitorTest
             }
         }
 
-        private void StartLargeExcelBuildInBackground(
-            string dbPath, string fromText, string toText,
-            int? mode, double? heaterMin, double? heaterMax,
-            double? airMin, double? airMax,
-            int? motor, int? fanSpeed, double? motorCurrentMin,
-            long totalCount)
+        private void StartLargeExcelBuildInBackground( string dbPath, long fromMs, long toMs, int? mode, double? heaterMin, double? heaterMax, double? airMin, double? airMax, int? motor, int? fanSpeed, double? motorCurrentMin, int sourceType, int? channelNo, long totalCount )
         {
             _excelBuilding = true;
             _excelCts = new CancellationTokenSource();
@@ -436,7 +447,6 @@ namespace BliMonitorTest
                 btnExcel.ToolTip = null;
             }
 
-            // ✅ 취소 버튼 표시
             if (btnCancelBusy != null)
                 btnCancelBusy.Visibility = Visibility.Visible;
 
@@ -460,7 +470,8 @@ namespace BliMonitorTest
             {
                 try
                 {
-                    ExportAllToExcelOpenXml( dbPath, tmpPath, fromText, toText, mode, heaterMin, heaterMax, airMin, airMax, motor, fanSpeed, motorCurrentMin, progress, token);
+                    ExportAllToExcelOpenXml( dbPath, tmpPath, fromMs, toMs, mode, heaterMin, heaterMax, airMin, airMax, motor, fanSpeed, motorCurrentMin, sourceType, channelNo, progress, token );
+
                     token.ThrowIfCancellationRequested();
 
                     if (File.Exists(finalTempPath)) File.Delete(finalTempPath);
@@ -470,7 +481,6 @@ namespace BliMonitorTest
                 }
                 catch
                 {
-                    // ✅ 실패/취소 시 tmp 정리
                     try { if (File.Exists(tmpPath)) File.Delete(tmpPath); } catch { }
                     throw;
                 }
@@ -481,7 +491,6 @@ namespace BliMonitorTest
                 {
                     _excelBuilding = false;
 
-                    // ✅ 취소 버튼 숨김
                     if (btnCancelBusy != null)
                         btnCancelBusy.Visibility = Visibility.Collapsed;
 
@@ -523,29 +532,38 @@ namespace BliMonitorTest
                         btnExcel.ToolTip = "엑셀 생성 완료";
                     }
 
-                    MessageBox.Show(
-                        $"대용량 엑셀 생성이 완료되었습니다.\n\n'엑셀 저장'을 누르면 원하는 위치에 저장할 수 있습니다.\n(건수: {totalCount:N0})", "완료", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show( $"대용량 엑셀 생성이 완료되었습니다.\n\n'엑셀 저장'을 누르면 원하는 위치에 저장할 수 있습니다.\n(건수: {totalCount:N0})", "완료", MessageBoxButton.OK, MessageBoxImage.Information );
                 });
             });
         }
 
-
-        private static string BuildWhere( int? mode, double? heaterMin, double? heaterMax, double? airMin, double? airMax, int? motor, int? fanSpeed, double? motorCurrentMin)
+        private static string BuildWhere( int? mode, double? heaterMin, double? heaterMax, double? airMin, double? airMax, int? motorCode, int? fanSpeed, double? motorCurrentMin, int sourceType, int? channelNo )
         {
-            string where = "WHERE created_at >= @from AND created_at < @to";
+            // ✅ 핵심: created_at_ms 범위 검색
+            string where = "WHERE created_at_ms >= @fromMs AND created_at_ms < @toMs";
+
+            // ✅ 단/다채널 구분: 0이면 전체
+            where += " AND (@sourceType = 0 OR source_type = @sourceType)";
+
+            // ✅ 채널: 0이면 전체
+            where += " AND (@channelNo = 0 OR channel_no = @channelNo)";
+
             if (mode.HasValue) where += " AND mode = @mode";
             if (heaterMin.HasValue) where += " AND heater_temp >= @heaterMin";
             if (heaterMax.HasValue) where += " AND heater_temp <= @heaterMax";
             if (airMin.HasValue) where += " AND air_temp >= @airMin";
             if (airMax.HasValue) where += " AND air_temp <= @airMax";
-            if (motor.HasValue) where += " AND motor = @motor";
+
+            if (motorCode.HasValue) where += " AND motor_code = @motorCode";
+
             if (fanSpeed.HasValue) where += " AND fan_speed = @fanSpeed";
             if (motorCurrentMin.HasValue) where += " AND motor_current >= @motorCurrentMin";
+
             return where;
         }
 
-        private static void ExportAllToExcelOpenXml( string dbPath, string xlsxPath, string fromText, string toText, int? mode, double? heaterMin, double? heaterMax, 
-            double? airMin, double? airMax, int? motor, int? fanSpeed, double? motorCurrentMin, IProgress<(int percent, long done, long total)> progress, CancellationToken token)
+        private static void ExportAllToExcelOpenXml( string dbPath, string xlsxPath, long fromMs, long toMs, int? mode, double? heaterMin, double? heaterMax, double? airMin, double? airMax, int? motorCode, int? fanSpeed, 
+            double? motorCurrentMin, int sourceType, int? channelNo, IProgress<(int percent, long done, long total)> progress, CancellationToken token )
         {
             string cs = $"Data Source={dbPath};";
 
@@ -553,14 +571,14 @@ namespace BliMonitorTest
             {
                 con.Open();
 
-                string where = BuildWhere(mode, heaterMin, heaterMax, airMin, airMax, motor, fanSpeed, motorCurrentMin);
+                string where = BuildWhere( mode, heaterMin, heaterMax, airMin, airMax, motorCode, fanSpeed, motorCurrentMin, sourceType, channelNo );
 
                 // total count(진행률 계산)
                 long total;
                 using (var cmdCount = con.CreateCommand())
                 {
                     cmdCount.CommandText = "SELECT COUNT(1) FROM receive_data " + where + ";";
-                    BindParams(cmdCount, fromText, toText, mode, heaterMin, heaterMax, airMin, airMax, motor, fanSpeed, motorCurrentMin);
+                    BindParams(cmdCount, fromMs, toMs, mode, heaterMin, heaterMax, airMin, airMax, motorCode, fanSpeed, motorCurrentMin, sourceType, channelNo);
                     total = Convert.ToInt64(cmdCount.ExecuteScalar());
                 }
 
@@ -571,9 +589,9 @@ namespace BliMonitorTest
                     cmd.CommandText =
                         "SELECT * FROM receive_data " +
                         where +
-                        " ORDER BY datetime(created_at) DESC;";
+                        " ORDER BY created_at_ms DESC;";
 
-                    BindParams(cmd, fromText, toText, mode, heaterMin, heaterMax, airMin, airMax, motor, fanSpeed, motorCurrentMin);
+                    BindParams(cmd, fromMs, toMs, mode, heaterMin, heaterMax, airMin, airMax, motorCode, fanSpeed, motorCurrentMin, sourceType, channelNo);
 
                     using (var reader = cmd.ExecuteReader(CommandBehavior.SequentialAccess))
                     using (var doc = SpreadsheetDocument.Create(xlsxPath, SpreadsheetDocumentType.Workbook))
