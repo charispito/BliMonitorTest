@@ -12,51 +12,6 @@
         SizeToContent="Width"
         Background="Transparent">
 
-    <Window.Resources>
-        <!-- 배경 그라데이션 -->
-        <LinearGradientBrush x:Key="AppBackgroundBrush" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#EAF4FF" Offset="0"/>
-            <GradientStop Color="#DDEEFF" Offset="1"/>
-        </LinearGradientBrush>
-
-        <!-- 카드 그림자 -->
-        <DropShadowEffect x:Key="CardShadow" Color="#000000" BlurRadius="18" ShadowDepth="2" Opacity="0.16"/>
-
-        <!-- 카드(Border) 공통 -->
-        <Style x:Key="CardBorderStyle" TargetType="Border">
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="CornerRadius" Value="18"/>
-            <Setter Property="Padding" Value="14"/>
-            <Setter Property="Effect" Value="{StaticResource CardShadow}"/>
-            <Setter Property="SnapsToDevicePixels" Value="True"/>
-        </Style>
-
-        <!-- 얇은 테두리(입력 박스 영역 등) -->
-        <SolidColorBrush x:Key="SoftBorderBrush" Color="#E5E7EB"/>
-
-        <!-- ✅ 상단 액션 버튼(연결/갱신) - 높이 줄인 버전 -->
-        <Style x:Key="TopActionButtonStyle" TargetType="Button">
-            <Setter Property="Height" Value="32"/>
-            <Setter Property="Padding" Value="12,0"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="Background" Value="#2563EB"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" CornerRadius="9">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-    </Window.Resources>
-
     <!-- 바깥: 그라데이션 배경 -->
     <Grid Background="{StaticResource AppBackgroundBrush}">
         <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">

@@ -2,17 +2,14 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              StartupUri="SelectWindow.xaml">
-
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="Resources/Styles/ComboBoxStyles.xaml"/>
+                <!-- 공통 테마 -->
+                <ResourceDictionary Source="pack://application:,,,/Resources/Styles/AppTheme.xaml"/>
+                <!-- 콤보박스 스타일 -->
+                <ResourceDictionary Source="pack://application:,,,/Resources/Styles/ComboBoxStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
-
-            <!-- (선택) 전역 기본 폰트 -->
-            <Style TargetType="{x:Type TextBlock}">
-                <Setter Property="FontFamily" Value="Segoe UI"/>
-            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

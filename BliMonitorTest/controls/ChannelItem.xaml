@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:BliMonitorTest.controls"
              mc:Ignorable="d" 
              d:DesignHeight="250" d:DesignWidth="800">
-    <Border Margin="6" BorderBrush="#000" BorderThickness="1" Background="#FFF">
+    <Border Margin="6" Style="{StaticResource CardBorderStyle}" BorderBrush="{StaticResource SoftBorderBrush}" BorderThickness="1">
         <Border.Effect>
             <DropShadowEffect ShadowDepth="1" Color="#CFCFCF" Direction="315"/>
         </Border.Effect>
