@@ -35,12 +35,9 @@ namespace BliMonitorTest.controls
         private static readonly ILog log = LogManager.GetLogger(typeof(OneChannelValueDetail));
 
         // Database 관련 변수
-        private SqliteConnection _db;
-        private SqliteTransaction _tx;
         private string _dbPath;
         private string _csvPath;
         private bool _csvHeaderWritten;
-        private bool _dbReady;
 
         private int _ConnectState = 0;
         private bool _ParameterMode = false;
@@ -262,8 +259,9 @@ namespace BliMonitorTest.controls
                     );
                     streamWriter.Flush();
 
-                    // 2) SQLite 기록
-                    MonitoringDb.InsertDb( ref _db, _dbPath, ref _dbReady, IsNewVersion, data, number, off_sum, air_sum, channelNo: 1, sourceType: MonitoringDb.SOURCE_SINGLE );
+                    // 2) SQLite 기록 : Queue 방식으로 비동기 처리
+                    MonitoringDbWriteService.Instance.Start(StoragePathUtil.GetDbPath());
+                    MonitoringDbWriteService.Instance.Enqueue( IsNewVersion, data, number, off_sum, air_sum, channelNo: 1, sourceType: MonitoringDb.SOURCE_SINGLE );
                 }
             }
             else
@@ -307,9 +305,6 @@ namespace BliMonitorTest.controls
                 // "이미 있다"의 의미로 true
                 _csvHeaderWritten = true;
             }
-
-            // 2) DB 준비
-            MonitoringDb.EnsureDb(ref _db, _dbPath, ref _dbReady);
         }
 
         private bool ValidateData(ReadData data, out string reason)

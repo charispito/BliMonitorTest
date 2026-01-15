@@ -1,5 +1,6 @@
 ﻿using BliMonitorTest.controls;
 using BliMonitorTest.util.MonitoringDb;
+using BliMonitorTest.util.StoragePathUtil;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Bibliography;
 using DocumentFormat.OpenXml.InkML;
@@ -176,7 +177,8 @@ namespace BliMonitorTest
             long fromMs = new DateTimeOffset(fromDate).ToUnixTimeMilliseconds();
             long toMs = new DateTimeOffset(toExclusive).ToUnixTimeMilliseconds();
 
-            string dbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Monitoring.db");
+            string dbPath = StoragePathUtil.GetDbPath();
+
             if (!File.Exists(dbPath))
             {
                 MessageBox.Show($"DB 파일을 찾을 수 없습니다.\n{dbPath}");
