@@ -75,13 +75,6 @@
         <Setter Property="Background" Value="#FFFFFF"/>
     </Style>
 
-    <Style TargetType="{x:Type DatePicker}">
-        <Setter Property="Height" Value="28"/>
-        <Setter Property="BorderBrush" Value="{StaticResource SoftBorderBrush}"/>
-        <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="Background" Value="#FFFFFF"/>
-    </Style>
-
     <!-- =========================
          Buttons
     ========================== -->
@@ -253,5 +246,26 @@
         <Setter Property="RowStyle" Value="{StaticResource PrettyDataGridRowStyle}"/>
         <Setter Property="CellStyle" Value="{StaticResource PrettyDataGridCellStyle}"/>
     </Style>
+    
+    <!-- DatePicker (Clean) -->
+    <Style TargetType="{x:Type DatePicker}">
+        <Setter Property="Height" Value="32"/>
+        <Setter Property="Padding" Value="10,0"/>
+        <Setter Property="BorderBrush" Value="{StaticResource SoftBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Background" Value="#FFFFFF"/>
+        <Setter Property="Foreground" Value="{StaticResource TextDark}"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+    </Style>
 
+    <!-- DatePicker 내부 TextBox -->
+    <Style TargetType="{x:Type DatePickerTextBox}">
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Padding" Value="0"/>
+    </Style>
 </ResourceDictionary>
