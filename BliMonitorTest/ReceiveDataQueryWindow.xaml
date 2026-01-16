@@ -72,10 +72,10 @@
                                 <ComboBoxItem Content="다채널" Tag="2"/>
                             </ComboBox>
                             <TextBlock Text="Channel:" Style="{StaticResource FieldLabelStyle}"/>
-                            <TextBox x:Name="tbChannelNo" Width="90" Margin="8,0,8,0" KeyDown="SearchBox_KeyDown" ToolTip="0=전체, 1~N"/>
+                            <TextBox x:Name="tbChannelNo" Width="90" Margin="8,6,8,0" KeyDown="SearchBox_KeyDown" ToolTip="0=전체, 1~N"/>
 
                             <TextBlock Text="MotorCurrent ≥" Style="{StaticResource FieldLabelStyle}"/>
-                            <TextBox x:Name="tbMotorCurrentMin" Width="90" Margin="8,0,8,0" KeyDown="SearchBox_KeyDown"/>
+                            <TextBox x:Name="tbMotorCurrentMin" Width="90" Margin="8,6,8,0" KeyDown="SearchBox_KeyDown"/>
                         </WrapPanel>
                     </StackPanel>
 

@@ -34,7 +34,8 @@ namespace BliMonitorTest
         private bool _isBusy = false;
 
         // Excel 관련
-        private const long ExcelLargeThreshold = 100000; // ✅ 대용량 기준 (추천)
+        //private const long ExcelLargeThreshold = 100000; // ✅ 대용량 기준 (추천)
+        private const long ExcelLargeThreshold = 10000; // ✅ 대용량 기준 (추천)
         private volatile bool _excelBuilding = false;
         private string _excelTempPath = null;
         private Task _excelBuildTask = null;
