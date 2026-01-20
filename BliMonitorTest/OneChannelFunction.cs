@@ -676,65 +676,92 @@ namespace BliMonitorTest
 
         public void ClearChartDataAndResetTime()
         {
-            // 1) 더미 시작시간 리셋 (요구사항 핵심)
             _dummyStartTime = null;
-
-            // 2) 이상치/기준선 로직 상태도 같이 리셋(있으면)
             _prevY = null;
 
-            if (_anomalySeries != null && _anomalySeries.Points != null)
+            if (_anomalySeries != null)
             {
-                _anomalySeries.Points.Clear();
+                if (_anomalySeries.Points != null)
+                    _anomalySeries.Points.Clear();
             }
 
-            // 3) 실제 라인 시리즈들 데이터 삭제 (PlotModel 기준)
-            PlotModel model = GetPlotModelOrNull();
-            if (model != null)
+            // 자기 차트뷰의 PlotModel/FullscreenPlotModel도 방어적으로 초기화
+            BliMonitorTest.data.MainViewModel vm = channel.chartView != null ? channel.chartView.ViewModel : null;
+            if (vm != null)
             {
-                if (model.Series != null)
+                OxyPlot.PlotModel model = vm.PlotModel;
+                if (model != null)
                 {
-                    for (int i = 0; i < model.Series.Count; i++)
+                    if (model.Series != null)
                     {
-                        Series s = model.Series[i];
-
-                        LineSeries ls = s as LineSeries;
-                        if (ls != null)
+                        for (int i = 0; i < model.Series.Count; i++)
                         {
-                            if (ls.Points != null) ls.Points.Clear();
-                            continue;
-                        }
+                            OxyPlot.Series.Series s = model.Series[i];
 
-                        ScatterSeries ss = s as ScatterSeries;
-                        if (ss != null)
-                        {
-                            if (ss.Points != null) ss.Points.Clear();
-                            continue;
-                        }
+                            OxyPlot.Series.LineSeries ls = s as OxyPlot.Series.LineSeries;
+                            if (ls != null)
+                            {
+                                if (ls.Points != null) ls.Points.Clear();
+                                continue;
+                            }
 
-                        AreaSeries ars = s as AreaSeries;
-                        if (ars != null)
-                        {
-                            if (ars.Points != null) ars.Points.Clear();
-                            if (ars.Points2 != null) ars.Points2.Clear();
-                            continue;
-                        }
+                            OxyPlot.Series.ScatterSeries ss = s as OxyPlot.Series.ScatterSeries;
+                            if (ss != null)
+                            {
+                                if (ss.Points != null) ss.Points.Clear();
+                                continue;
+                            }
 
-                        StemSeries sts = s as StemSeries;
-                        if (sts != null)
-                        {
-                            if (sts.Points != null) sts.Points.Clear();
-                            continue;
+                            OxyPlot.Series.AreaSeries ars = s as OxyPlot.Series.AreaSeries;
+                            if (ars != null)
+                            {
+                                if (ars.Points != null) ars.Points.Clear();
+                                if (ars.Points2 != null) ars.Points2.Clear();
+                                continue;
+                            }
+
+                            OxyPlot.Series.StemSeries sts = s as OxyPlot.Series.StemSeries;
+                            if (sts != null)
+                            {
+                                if (sts.Points != null) sts.Points.Clear();
+                                continue;
+                            }
                         }
                     }
+                    model.ResetAllAxes();
+                    model.InvalidatePlot(true);
                 }
 
-                // 축도 같이 원복하고 싶으면(선택)
-                model.ResetAllAxes();
+                if (vm.FullscreenPlotModel != null)
+                {
+                    OxyPlot.PlotModel f = vm.FullscreenPlotModel;
+                    if (f.Series != null)
+                    {
+                        for (int i = 0; i < f.Series.Count; i++)
+                        {
+                            OxyPlot.Series.Series s = f.Series[i];
 
-                // 화면 갱신
-                model.InvalidatePlot(true);
+                            OxyPlot.Series.LineSeries ls = s as OxyPlot.Series.LineSeries;
+                            if (ls != null)
+                            {
+                                if (ls.Points != null) ls.Points.Clear();
+                                continue;
+                            }
+
+                            OxyPlot.Series.ScatterSeries ss = s as OxyPlot.Series.ScatterSeries;
+                            if (ss != null)
+                            {
+                                if (ss.Points != null) ss.Points.Clear();
+                                continue;
+                            }
+                        }
+                    }
+                    f.ResetAllAxes();
+                    f.InvalidatePlot(true);
+                }
             }
         }
+
 
     }
 }

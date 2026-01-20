@@ -112,15 +112,137 @@ namespace BliMonitorTest.controls
                 MessageBoxImage.Warning
             );
 
-            if (result != MessageBoxResult.Yes) return;
+            if (result != MessageBoxResult.Yes)
+                return;
 
+            // 1) 항상 현재 OxyView의 PlotModel/FullscreenPlotModel을 먼저 초기화
+            ClearPlotModel(this.ViewModel);
+
+            // 2) 창 타입별로 필요한 추가 초기화가 있으면 보강
             Window win = Window.GetWindow(this);
-            BliMonitorTest.OneChannelWindow oneChannel = win as BliMonitorTest.OneChannelWindow;
-            if (oneChannel != null)
+            if (win == null)
+                return;
+
+            // 단일채널: 시간/상태 리셋 등 창 전용 로직 실행
+            BliMonitorTest.OneChannelWindow one = win as BliMonitorTest.OneChannelWindow;
+            if (one != null)
             {
-                oneChannel.ClearChartDataAndResetTime();
+                // 창 전용 내부 버퍼/시간 등 리셋
+                one.ClearChartDataAndResetTime();
+                return;
+            }
+
+            // 다채널 메인 창: 이미 this.ViewModel 클리어로 충분 (필요 시 추가 커버)
+            BliMonitorTest.MultiWindow1 multi1 = win as BliMonitorTest.MultiWindow1;
+            if (multi1 != null)
+            {
+                // 기본적으로 this.ViewModel만 지우면 충분합니다.
+                // multi1.Chart.ViewModel와 this.ViewModel가 동일한 경우 이미 반영됨.
+                return;
+            }
+
+            // 다채널 보조 창(MultiWindow2)도 동일 처리
+            BliMonitorTest.MultiWindow2 multi2 = win as BliMonitorTest.MultiWindow2;
+            if (multi2 != null)
+            {
+                // this.ViewModel 클리어로 충분. 필요시 multi2 내 다른 OxyView를 추가로 처리.
+                return;
             }
         }
+
+
+        private void ClearPlotModel(BliMonitorTest.data.MainViewModel vm)
+        {
+            if (vm == null)
+                return;
+
+            // 메인 PlotModel
+            OxyPlot.PlotModel model = vm.PlotModel;
+            if (model != null)
+            {
+                if (model.Series != null)
+                {
+                    for (int i = 0; i < model.Series.Count; i++)
+                    {
+                        OxyPlot.Series.Series s = model.Series[i];
+
+                        OxyPlot.Series.LineSeries ls = s as OxyPlot.Series.LineSeries;
+                        if (ls != null)
+                        {
+                            if (ls.Points != null) ls.Points.Clear();
+                            continue;
+                        }
+
+                        OxyPlot.Series.ScatterSeries ss = s as OxyPlot.Series.ScatterSeries;
+                        if (ss != null)
+                        {
+                            if (ss.Points != null) ss.Points.Clear();
+                            continue;
+                        }
+
+                        OxyPlot.Series.AreaSeries ars = s as OxyPlot.Series.AreaSeries;
+                        if (ars != null)
+                        {
+                            if (ars.Points != null) ars.Points.Clear();
+                            if (ars.Points2 != null) ars.Points2.Clear();
+                            continue;
+                        }
+
+                        OxyPlot.Series.StemSeries sts = s as OxyPlot.Series.StemSeries;
+                        if (sts != null)
+                        {
+                            if (sts.Points != null) sts.Points.Clear();
+                            continue;
+                        }
+                    }
+                }
+
+                model.ResetAllAxes();
+
+                if (chart != null)
+                    chart.InvalidatePlot(true);
+            }
+
+            // 전체화면 PlotModel
+            if (vm.FullscreenPlotModel != null)
+            {
+                OxyPlot.PlotModel f = vm.FullscreenPlotModel;
+
+                if (f.Series != null)
+                {
+                    for (int i = 0; i < f.Series.Count; i++)
+                    {
+                        OxyPlot.Series.Series s = f.Series[i];
+
+                        OxyPlot.Series.LineSeries ls = s as OxyPlot.Series.LineSeries;
+                        if (ls != null)
+                        {
+                            if (ls.Points != null) ls.Points.Clear();
+                            continue;
+                        }
+
+                        OxyPlot.Series.ScatterSeries ss = s as OxyPlot.Series.ScatterSeries;
+                        if (ss != null)
+                        {
+                            if (ss.Points != null) ss.Points.Clear();
+                            continue;
+                        }
+
+                        OxyPlot.Series.AreaSeries ars = s as OxyPlot.Series.AreaSeries;
+                        if (ars != null)
+                        {
+                            if (ars.Points != null) ars.Points.Clear();
+                            if (ars.Points2 != null) ars.Points2.Clear();
+                            continue;
+                        }
+                    }
+                }
+
+                f.ResetAllAxes();
+                vm.FullscreenPlotModel.InvalidatePlot(true);
+            }
+        }
+
 
         private void BtnOpenDb_Click(object sender, RoutedEventArgs e)
         {
