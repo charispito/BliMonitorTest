@@ -40,6 +40,14 @@ namespace BliMonitorTest.util.StoragePathUtil
         }
 
         /// <summary>
+        /// Parameter Data 저장 폴더:
+        /// </summary>
+        public static string GetParamDirectory()
+        {
+            return Path.Combine(GetExeDirectory(), "ParameterSetting");
+        }
+
+        /// <summary>
         /// 시간 단위 CSV 파일 경로 예) Monitoring_20260112_16.csv
         /// prefix는 단일/다채널 공통 파일이면 "Monitoring" 같이 고정 추천.
         /// </summary>

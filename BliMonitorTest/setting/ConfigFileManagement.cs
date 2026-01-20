@@ -13,14 +13,18 @@ namespace BliMonitorTest.data
     {
         public void InitPath()
         {
-            string path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ParameterSetting";
+            string path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ParameterSetting");
+            //string path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ParameterSetting";
+
             bool exist = Directory.Exists(path);
+
             if (!exist)
             {
                 Directory.CreateDirectory(path);
             }
 
         }
+
         public SettingItem ReadFromFile(string name)
         {
             SettingItem item = null;
@@ -28,8 +32,11 @@ namespace BliMonitorTest.data
             {
                 name += ".config";
             }
-            string path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ParameterSetting";
+
+            string path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ParameterSetting");
+            //string path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ParameterSetting";
             bool exist = Directory.Exists(path);
+
             if (!exist)
             {
                 Directory.CreateDirectory(path);
@@ -119,7 +126,15 @@ namespace BliMonitorTest.data
 
         public void CreateConfig(string name, SettingItem item)
         {
-            string path = string.Format(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ParameterSetting\\{0}.config", name);
+            // 실행 파일(.exe) 위치 기준 폴더
+            string dir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ParameterSetting");
+
+            // 폴더 없으면 생성
+            Directory.CreateDirectory(dir);
+
+            // 최종 파일 경로
+            string path = Path.Combine(dir, $"{name}.config");
+
             ExeConfigurationFileMap fileMap = new ExeConfigurationFileMap
             {
                 ExeConfigFilename = path
@@ -129,6 +144,7 @@ namespace BliMonitorTest.data
             config.Sections.Clear();
             config.AppSettings.Settings.Clear();
             int index = 1;
+
             SettingSection section1 = new SettingSection();
             SettingSection section2 = new SettingSection();
             SettingSection section3 = new SettingSection();

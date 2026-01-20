@@ -82,10 +82,11 @@ namespace BliMonitorTest
 
         private void InitializeSetting()
         {
-            string path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ParameterSetting";
+            string path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ParameterSetting");
+            //string path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ParameterSetting";
+
             if (!Directory.Exists(path))
                 Directory.CreateDirectory(path);
-
         }
 
         private void Initialize2()
@@ -175,9 +176,13 @@ namespace BliMonitorTest
             else
             {
                 string name = FileList.SelectedItem.ToString();
-                string path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ParameterSetting";
+
+                string path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ParameterSetting");
+                //string path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ParameterSetting";
+
                 path += $"\\{name}.config";
                 Console.WriteLine(path);
+
                 FileInfo info = new FileInfo(path);
                 if (info.Exists)
                 {
@@ -259,15 +264,27 @@ namespace BliMonitorTest
 
         private void SetList()
         {
-            string path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ParameterSetting";
-            DirectoryInfo info = new DirectoryInfo(path);
-            if (files == null)
-                files = new List<string>();
-            files.Clear();
-            foreach (FileInfo file in info.GetFiles())
+            string path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ParameterSetting");
+
+            if (!Directory.Exists(path))
             {
-                files.Add(file.Name.Replace(".config", ""));
+                if (files == null) files = new List<string>();
+                files.Clear();
+                FileList.ItemsSource = files;
+                FileList.Items.Refresh();
+                return;
             }
+
+            var info = new DirectoryInfo(path);
+
+            if (files == null) files = new List<string>();
+            files.Clear();
+
+            foreach (FileInfo file in info.GetFiles("*.config"))
+            {
+                files.Add(System.IO.Path.GetFileNameWithoutExtension(file.Name));
+            }
+
             FileList.ItemsSource = files;
             FileList.Items.Refresh();
         }
