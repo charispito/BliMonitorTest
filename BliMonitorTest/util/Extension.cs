@@ -111,5 +111,10 @@ namespace BliMonitorTest.util
                 str = "";
             return str;
         }
+        public static string Safe(string s)
+        {
+            if (s == null) return "";
+            return s;
+        }
     }
 }

@@ -49,6 +49,7 @@ namespace BliMonitorTest
         private RangeEnabledObservableCollection<SettingData> motor1 = new RangeEnabledObservableCollection<SettingData>();
 
         private List<SettingData> fan = new List<SettingData>();
+        private List<string> errorFiles;
         private RangeEnabledObservableCollection<SettingData> fan1 = new RangeEnabledObservableCollection<SettingData>();
         private List<byte> receivedData = new List<byte>();
         private ConfigFileManagement management;
@@ -66,6 +67,7 @@ namespace BliMonitorTest
             InitializeSetting();
             management = new ConfigFileManagement();
             SetList();
+            SetErrorList();
         }
 
         public ParameterWindow()
@@ -74,8 +76,8 @@ namespace BliMonitorTest
             InitializeSetting();
             management = new ConfigFileManagement();
             SetList();
+            SetErrorList();
             Initialize2();
-
             //Initialize();
         }
 
@@ -100,7 +102,7 @@ namespace BliMonitorTest
             list.Add(new SettingData() { Name = "열풍 온도" });
             list.Add(new SettingData() { Name = "열풍 On Time" });
             list.Add(new SettingData() { Name = "운전 횟수" });
-            BliMonitorTest.ItemsSource = list;
+            ErrorGrid.ItemsSource = list;
             MicomGrid.ItemsSource = getModeData();
             MicomGrid2.ItemsSource = getModeData();
             MicomGrid3.ItemsSource = getModeData();
@@ -132,6 +134,10 @@ namespace BliMonitorTest
             SaveButton.Click += SaveButton_Click;
             DeleteButton.Click += DeleteButton_Click;
             RefreshButton.Click += RefreshButton_Click;
+            ErrorSaveButton.Click += ErrorSaveButton_Click;
+            ErrorDeleteButton.Click += ErrorDeleteButton_Click;
+            ErrorRefreshButton.Click += ErrorRefreshButton_Click;
+
             if (port != null)
             {
                 Loaded += ParameterWindow_Loaded1;
@@ -164,6 +170,7 @@ namespace BliMonitorTest
         private void RefreshButton_Click(object sender, RoutedEventArgs e)
         {
             SetList();
+            SetErrorList();
         }
 
         private void DeleteButton_Click(object sender, RoutedEventArgs e)
@@ -188,6 +195,7 @@ namespace BliMonitorTest
                 {
                     info.Delete();
                     SetList();
+                    SetErrorList();
                 }
             }
         }
@@ -258,6 +266,7 @@ namespace BliMonitorTest
                 SettingItem item = GetSettingSectionData();
                 management.CreateConfig(FileName.Text.ToString(), item);
                 SetList();
+                SetErrorList();
                 MessageBox.Show("저장 되었습니다.");
             }
         }
@@ -287,6 +296,33 @@ namespace BliMonitorTest
 
             FileList.ItemsSource = files;
             FileList.Items.Refresh();
+        }
+
+        private void SetErrorList()
+        {
+            string path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ErrorData");
+
+            if (!Directory.Exists(path))
+            {
+                if (errorFiles == null) errorFiles = new List<string>();
+                errorFiles.Clear();
+                ErrorFileList.ItemsSource = errorFiles;
+                ErrorFileList.Items.Refresh();
+                return;
+            }
+
+            var info = new DirectoryInfo(path);
+
+            if (errorFiles == null) errorFiles = new List<string>();
+            errorFiles.Clear();
+
+            foreach (FileInfo file in info.GetFiles("*.config"))
+            {
+                errorFiles.Add(System.IO.Path.GetFileNameWithoutExtension(file.Name));
+            }
+
+            ErrorFileList.ItemsSource = errorFiles;
+            ErrorFileList.Items.Refresh();
         }
 
         private SettingItem GetSettingSectionData()
@@ -538,6 +574,254 @@ namespace BliMonitorTest
                 oneChannel.setParameter();
                 //oneChannel.OnParameterLoadAction();
                 port.Write(command, 0, command.Length);
+            }
+        }
+
+        private void ErrorListDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            var item = sender as ListBoxItem;
+            if (item == null) return;
+
+            var content = item.Content;
+            if (content == null) return;
+            string name = content.ToString();
+            if (name.Length == 0) return;
+
+            ErrorFileName.Text = name;
+
+            string path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ErrorData");
+            string full = System.IO.Path.Combine(path, name + ".config");
+            if (!File.Exists(full)) return;
+
+            var list = new ObservableCollection<ErrorData>();
+
+            try
+            {
+                var doc = System.Xml.Linq.XDocument.Load(full);
+                var root = doc.Root;
+                if (root == null)
+                {
+                    MessageBox.Show("잘못된 파일 형식입니다.");
+                    return;
+                }
+
+                var section = root.Element("Error");
+                if (section == null)
+                {
+                    MessageBox.Show("Error 섹션을 찾을 수 없습니다.");
+                    return;
+                }
+
+                foreach (var add in section.Elements("add"))
+                {
+                    string n = "";
+                    string val1 = "";
+                    string val2 = "";
+                    string val3 = "";
+                    string val4 = "";
+                    string val5 = "";
+
+                    var attrN = add.Attribute("Name");
+                    if (attrN != null) n = attrN.Value;
+
+                    var attr1 = add.Attribute("Value1");
+                    if (attr1 != null) val1 = NormalizeZero(attr1.Value);
+
+                    var attr2 = add.Attribute("Value2");
+                    if (attr2 != null) val2 = NormalizeZero(attr2.Value);
+
+                    var attr3 = add.Attribute("Value3");
+                    if (attr3 != null) val3 = NormalizeZero(attr3.Value);
+
+                    var attr4 = add.Attribute("Value4");
+                    if (attr4 != null) val4 = NormalizeZero(attr4.Value);
+
+                    var attr5 = add.Attribute("Value5");
+                    if (attr5 != null) val5 = NormalizeZero(attr5.Value);
+
+                    list.Add(new ErrorData
+                    {
+                        Name = n,
+                        Value = val1,
+                        Value2 = val2,
+                        Value3 = val3,
+                        Value4 = val4,
+                        Value5 = val5
+                    });
+                }
+
+                Dispatcher.BeginInvoke(new Action(delegate
+                {
+                    ErrorGrid.ItemsSource = list;
+                }));
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error 파일 로드 실패", ex);
+                MessageBox.Show("에러 파일을 읽는 중 문제가 발생했습니다.");
+            }
+        }
+
+        // 문자열이 "0" 또는 공백+0 형태면 "0"으로, 숫자 0도 "0"으로 표시.
+        // 숫자가 아니거나 빈 문자열은 원문 유지.
+        private static string NormalizeZero(string s)
+        {
+            if (s == null) return "";
+            string t = s.Trim();
+
+            // 빈 문자열은 그대로 빈 문자열로 둔다 (사용자가 비워둔 칸 구분용)
+            if (t.Length == 0) return "";
+
+            int num;
+            // 숫자로 파싱 가능하면 0일 때 "0"
+            if (int.TryParse(t, out num))
+            {
+                if (num == 0) return "0";
+                return t; // 0이 아니면 원문 유지 (예: "5")
+            }
+
+            // 숫자가 아니면 원문 유지 (에러 텍스트 등)
+            return t;
+        }
+
+        private void ErrorSaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (ErrorFileName.Text == null || ErrorFileName.Text.Trim().Length == 0)
+            {
+                MessageBox.Show("에러 파일명을 입력하세요");
+                return;
+            }
+
+            var src = ErrorGrid.ItemsSource as System.Collections.IEnumerable;
+            if (src == null)
+            {
+                MessageBox.Show("저장할 에러 데이터가 없습니다.");
+                return;
+            }
+
+            string dir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ErrorData");
+            if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+            string full = System.IO.Path.Combine(dir, ErrorFileName.Text + ".config");
+
+            var sb = new StringBuilder();
+            sb.AppendLine("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
+            sb.AppendLine("<configuration>");
+            sb.AppendLine("  <configSections>");
+            sb.AppendLine("    <section name=\"Error\" type=\"BliMonitorTest.setting.SettingSection, BliMonitorTest, Version=1.0.0.9, Culture=neutral, PublicKeyToken=null\" />");
+            sb.AppendLine("  </configSections>");
+            sb.AppendLine("  <appSettings>");
+            sb.AppendLine("    <clear />");
+            sb.AppendLine("  </appSettings>");
+            sb.AppendLine("  <Error>");
+
+            int index = 1;
+            foreach (var row in src)
+            {
+                string name = "";
+                string v1 = "";
+                string v2 = "";
+                string v3 = "";
+                string v4 = "";
+                string v5 = "";
+
+                // ErrorData인 경우
+                var ed = row as ErrorData;
+                if (ed != null)
+                {
+                    name = ed.Name ?? "";
+                    v1 = ed.Value ?? "";
+                    v2 = ed.Value2 ?? "";
+                    v3 = ed.Value3 ?? "";
+                    v4 = ed.Value4 ?? "";
+                    v5 = ed.Value5 ?? "";
+                }
+                else
+                {
+                    // SettingData인 경우
+                    var sd = row as SettingData;
+                    if (sd != null)
+                    {
+                        name = sd.Name ?? "";
+
+                        // Value는 반드시 문자열화
+                        v1 = sd.Value.ToString();
+                        v2 = sd.Value2.ToString();
+                        v3 = sd.Value3.ToString();
+                        v4 = sd.Value4.ToString();
+                        v5 = sd.Value5.ToString();
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
+
+                // 저장용 0 정규화
+                v1 = NormalizeZeroForSave(v1);
+                v2 = NormalizeZeroForSave(v2);
+                v3 = NormalizeZeroForSave(v3);
+                v4 = NormalizeZeroForSave(v4);
+                v5 = NormalizeZeroForSave(v5);
+
+                // XML 이스케이프 (string만)
+                name = System.Security.SecurityElement.Escape(name);
+                v1 = System.Security.SecurityElement.Escape(v1);
+                v2 = System.Security.SecurityElement.Escape(v2);
+                v3 = System.Security.SecurityElement.Escape(v3);
+                v4 = System.Security.SecurityElement.Escape(v4);
+                v5 = System.Security.SecurityElement.Escape(v5);
+
+                // 단 한 번만 AppendLine
+                sb.AppendLine("    <add Name=\"" + name + "\" Value1=\"" + v1 + "\" Value2=\"" + v2 + "\" Value3=\"" + v3 + "\" Value4=\"" + v4 + "\" Value5=\"" + v5 + "\" Index=\"" + index.ToString() + "\" />");
+                index++;
+            }
+
+            sb.AppendLine("  </Error>");
+            sb.AppendLine("</configuration>");
+
+            File.WriteAllText(full, sb.ToString(), Encoding.UTF8);
+            SetErrorList();
+            MessageBox.Show("에러 데이터가 저장되었습니다.");
+        }
+
+        // null→"0"; trim 후 빈칸→"0"; 숫자면 0→"0", 그 외는 원문 유지; 숫자 아님은 원문 유지
+        private static string NormalizeZeroForSave(string s)
+        {
+            if (s == null) return "0";
+            string t = s.Trim();
+            if (t.Length == 0) return "0"; // 빈칸도 0으로 저장
+
+            int num;
+            if (int.TryParse(t, out num))
+            {
+                return (num == 0) ? "0" : t;
+            }
+            return t;
+        }
+
+
+        private void ErrorRefreshButton_Click(object sender, RoutedEventArgs e)
+        {
+            SetErrorList();
+        }
+
+        private void ErrorDeleteButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (ErrorFileList.SelectedIndex == -1)
+            {
+                MessageBox.Show("에러 파일이 선택되지 않았습니다.");
+                return;
+            }
+
+            string name = ErrorFileList.SelectedItem.ToString();
+            string dir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ErrorData");
+            string full = System.IO.Path.Combine(dir, name + ".config");
+
+            var info = new FileInfo(full);
+            if (info.Exists)
+            {
+                info.Delete();
+                SetErrorList();
             }
         }
 
@@ -971,7 +1255,7 @@ namespace BliMonitorTest
             list.Add(new ErrorData() { Name = "운전 횟수", Value = intTimes1.ToString(), Value2 = intTimes2.ToString(), Value3 = intTimes3.ToString(), Value4 = intTimes4.ToString(), Value5 = intTimes5.ToString() });
             Dispatcher.BeginInvoke(new Action(() =>
             {
-                BliMonitorTest.ItemsSource = list;
+                ErrorGrid.ItemsSource = list;
                 RunCount.Content = timesInt;
             }));
         }
