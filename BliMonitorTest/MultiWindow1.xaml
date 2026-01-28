@@ -8,19 +8,7 @@
         Title="BLI 모니터링 프로그램" Height="900" Width="1915" WindowStartupLocation="CenterScreen" Background="Transparent">
     
     <Window.Resources>
-        <!-- ComboBox 텍스트/항목 센터 정렬 (이 창 전용 유지) -->
-        <Style x:Key="CenterAlignedComboBox" TargetType="ComboBox">
-            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="ItemContainerStyle">
-                <Setter.Value>
-                    <Style TargetType="ComboBoxItem">
-                        <Setter Property="HorizontalContentAlignment" Value="Center"/>
-                        <Setter Property="VerticalContentAlignment" Value="Center"/>
-                    </Style>
-                </Setter.Value>
-            </Setter>
-        </Style>
+
     </Window.Resources>
 
     <!-- 바깥: 그라데이션 배경 -->
@@ -67,16 +55,8 @@
                             <CheckBox Content="바탕화면 저장" FontSize="17" VerticalContentAlignment="Center" HorizontalAlignment="Right" Margin="10, 0" x:Name="SaveCheck"/>
                             <Label Grid.Column="5" x:Name="VersionText" FontSize="17" HorizontalContentAlignment="Right" Margin="0, 0, 20, 0"/>
 
-                            <Button Grid.Column="3" Content="시작" Width="86" Margin="10,0"
-                                        x:Name="StartButton"
-                                        Style="{StaticResource TopActionButtonStyle}"
-                                        Background="#0EA5E9"
-                                        Padding="0"/>
-                            <Button Grid.Column="4"
-                                        Content="정지"
-                                        Width="86"
-                                        x:Name="StopButton"
-                                        Style="{StaticResource TopActionButtonStyle}"
+                            <Button Grid.Column="3" Content="시작" Width="86" Margin="10,0" x:Name="StartButton" Style="{StaticResource TopActionButtonStyle}" Background="#0EA5E9" Padding="0"/>
+                            <Button Grid.Column="4" Content="정지" Width="86" x:Name="StopButton" Style="{StaticResource TopActionButtonStyle}"
                                         Padding="0"/>
                             <TextBox Visibility="Hidden" x:Name="FileNameBox" VerticalContentAlignment="Center" Grid.Column="2" Width="700" BorderBrush="Black" BorderThickness="1" Margin="10, 0"/>
                             <Label Visibility="Hidden" Grid.Column="1" Content="Save File Name" FontSize="16"/>

@@ -553,18 +553,6 @@ namespace BliMonitorTest
 
                     default:
                         return DummySerialPortNs.DummySerialPort.RSP_StartStopStatus;
-                        /*
-                        case ProtocolKind.ErrorDataRequest:
-                            return (byte[])dummy.RSP_ErrorData.Clone();
-                        case ProtocolKind.ParameterRequest:
-                            return (byte[])dummy.RSP_ParameterRequest.Clone();
-                        case ProtocolKind.ParameterSet:
-
-                        case ProtocolKind.StartStopStatus:
-                            return (byte[])dummy.RSP_StartStopStatus.Clone();
-                        default:
-                            return (byte[])dummy.RSP_StartStopStatus.Clone();
-                        */
                 }
             }
             catch

@@ -7,16 +7,6 @@
         Background="Transparent">
 
     <Window.Resources>
-
-        <!-- ✅ 은은한 연한 푸른색 그라데이션 배경 -->
-        <LinearGradientBrush x:Key="AppBackgroundBrush" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#EAF4FF" Offset="0"/>
-            <GradientStop Color="#DDEEFF" Offset="1"/>
-        </LinearGradientBrush>
-
-        <!-- 카드 그림자 -->
-        <DropShadowEffect x:Key="CardShadow" Color="#000000" BlurRadius="18" ShadowDepth="2" Opacity="0.18"/>
-
         <!-- 공통 텍스트 스타일 -->
         <Style x:Key="TitleText" TargetType="TextBlock">
             <Setter Property="FontSize" Value="26"/>

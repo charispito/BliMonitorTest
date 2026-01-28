@@ -22,21 +22,21 @@
                 <ColumnDefinition Width="5"/>
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
-                <RowDefinition Height="5"/>
-                <RowDefinition Height="30"/>
-                <RowDefinition Height="30"/>
-                <RowDefinition Height="30"/>
-                <RowDefinition Height="30"/>
-                <RowDefinition Height="30"/>
-                <RowDefinition Height="30"/>
-                <RowDefinition Height="5"/>
+                <RowDefinition Height="2"/>
+                <RowDefinition Height="27"/>
+                <RowDefinition Height="27"/>
+                <RowDefinition Height="27"/>
+                <RowDefinition Height="27"/>
+                <RowDefinition Height="27"/>
+                <RowDefinition Height="27"/>
+                <RowDefinition Height="2"/>
             </Grid.RowDefinitions>
-            <local:DoubleLabel Grid.Row="1" Grid.Column="2" Margin="5, 3" x:Name="Item1"/>
-            <local:DoubleLabel Grid.Row="2" Grid.Column="2" Margin="5, 3" x:Name="Item2"/>
-            <local:DoubleLabel Grid.Row="3" Grid.Column="2" Margin="5, 3" x:Name="Item3"/>
-            <local:DoubleLabel Grid.Row="4" Grid.Column="2" Margin="5, 3" x:Name="Item4"/>
-            <local:DoubleLabel Grid.Row="5" Grid.Column="2" Margin="5, 3" x:Name="Item5"/>
-            <local:DoubleLabel Grid.Row="6" Grid.Column="2" Margin="5, 3" x:Name="Item6"/>
+            <local:DoubleLabel Grid.Row="1" Grid.Column="2" Margin="4, 3" x:Name="Item1"/>
+            <local:DoubleLabel Grid.Row="2" Grid.Column="2" Margin="4, 3" x:Name="Item2"/>
+            <local:DoubleLabel Grid.Row="3" Grid.Column="2" Margin="4, 3" x:Name="Item3"/>
+            <local:DoubleLabel Grid.Row="4" Grid.Column="2" Margin="4, 3" x:Name="Item4"/>
+            <local:DoubleLabel Grid.Row="5" Grid.Column="2" Margin="4, 3" x:Name="Item5"/>
+            <local:DoubleLabel Grid.Row="6" Grid.Column="2" Margin="4, 3" x:Name="Item6"/>
             <CheckBox x:Name="Item1Check" Grid.Row="1" Grid.Column="1" VerticalAlignment="Center"/>
             <CheckBox x:Name="Item2Check" Grid.Row="2" Grid.Column="1" VerticalAlignment="Center"/>
             <CheckBox x:Name="Item3Check" Grid.Row="3" Grid.Column="1" VerticalAlignment="Center"/>
@@ -52,12 +52,12 @@
             <CheckBox x:Name="Item6Check" Grid.Row="2" Grid.Column="3" VerticalAlignment="Center"/>
             <CheckBox x:Name="Item7Check" Grid.Row="3" Grid.Column="3" VerticalAlignment="Center"/>
             <CheckBox x:Name="Item8Check" Grid.Row="4" Grid.Column="3" VerticalAlignment="Center"/>
-            <Label Grid.Row="2" Grid.RowSpan="2" Grid.Column="5" Margin="5,3" BorderBrush="#000" BorderThickness="1" x:Name="StateContent" FontSize="15" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center" MaxWidth="200">
+            <Label Grid.Row="2" Grid.RowSpan="2" Grid.Column="5" Margin="5,0,5,0" BorderBrush="#000" BorderThickness="1" x:Name="StateContent" FontSize="12" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" MaxWidth="200">
                 <Label.ContentTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding}"
                        TextWrapping="WrapWithOverflow"
-                       TextAlignment="Center"
+                       TextAlignment="Center" MaxWidth="180" MaxHeight="300" VerticalAlignment="Center" HorizontalAlignment="Center"
                        Foreground="#333333"/>
                     </DataTemplate>
                 </Label.ContentTemplate>

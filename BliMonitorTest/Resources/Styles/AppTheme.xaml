@@ -1,6 +1,20 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
+    <!-- ComboBox 텍스트/항목 센터 정렬 (OneChannel과 동일) -->
+    <Style x:Key="CenterAlignedComboBox" TargetType="ComboBox">
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="ItemContainerStyle">
+            <Setter.Value>
+                <Style TargetType="ComboBoxItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                    <Setter Property="VerticalContentAlignment" Value="Center"/>
+                </Style>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- =========================
          Background
     ========================== -->
@@ -25,15 +39,12 @@
     <!-- =========================
          Card
     ========================== -->
-    <DropShadowEffect x:Key="CardShadow"
-                      Color="#000000"
-                      BlurRadius="18"
-                      ShadowDepth="2"
-                      Opacity="0.16"/>
+    <DropShadowEffect x:Key="CardShadow" Color="#000000" BlurRadius="18" ShadowDepth="2" Opacity="0.16"/>
 
+    <!-- ✅ 카드(Border) 공통 스타일 (키 기반) -->
     <Style x:Key="CardBorderStyle" TargetType="Border">
         <Setter Property="Background" Value="White"/>
-        <Setter Property="CornerRadius" Value="16"/>
+        <Setter Property="CornerRadius" Value="18"/>
         <Setter Property="Padding" Value="14"/>
         <Setter Property="Effect" Value="{StaticResource CardShadow}"/>
         <Setter Property="SnapsToDevicePixels" Value="True"/>
@@ -49,10 +60,12 @@
     </Style>
 
     <!-- 섹션 헤더(검색 조건/조회 결과 같은 제목) -->
-    <Style x:Key="SectionTitleStyle" TargetType="TextBlock">
-        <Setter Property="FontSize" Value="15"/>
-        <Setter Property="FontWeight" Value="Bold"/>
-        <Setter Property="Foreground" Value="{StaticResource TextDark}"/>
+    <Style x:Key="SectionTitleStyle" TargetType="Label">
+        <Setter Property="FontSize" Value="18"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="#111827"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Margin" Value="0,0,0,10"/>
     </Style>
 
     <!-- 라벨(기간/Mode/Heater 등) -->
@@ -73,6 +86,87 @@
         <Setter Property="BorderBrush" Value="{StaticResource SoftBorderBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="Background" Value="#FFFFFF"/>
+    </Style>
+
+    <!-- 작은 서브 타이틀 -->
+    <Style x:Key="SubTitleStyle" TargetType="Label">
+        <Setter Property="FontSize" Value="15"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Foreground" Value="#111827"/>
+        <Setter Property="Padding" Value="0"/>
+    </Style>
+
+    <!-- 입력 컨트롤 톤 통일 -->
+    <Style x:Key="SoftTextBoxStyle" TargetType="TextBox">
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="Padding" Value="10,6"/>
+        <Setter Property="BorderBrush" Value="{StaticResource SoftBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Background" Value="#FBFDFF"/>
+    </Style>
+
+    <Style x:Key="SoftListBoxStyle" TargetType="ListBox">
+        <Setter Property="BorderBrush" Value="{StaticResource SoftBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Background" Value="White"/>
+        <Setter Property="Padding" Value="6"/>
+    </Style>
+
+    <!-- 버튼 스타일: 기본(중립) -->
+    <Style x:Key="SoftButtonStyle" TargetType="Button">
+        <Setter Property="Height" Value="34"/>
+        <Setter Property="Padding" Value="14,0"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="#111827"/>
+        <Setter Property="Background" Value="#F3F4F6"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="{StaticResource SoftBorderBrush}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="#EDEFF3"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="#E5E7EB"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- 버튼 스타일: Danger(빨강 액션) -->
+    <Style x:Key="DangerButtonStyle" TargetType="Button" BasedOn="{StaticResource SoftButtonStyle}">
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="Background" Value="#DC2626"/>
+        <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+
+    <!-- 버튼 스타일: Outline(READ처럼 가벼운 강조) -->
+    <Style x:Key="OutlineBlueButtonStyle" TargetType="Button" BasedOn="{StaticResource SoftButtonStyle}">
+        <Setter Property="Foreground" Value="#2563EB"/>
+        <Setter Property="Background" Value="White"/>
+        <Setter Property="BorderBrush" Value="#93C5FD"/>
+    </Style>
+
+    <Style x:Key="OutlineRedButtonStyle" TargetType="Button" BasedOn="{StaticResource SoftButtonStyle}">
+        <Setter Property="Foreground" Value="#DC2626"/>
+        <Setter Property="Background" Value="White"/>
+        <Setter Property="BorderBrush" Value="#FCA5A5"/>
     </Style>
 
     <!-- =========================
@@ -155,14 +249,23 @@
     </Style>
 
     <!-- Top action (OneChannel/MultiWindow에서 사용하던 키 유지) -->
-    <Style x:Key="TopActionButtonStyle" TargetType="Button" BasedOn="{StaticResource PrimaryButtonStyle}">
+    <!-- 상단 액션 버튼(연결/갱신) (OneChannel과 동일) -->
+    <Style x:Key="TopActionButtonStyle" TargetType="Button">
         <Setter Property="Height" Value="32"/>
         <Setter Property="Padding" Value="12,0"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="Background" Value="#2563EB"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
                     <Border Background="{TemplateBinding Background}" CornerRadius="9">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <ContentPresenter HorizontalAlignment="Center"
+                                 VerticalAlignment="Center"/>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>
