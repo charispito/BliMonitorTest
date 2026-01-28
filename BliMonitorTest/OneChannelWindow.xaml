@@ -50,19 +50,19 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition/>
                                 </Grid.ColumnDefinitions>
-                                <CheckBox Content="바탕화면 저장" FontSize="16" VerticalContentAlignment="Center" HorizontalAlignment="Right" Margin="10,0" x:Name="SaveCheck"/>
+                                <CheckBox Content="바탕화면 저장" FontSize="16" VerticalContentAlignment="Center" HorizontalAlignment="Right" Margin="0,1,79,-2" x:Name="SaveCheck"/>
                                 <Label Grid.Column="5" Margin="0,0,20,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontSize="16" x:Name="VersionText"/>
 
                                 <!-- Save File Name -->
                                 <Border Grid.Row="1" Grid.Column="1" Padding="8" BorderThickness="1" BorderBrush="{StaticResource SoftBorderBrush}" CornerRadius="10" Background="#FBFDFF">
-                                    <WrapPanel>
+                                    <WrapPanel Grid.Column="1" Grid.ColumnSpan="2" Margin="0,0,0,0" HorizontalAlignment="Center">
                                         <Label Content="Save File Name" FontSize="16" VerticalContentAlignment="Center" FontWeight="Black"/>
-                                        <TextBox FontSize="17" FontWeight="Black" Width="680" VerticalContentAlignment="Center" x:Name="FileName"/>
+                                        <TextBox FontSize="16" FontWeight="Black" Width="680" VerticalContentAlignment="Center" x:Name="FileName" Margin="5,0,0,0"/>
                                     </WrapPanel>
                                 </Border>
                                 <controls:LabeledCombobox x:Name="PortList" Title="COM" Grid.Column="2" Margin="10,0"/>
-                                <Button Grid.Column="3" Content="연결" Width="86" x:Name="ConnectButton" Style="{StaticResource TopActionButtonStyle}" Padding="0"/>
-                                <Button Grid.Column="4" Content="갱신" Width="86" Margin="10,0" x:Name="RefreshButton" Style="{StaticResource TopActionButtonStyle}" Background="#0EA5E9" Padding="0"/>
+                                <Button Grid.Column="3" Content="연결" Width="86" x:Name="ConnectButton" Style="{StaticResource SoftButtonStyle}" Padding="0" Margin="0,0,0,8" VerticalAlignment="Bottom"/>
+                                <Button Grid.Column="4" Content="갱신" Width="86" Margin="10,0" x:Name="RefreshButton" Style="{StaticResource SoftButtonStyle}" Padding="0"/>
                                 <Label Grid.Column="5" Content="2022.02.01 ver 1.0.0" FontWeight="Black" Visibility="Hidden"/>
                                 <ComboBox x:Name="DummyInterfaceCombo" Grid.Row="0" Grid.Column="5" Width="120" Margin="123,0,12,0" Style="{StaticResource PrettyComboBoxStyle}">
                                     <ComboBoxItem Content="상태 요청" Tag="3"/>

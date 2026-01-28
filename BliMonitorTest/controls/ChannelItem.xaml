@@ -52,16 +52,7 @@
             <CheckBox x:Name="Item6Check" Grid.Row="2" Grid.Column="3" VerticalAlignment="Center"/>
             <CheckBox x:Name="Item7Check" Grid.Row="3" Grid.Column="3" VerticalAlignment="Center"/>
             <CheckBox x:Name="Item8Check" Grid.Row="4" Grid.Column="3" VerticalAlignment="Center"/>
-            <Label Grid.Row="2" Grid.RowSpan="2" Grid.Column="5" Margin="5,0,5,0" BorderBrush="#000" BorderThickness="1" x:Name="StateContent" FontSize="12" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" MaxWidth="200">
-                <Label.ContentTemplate>
-                    <DataTemplate>
-                        <TextBlock Text="{Binding}"
-                       TextWrapping="WrapWithOverflow"
-                       TextAlignment="Center" MaxWidth="180" MaxHeight="300" VerticalAlignment="Center" HorizontalAlignment="Center"
-                       Foreground="#333333"/>
-                    </DataTemplate>
-                </Label.ContentTemplate>
-            </Label>
+            <Label Grid.Row="2" Grid.RowSpan="2" Grid.Column="5" Padding="0" BorderBrush="#000" BorderThickness="1" x:Name="StateContent" FontSize="13" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" MaxWidth="195"/>
             <local:DoubleLabel Grid.Row="4" Grid.Column="5" Margin="5, 3" x:Name="VersionBox" TitleBackground="#652822E8"/>
             <local:DoubleLabel Grid.Row="5" Grid.Column="5" Margin="5, 3" x:Name="CompileBox" TitleBackground="#652822E8"/>
             <local:DoubleLabel Grid.Row="6" Grid.Column="5" Margin="5, 3" x:Name="StateBox" TitleBackground="#652822E8"/>
