@@ -310,7 +310,8 @@ namespace BliMonitorTest.controls
             {
                 IsNewVersion = false;
                 ApplyNewVersion.IsChecked = false;
-                MessageBox.Show("연결 되지 않았습니다.");
+                //MessageBox.Show("연결 되지 않았습니다.");
+                ToastMessage.ToastService.AppToast.Show("연결 되지 않았습니다.");
                 return;
             }
 
@@ -332,7 +333,8 @@ namespace BliMonitorTest.controls
             {
                 if (client == null || !client.Connected)
                 {
-                    MessageBox.Show("연결 되지 않았습니다.");
+                    //MessageBox.Show("연결 되지 않았습니다.");
+                    ToastMessage.ToastService.AppToast.Show("연결 되지 않았습니다.");
                     return;
                 }
             }
@@ -365,7 +367,8 @@ namespace BliMonitorTest.controls
         {
             if (client == null || !client.Connected)
             {
-                MessageBox.Show("연결 되지 않았습니다.");
+                //MessageBox.Show("연결 되지 않았습니다.");
+                ToastMessage.ToastService.AppToast.Show("연결 되지 않았습니다.");
                 return;
             }
             run = false;
@@ -393,13 +396,15 @@ namespace BliMonitorTest.controls
         {
             if (client == null || !client.Connected)
             {
-                MessageBox.Show("연결 되지 않았습니다.");
+                //MessageBox.Show("연결 되지 않았습니다.");
+                ToastMessage.ToastService.AppToast.Show("연결 되지 않았습니다.");
                 return;
             }
             byte[] command = null;
             if (run)
             {
-                MessageBox.Show("이미 시작했습니다.");
+                //MessageBox.Show("이미 시작했습니다.");
+                ToastMessage.ToastService.AppToast.Show("이미 시작했습니다.");
                 return;
             }
             if (IsNewVersion)

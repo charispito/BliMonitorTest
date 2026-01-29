@@ -58,6 +58,12 @@ namespace BliMonitorTest
         private RangeEnabledObservableCollection<SettingData> heater11 = new RangeEnabledObservableCollection<SettingData>();
         private RangeEnabledObservableCollection<SettingData> heater12 = new RangeEnabledObservableCollection<SettingData>();
 
+        // 진행 상태 및 저장 간격 제어
+        private volatile bool _isReadingError = false;
+
+        private int retentionDays = 90;     // 에러데이터 보관 기간(일)
+        private int maxFiles = 10000;       // 에러데이터 최대 파일 수
+
         public ParameterWindow(SerialPort port, OneChannelValueDetail detail)
         {
             InitializeComponent();
@@ -146,18 +152,41 @@ namespace BliMonitorTest
                 ReadParamButton.Click += ReadParamButton_Click;
                 ReadErrorButton.Click += (s, e) =>
                 {
-                    byte[] command = Protocol.GetError(oneChannel.IsNewVersion);
-                    command.PrintHex(1);
-                    oneChannel.setParameter();
-                    port.Write(command, 0, command.Length);
+                    if (_isReadingError)
+                    {
+                        log.Info("ReadErrorButton: 이전 요청 처리 중. 클릭 무시");
+                        return;
+                    }
 
-                    log.Debug("============        LOG DATA ParameterWindow.cs [ReadErrorButton] RESPONSE START       ==================");
-                    log.Debug("ReadErrorButton IsNewVersion : " + oneChannel.IsNewVersion);
-                    ByteLogHelper.LogPacket(command, "RX");
-                    ByteLogHelper.ToHexWith0x(command);
-                    ByteLogHelper.DumpLinesWith0x(command, 16);
-                    log.Debug("============        LOG DATA ParameterWindow.cs [ReadErrorButton] RESPONSE END       ==================");
+                    try
+                    {
+                        byte[] command = Protocol.GetError(oneChannel.IsNewVersion);
+                        command.PrintHex(1);
+                        oneChannel.setParameter();
+                        port.Write(command, 0, command.Length);
+
+                        log.Debug("============        LOG DATA ParameterWindow.cs [ReadErrorButton] RESPONSE START       ==================");
+                        log.Debug("ReadErrorButton IsNewVersion : " + oneChannel.IsNewVersion);
+                        ByteLogHelper.LogPacket(command, "RX");
+                        ByteLogHelper.ToHexWith0x(command);
+                        ByteLogHelper.DumpLinesWith0x(command, 16);
+                        log.Debug("============        LOG DATA ParameterWindow.cs [ReadErrorButton] RESPONSE END       ==================");
+                    } catch (Exception ex) {
+                        log.Error("ReadErrorButton 전송 실패", ex);
+                        _isReadingError = false;
+                        ReadErrorButton.IsEnabled = true;
+                        //MessageBox.Show("에러 요청 전송 중 문제가 발생했습니다.");
+                        ToastMessage.ToastService.AppToast.Show("에러 요청 전송 중 문제가 발생했습니다.");
+                    } finally {
+                        // 향후 패킷수신시 자동 저장 기능 구현 예정
+                        AutoSaveErrorDataToFile();
+
+                        // 요청 상태 해제
+                        _isReadingError = false;
+                        ReadErrorButton.IsEnabled = true;
+                    }
                 };
+
                 WriteParamButton.Click += WriteParamButton_Click;
                 ResetErrorButton.Click += ResetErrorButton_Click;
             }
@@ -178,7 +207,8 @@ namespace BliMonitorTest
             Console.WriteLine("delete");
             if (FileList.SelectedIndex == -1)
             {
-                MessageBox.Show("파일이 선택 되지 않았습니다.");
+                //MessageBox.Show("파일이 선택 되지 않았습니다.");
+                ToastMessage.ToastService.AppToast.Show("파일이 선택 되지 않았습니다.");
             }
             else
             {
@@ -258,7 +288,8 @@ namespace BliMonitorTest
         {
             if (FileName.Text.Length == 0)
             {
-                MessageBox.Show("파일명을 입력 하세요");
+                //MessageBox.Show("파일명을 입력 하세요.");
+                ToastMessage.ToastService.AppToast.Show("파일명을 입력 하세요.");
                 return;
             }
             else
@@ -267,7 +298,8 @@ namespace BliMonitorTest
                 management.CreateConfig(FileName.Text.ToString(), item);
                 SetList();
                 SetErrorList();
-                MessageBox.Show("저장 되었습니다.");
+                //MessageBox.Show("저장 되었습니다.");
+                ToastMessage.ToastService.AppToast.Show("저장 되었습니다.");
             }
         }
 
@@ -302,27 +334,60 @@ namespace BliMonitorTest
         {
             string path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ErrorData");
 
-            if (!Directory.Exists(path))
+            try
             {
+                if (!Directory.Exists(path))
+                {
+                    if (errorFiles == null) errorFiles = new List<string>();
+                    errorFiles.Clear();
+                    ErrorFileList.ItemsSource = errorFiles;
+                    ErrorFileList.Items.Refresh();
+                    return;
+                }
+
+                var info = new DirectoryInfo(path);
+
+                // 최신 생성 파일이 위로 오도록: CreationTimeUtc 기준 내림차순
+                var ordered = info.GetFiles("*.config")
+                                  .OrderByDescending(f => f.CreationTimeUtc)
+                                  .ToList();
+
                 if (errorFiles == null) errorFiles = new List<string>();
                 errorFiles.Clear();
+
+                foreach (FileInfo file in ordered)
+                {
+                    errorFiles.Add(System.IO.Path.GetFileNameWithoutExtension(file.Name));
+                }
+
                 ErrorFileList.ItemsSource = errorFiles;
                 ErrorFileList.Items.Refresh();
-                return;
             }
-
-            var info = new DirectoryInfo(path);
-
-            if (errorFiles == null) errorFiles = new List<string>();
-            errorFiles.Clear();
-
-            foreach (FileInfo file in info.GetFiles("*.config"))
+            catch (Exception ex)
             {
-                errorFiles.Add(System.IO.Path.GetFileNameWithoutExtension(file.Name));
+                log.Warn("SetErrorList 정렬 처리 중 문제 발생", ex);
+                // 문제가 발생해도 최소한 기존 방식으로라도 목록을 보여주기 위한 폴백
+                try
+                {
+                    var info = new DirectoryInfo(path);
+                    if (errorFiles == null) errorFiles = new List<string>();
+                    errorFiles.Clear();
+                    foreach (FileInfo file in info.GetFiles("*.config"))
+                    {
+                        errorFiles.Add(System.IO.Path.GetFileNameWithoutExtension(file.Name));
+                    }
+                    ErrorFileList.ItemsSource = errorFiles;
+                    ErrorFileList.Items.Refresh();
+                }
+                catch
+                {
+                    // 폴백도 실패하면 빈 리스트 표시
+                    if (errorFiles == null) errorFiles = new List<string>();
+                    errorFiles.Clear();
+                    ErrorFileList.ItemsSource = errorFiles;
+                    ErrorFileList.Items.Refresh();
+                }
             }
-
-            ErrorFileList.ItemsSource = errorFiles;
-            ErrorFileList.Items.Refresh();
         }
 
         private SettingItem GetSettingSectionData()
@@ -400,7 +465,8 @@ namespace BliMonitorTest
         {
             if (!RightSet)
             {
-                MessageBox.Show("값이 설정 되지 않았습니다.");
+                //MessageBox.Show("값이 설정 되지 않았습니다.");
+                ToastMessage.ToastService.AppToast.Show("값이 설정 되지 않았습니다.");
                 return;
             }
 
@@ -601,14 +667,16 @@ namespace BliMonitorTest
                 var root = doc.Root;
                 if (root == null)
                 {
-                    MessageBox.Show("잘못된 파일 형식입니다.");
+                    //MessageBox.Show("잘못된 파일 형식입니다.");
+                    ToastMessage.ToastService.AppToast.Show("잘못된 파일 형식입니다.");
                     return;
                 }
 
                 var section = root.Element("Error");
                 if (section == null)
                 {
-                    MessageBox.Show("Error 섹션을 찾을 수 없습니다.");
+                    //MessageBox.Show("Error 섹션을 찾을 수 없습니다.");
+                    ToastMessage.ToastService.AppToast.Show("Error 섹션을 찾을 수 없습니다.");
                     return;
                 }
 
@@ -658,7 +726,8 @@ namespace BliMonitorTest
             catch (Exception ex)
             {
                 log.Error("Error 파일 로드 실패", ex);
-                MessageBox.Show("에러 파일을 읽는 중 문제가 발생했습니다.");
+                //MessageBox.Show("에러 파일을 읽는 중 문제가 발생했습니다.");
+                ToastMessage.ToastService.AppToast.Show("에러 파일을 읽는 중 문제가 발생했습니다.");
             }
         }
 
@@ -688,14 +757,16 @@ namespace BliMonitorTest
         {
             if (ErrorFileName.Text == null || ErrorFileName.Text.Trim().Length == 0)
             {
-                MessageBox.Show("에러 파일명을 입력하세요");
+                //MessageBox.Show("에러 파일명을 입력하세요.");
+                ToastMessage.ToastService.AppToast.Show("에러 파일명을 입력하세요.");
                 return;
             }
 
             var src = ErrorGrid.ItemsSource as System.Collections.IEnumerable;
             if (src == null)
             {
-                MessageBox.Show("저장할 에러 데이터가 없습니다.");
+                //MessageBox.Show("저장할 에러 데이터가 없습니다.");
+                ToastMessage.ToastService.AppToast.Show("저장할 에러 데이터가 없습니다.");
                 return;
             }
 
@@ -781,7 +852,8 @@ namespace BliMonitorTest
 
             File.WriteAllText(full, sb.ToString(), Encoding.UTF8);
             SetErrorList();
-            MessageBox.Show("에러 데이터가 저장되었습니다.");
+            //MessageBox.Show("에러 데이터가 저장되었습니다.");
+            ToastMessage.ToastService.AppToast.Show("에러 데이터가 저장되었습니다.");
         }
 
         // null→"0"; trim 후 빈칸→"0"; 숫자면 0→"0", 그 외는 원문 유지; 숫자 아님은 원문 유지
@@ -809,7 +881,8 @@ namespace BliMonitorTest
         {
             if (ErrorFileList.SelectedIndex == -1)
             {
-                MessageBox.Show("에러 파일이 선택되지 않았습니다.");
+                //MessageBox.Show("에러 파일이 선택되지 않았습니다.");
+                ToastMessage.ToastService.AppToast.Show("에러 파일이 선택되지 않았습니다.");
                 return;
             }
 
@@ -1257,7 +1330,180 @@ namespace BliMonitorTest
             {
                 ErrorGrid.ItemsSource = list;
                 RunCount.Content = timesInt;
+
+                // 화면 셋팅 직후 자동 저장 트리거 : 실기구로 부터 에러데이터 수신 시점
+                AutoSaveErrorDataToFile();
             }));
+        }
+
+        // 경로에 UTF-8로 저장. IOException 발생 시 1회 재시도(50ms 대기)
+        private static void WriteFileWithRetry(string path, string content)
+        {
+            try
+            {
+                File.WriteAllText(path, content, Encoding.UTF8);
+            }
+            catch (IOException)
+            {
+                System.Threading.Thread.Sleep(50);
+                File.WriteAllText(path, content, Encoding.UTF8);
+            }
+        }
+
+        // 기본 파일명(yyyyMMdd_HHmmss) 사용, 동일 초에 다중 저장 시 _clickNN 접미사로 충돌 방지
+        private static string BuildUniqueErrorFilePath(string directory)
+        {
+            string baseName = "ErrorData_" + DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            string full = System.IO.Path.Combine(directory, baseName + ".config");
+            int suffix = 1;
+            while (File.Exists(full) && suffix <= 99)
+            {
+                full = System.IO.Path.Combine(directory, $"{baseName}_click{suffix:D2}.config");
+                suffix++;
+            }
+            return full;
+        }
+
+        // ErrorData 보존 정책: 90일 초과 파일 삭제, 이어서 개수 상한(기본 10000) 초과 시 오래된 파일부터 정리
+        private void EnforceErrorDataRetention(string directory, int retentionDays, int maxFiles)
+        {
+            try
+            {
+                if (!Directory.Exists(directory)) return;
+
+                var all = new DirectoryInfo(directory)
+                    .GetFiles("*.config")
+                    .OrderBy(f => f.CreationTimeUtc)
+                    .ToList();
+
+                // 90일 초과 파일 삭제
+                DateTime limit = DateTime.UtcNow.AddDays(-retentionDays);
+                foreach (var f in all.Where(f => f.CreationTimeUtc < limit).ToList())
+                {
+                    try { f.Delete(); } catch { /* 무시 */ }
+                }
+
+                // 최신 목록 다시 로드 후 개수 상한 체크
+                all = new DirectoryInfo(directory)
+                    .GetFiles("*.config")
+                    .OrderBy(f => f.CreationTimeUtc)
+                    .ToList();
+
+                if (all.Count > maxFiles)
+                {
+                    int toDelete = all.Count - maxFiles;
+                    foreach (var f in all.Take(toDelete))
+                    {
+                        try { f.Delete(); } catch { /* 무시 */ }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Warn("EnforceErrorDataRetention 처리 중 문제", ex);
+            }
+        }
+
+        // 자동 저장: ErrorGrid.ItemsSource를 XML로 저장 (파일명 충돌 방지 + 재시도 + 90일 보존)
+        private void AutoSaveErrorDataToFile()
+        {
+            try
+            {
+                var src = ErrorGrid.ItemsSource as System.Collections.IEnumerable;
+                if (src == null)
+                {
+                    log.Warn("AutoSaveErrorDataToFile: ErrorGrid.ItemsSource가 비어 있음");
+                    return;
+                }
+
+                string dir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ErrorData");
+                if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+
+                // XML 조립
+                var sb = new StringBuilder();
+                sb.AppendLine("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
+                sb.AppendLine("<configuration>");
+                sb.AppendLine("  <configSections>");
+                sb.AppendLine("    <section name=\"Error\" type=\"BliMonitorTest.setting.SettingSection, BliMonitorTest, Version=1.0.0.9, Culture=neutral, PublicKeyToken=null\" />");
+                sb.AppendLine("  </configSections>");
+                sb.AppendLine("  <appSettings>");
+                sb.AppendLine("    <clear />");
+                sb.AppendLine("  </appSettings>");
+                sb.AppendLine("  <Error>");
+
+                int index = 1;
+                foreach (var row in src)
+                {
+                    string name = "";
+                    string v1 = "";
+                    string v2 = "";
+                    string v3 = "";
+                    string v4 = "";
+                    string v5 = "";
+
+                    if (row is ErrorData ed)
+                    {
+                        name = ed.Name ?? "";
+                        v1 = ed.Value ?? "";
+                        v2 = ed.Value2 ?? "";
+                        v3 = ed.Value3 ?? "";
+                        v4 = ed.Value4 ?? "";
+                        v5 = ed.Value5 ?? "";
+                    }
+                    else if (row is SettingData sd)
+                    {
+                        name = sd.Name ?? "";
+                        v1 = sd.Value.ToString() ?? "";
+                        v2 = sd.Value2.ToString() ?? "";
+                        v3 = sd.Value3.ToString() ?? "";
+                        v4 = sd.Value4.ToString() ?? "";
+                        v5 = sd.Value5.ToString() ?? "";
+                    }
+                    else
+                    {
+                        continue;
+                    }
+
+                    v1 = NormalizeZeroForSave(v1);
+                    v2 = NormalizeZeroForSave(v2);
+                    v3 = NormalizeZeroForSave(v3);
+                    v4 = NormalizeZeroForSave(v4);
+                    v5 = NormalizeZeroForSave(v5);
+
+                    name = System.Security.SecurityElement.Escape(name);
+                    v1 = System.Security.SecurityElement.Escape(v1);
+                    v2 = System.Security.SecurityElement.Escape(v2);
+                    v3 = System.Security.SecurityElement.Escape(v3);
+                    v4 = System.Security.SecurityElement.Escape(v4);
+                    v5 = System.Security.SecurityElement.Escape(v5);
+
+                    sb.AppendLine($"    <add Name=\"{name}\" Value1=\"{v1}\" Value2=\"{v2}\" Value3=\"{v3}\" Value4=\"{v4}\" Value5=\"{v5}\" Index=\"{index}\" />");
+                    index++;
+                }
+
+                sb.AppendLine("  </Error>");
+                sb.AppendLine("</configuration>");
+
+                // 파일 경로 생성(충돌 방지)
+                string full = BuildUniqueErrorFilePath(dir);
+
+                // 저장(재시도 1회)
+                WriteFileWithRetry(full, sb.ToString());
+
+                // 리스트 갱신
+                SetErrorList();
+
+                // 보존 정책 실행(90일 + 개수 상한)
+                EnforceErrorDataRetention(dir, retentionDays: 90, maxFiles: 10000);
+
+                log.Info($"AutoSaveErrorDataToFile: 자동 저장 완료 → {full}");
+            }
+            catch (Exception ex)
+            {
+                log.Error("AutoSaveErrorDataToFile 실패", ex);
+                //MessageBox.Show("에러 데이터를 자동 저장하는 중 문제가 발생했습니다.");
+                ToastMessage.ToastService.AppToast.Show("에러 데이터를 자동 저장하는 중 문제가 발생했습니다.");
+            }
         }
 
         private RangeEnabledObservableCollection<SettingData> getModeData()

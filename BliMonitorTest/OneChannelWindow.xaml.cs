@@ -493,7 +493,8 @@ namespace BliMonitorTest
                 // 포트 선택 확인
                 if (PortList.box.SelectedIndex == -1)
                 {
-                    MessageBox.Show("포트가 선택 되지 않았습니다.");
+                    //MessageBox.Show("포트가 선택 되지 않았습니다.");
+                    ToastMessage.ToastService.AppToast.Show("포트가 선택 되지 않았습니다.");
                     return;
                 }
 
@@ -638,7 +639,8 @@ namespace BliMonitorTest
                         else
                         {
                             channel.Item1Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -666,7 +668,8 @@ namespace BliMonitorTest
                         else
                         {
                             channel.Item2Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -703,7 +706,8 @@ namespace BliMonitorTest
                         else
                         {
                             channel.Item3Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -731,7 +735,8 @@ namespace BliMonitorTest
                         else
                         {
                             channel.Item4Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -759,7 +764,8 @@ namespace BliMonitorTest
                         else
                         {
                             channel.Item5Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -787,7 +793,8 @@ namespace BliMonitorTest
                         else
                         {
                             channel.Item6Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -815,7 +822,8 @@ namespace BliMonitorTest
                         else
                         {
                             channel.Item7Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -843,7 +851,8 @@ namespace BliMonitorTest
                         else
                         {
                             channel.Item8Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else

@@ -137,7 +137,8 @@ namespace BliMonitorTest
                         else
                         {
                             Item1.Item1Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -164,7 +165,8 @@ namespace BliMonitorTest
                         else
                         {
                             Item1.Item2Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -201,7 +203,8 @@ namespace BliMonitorTest
                         else
                         {
                             Item1.Item3Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -228,7 +231,8 @@ namespace BliMonitorTest
                         else
                         {
                             Item1.Item4Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -255,7 +259,8 @@ namespace BliMonitorTest
                         else
                         {
                             Item1.Item5Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -282,7 +287,8 @@ namespace BliMonitorTest
                         else
                         {
                             Item1.Item6Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -309,7 +315,8 @@ namespace BliMonitorTest
                         else
                         {
                             Item1.Item7Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -336,7 +343,8 @@ namespace BliMonitorTest
                         else
                         {
                             Item1.Item8Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -382,7 +390,8 @@ namespace BliMonitorTest
                         else
                         {
                             Item2.Item1Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -409,7 +418,8 @@ namespace BliMonitorTest
                         else
                         {
                             Item2.Item2Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -444,7 +454,8 @@ namespace BliMonitorTest
                         else
                         {
                             Item2.Item3Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -471,7 +482,8 @@ namespace BliMonitorTest
                         else
                         {
                             Item2.Item4Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -498,7 +510,8 @@ namespace BliMonitorTest
                         else
                         {
                             Item2.Item5Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -525,7 +538,8 @@ namespace BliMonitorTest
                         else
                         {
                             Item2.Item6Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -552,7 +566,8 @@ namespace BliMonitorTest
                         else
                         {
                             Item2.Item7Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -579,7 +594,8 @@ namespace BliMonitorTest
                         else
                         {
                             Item2.Item8Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -626,7 +642,8 @@ namespace BliMonitorTest
                         else
                         {
                             Item3.Item1Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -653,7 +670,8 @@ namespace BliMonitorTest
                         else
                         {
                             Item3.Item2Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -689,7 +707,8 @@ namespace BliMonitorTest
                         else
                         {
                             Item3.Item3Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -716,7 +735,8 @@ namespace BliMonitorTest
                         else
                         {
                             Item3.Item4Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -743,7 +763,8 @@ namespace BliMonitorTest
                         else
                         {
                             Item3.Item5Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -770,7 +791,8 @@ namespace BliMonitorTest
                         else
                         {
                             Item3.Item6Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -797,7 +819,8 @@ namespace BliMonitorTest
                         else
                         {
                             Item3.Item7Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -824,7 +847,8 @@ namespace BliMonitorTest
                         else
                         {
                             Item3.Item8Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -870,7 +894,8 @@ namespace BliMonitorTest
                         else
                         {
                             Item4.Item1Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -897,7 +922,8 @@ namespace BliMonitorTest
                         else
                         {
                             Item4.Item2Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -933,7 +959,8 @@ namespace BliMonitorTest
                         else
                         {
                             Item4.Item3Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -960,7 +987,8 @@ namespace BliMonitorTest
                         else
                         {
                             Item4.Item4Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -987,7 +1015,8 @@ namespace BliMonitorTest
                         else
                         {
                             Item4.Item5Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -1014,7 +1043,8 @@ namespace BliMonitorTest
                         else
                         {
                             Item4.Item6Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else
@@ -1041,7 +1071,8 @@ namespace BliMonitorTest
                         else
                         {
                             Item4.Item7Check.IsChecked = false;
-                            MessageBox.Show("최대 8개 선택 가능합니다.");
+                            //MessageBox.Show("최대 8개 선택 가능합니다.");
+                            ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
                     else

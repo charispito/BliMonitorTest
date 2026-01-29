@@ -149,13 +149,15 @@ namespace BliMonitorTest
 
             if (toExclusive <= fromDate)
             {
-                MessageBox.Show("기간이 올바르지 않습니다.");
+                //MessageBox.Show("기간이 올바르지 않습니다.");
+                ToastMessage.ToastService.AppToast.Show("기간이 올바르지 않습니다.");
                 return;
             }
 
             if ((toExclusive - fromDate).TotalDays > 31)
             {
-                MessageBox.Show("기간 조회는 최대 1달(31일)까지만 가능합니다.");
+                //MessageBox.Show("기간 조회는 최대 1달(31일)까지만 가능합니다.");
+                ToastMessage.ToastService.AppToast.Show("기간 조회는 최대 1달(31일)까지만 가능합니다.");
                 return;
             }
 
@@ -182,7 +184,8 @@ namespace BliMonitorTest
 
             if (!File.Exists(dbPath))
             {
-                MessageBox.Show($"DB 파일을 찾을 수 없습니다.\n{dbPath}");
+                //MessageBox.Show($"DB 파일을 찾을 수 없습니다.\n{dbPath}");
+                ToastMessage.ToastService.AppToast.Show($"DB 파일을 찾을 수 없습니다.\n{dbPath}");
                 return;
             }
 
@@ -333,7 +336,8 @@ namespace BliMonitorTest
                     // ✅ 1회 저장 성공 → 초기 상태로 복귀(단발성)
                     ResetExcelState(deleteTempFile: true);
 
-                    MessageBox.Show("엑셀 파일 저장이 완료되었습니다.");
+                    //MessageBox.Show("엑셀 파일 저장이 완료되었습니다.");
+                    ToastMessage.ToastService.AppToast.Show("엑셀 파일 저장이 완료되었습니다.");
                 }
                 catch (Exception ex)
                 {
@@ -370,7 +374,8 @@ namespace BliMonitorTest
             string dbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Monitoring.db");
             if (!File.Exists(dbPath))
             {
-                MessageBox.Show($"DB 파일을 찾을 수 없습니다.\n{dbPath}");
+                //MessageBox.Show($"DB 파일을 찾을 수 없습니다.\n{dbPath}");
+                ToastMessage.ToastService.AppToast.Show($"DB 파일을 찾을 수 없습니다.\n{dbPath}");
                 return;
             }
 
@@ -394,7 +399,8 @@ namespace BliMonitorTest
 
             if (totalCount <= 0)
             {
-                MessageBox.Show("조건에 맞는 데이터가 없습니다.");
+                //MessageBox.Show("조건에 맞는 데이터가 없습니다.");
+                ToastMessage.ToastService.AppToast.Show("조건에 맞는 데이터가 없습니다.\"");
                 return;
             }
 
@@ -431,6 +437,7 @@ namespace BliMonitorTest
                 });
 
                 MessageBox.Show("엑셀 다운로드가 완료되었습니다.");
+                ToastMessage.ToastService.AppToast.Show("엑셀 다운로드가 완료되었습니다.");
             }
             finally
             {
@@ -509,7 +516,8 @@ namespace BliMonitorTest
                             btnExcel.ToolTip = null;
                         }
 
-                        MessageBox.Show("엑셀 생성이 취소되었습니다.");
+                        //MessageBox.Show("엑셀 생성이 취소되었습니다.");
+                        ToastMessage.ToastService.AppToast.Show("엑셀 생성이 취소되었습니다.");
                         return;
                     }
 

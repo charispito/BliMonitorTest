@@ -272,19 +272,13 @@ namespace BliMonitorTest.util
                                 Array.Clear(clientdata.readByteParameterData, 0, result);
                                 clientdata.readParameterData.AddRange(slice);
 
-                                log.Debug("!!!!!!!!!!!!!!!!!!!        3333333333333333 START Old Version     !!!!!!!!!!!!!!!!!!!");
-                                log.Debug("ClientManager asyncReadAsync 265 slice : " + slice);
-                                log.Debug("ClientManager asyncReadAsync 265 clientdata.readParameterData.Count : " + clientdata.readParameterData.Count);
-                                log.Debug("ClientManager asyncReadAsync 265 clientdata.readParameterData.ToArray() : " + clientdata.readParameterData.ToArray());
-                                log.Debug("!!!!!!!!!!!!!!!!!!!        3333333333333333 END Old Version     !!!!!!!!!!!!!!!!!!!");
-
                                 if (clientdata.readParameterData.Count >= 70)
                                 {
                                     byte[] receive = clientdata.readParameterData.ToArray();
                                     int s_idx = getStxIndex(receive);
 
-                                    log.Debug("ClientManager asyncReadAsync 275 receive : " + receive);
-                                    log.Debug("ClientManager asyncReadAsync 275 s_idx : " + s_idx);
+                                    //log.Debug("ClientManager asyncReadAsync 275 receive : " + receive);
+                                    //log.Debug("ClientManager asyncReadAsync 275 s_idx : " + s_idx);
                                     ByteLogHelper.LogPacket(receive, "RX");
 
                                     Console.WriteLine("s_idx={0} length={1}", s_idx, receive.Length);

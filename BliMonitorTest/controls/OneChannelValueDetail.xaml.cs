@@ -336,12 +336,14 @@ namespace BliMonitorTest.controls
         {
             if (!port.IsOpen)
             {
-                MessageBox.Show("연결 되지 않았습니다.");
+                //MessageBox.Show("연결 되지 않았습니다.");
+                ToastMessage.ToastService.AppToast.Show("연결 되지 않았습니다.");
                 return;
             }
             if (run)
             {
-                MessageBox.Show("이미 운전중입니다.");
+                //MessageBox.Show("이미 운전중입니다.");
+                ToastMessage.ToastService.AppToast.Show("이미 운전중입니다.");
                 return;
             }
             OnTestStart();
@@ -362,7 +364,8 @@ namespace BliMonitorTest.controls
         {
             if (!port.IsOpen)
             {
-                MessageBox.Show("연결 되지 않았습니다.");
+                //MessageBox.Show("연결 되지 않았습니다.");
+                ToastMessage.ToastService.AppToast.Show("연결 되지 않았습니다.");
                 return;
             }
             if (streamWriter != null)
