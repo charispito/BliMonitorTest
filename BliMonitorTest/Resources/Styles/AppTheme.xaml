@@ -68,6 +68,15 @@
         <Setter Property="Margin" Value="0,0,0,10"/>
     </Style>
 
+    <!-- 섹션 헤더(검색 조건/조회 결과 같은 제목) -->
+    <Style x:Key="SectionTitleStyleTextBlock" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="18"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="#111827"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Margin" Value="0,0,0,10"/>
+    </Style>
+    
     <!-- 라벨(기간/Mode/Heater 등) -->
     <Style x:Key="FieldLabelStyle" TargetType="TextBlock">
         <Setter Property="Foreground" Value="{StaticResource TextMute}"/>

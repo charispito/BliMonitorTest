@@ -599,7 +599,8 @@ namespace BliMonitorTest
             ErrorSaveButton.Click += ErrorSaveButton_Click;
             ErrorDeleteButton.Click += ErrorDeleteButton_Click;
             ErrorRefreshButton.Click += ErrorRefreshButton_Click;
-
+            OpenErrorDataQueryButton.Click += OpenErrorDataQueryButton_Click;
+            
             // 검색 필터 이벤트 연결 (XAML의 x:Name 동일 가정)
             FileSearchBox.TextChanged += FileSearchBox_TextChanged;
             ErrorSearchBox.TextChanged += ErrorSearchBox_TextChanged;
@@ -2188,6 +2189,35 @@ namespace BliMonitorTest
                 out double v)) return v;
             if (double.TryParse((s ?? "").Trim(), out v)) return v;
             return 0;
+        }
+
+        private void OpenErrorDataQueryButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // 먼저 인스턴스 생성 (여기서 리소스 파싱이 일어남)
+                var win = new ErrorDataQueryWindow
+                {
+                    Owner = this,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                };
+
+                // 초기 필터 세팅: 규약은 0(전체)/1(단일)/2(다채널)
+                // MonitoringDb.SOURCE_MULTI가 2가 아닐 수 있으므로 “2”로 강제 전달
+                int currentChannel = _channelNoForDb;
+                string fileLike = (ErrorFileName?.Text ?? "").Trim();
+                if (fileLike.Length == 0) fileLike = null;
+
+                win.SetInitialFilter(sourceType: 2, channelNo: currentChannel, fileNameLike: fileLike);
+
+                // 마지막에 Show
+                win.Show();
+            }
+            catch (Exception ex)
+            {
+                log.Warn("OpenErrorDataQueryButton_Click 실패", ex);
+                ToastMessage.ToastService.AppToast.Show("에러데이터 조회 화면을 여는 중 문제가 발생했습니다.");
+            }
         }
 
     }

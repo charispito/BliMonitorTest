@@ -1985,5 +1985,29 @@ namespace BliMonitorTest
             if (double.TryParse((s ?? "").Trim(), out v)) return v;
             return 0;
         }
+
+        private void OpenErrorDataQueryButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var win = new ErrorDataQueryWindow
+                {
+                    Owner = this,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                };
+                win.Show();
+
+                // 다채널 + 현재 채널 기본 필터 세팅
+                // 파일명 필터는 필요 시 팝업의 ErrorFileName.Text를 넘겨도 좋음
+                int currentChannel = _channelNoForDb;
+                win.SetInitialFilter(sourceType: BliMonitorTest.util.MonitoringDb.MonitoringDb.SOURCE_SINGLE, channelNo: currentChannel, fileNameLike: null);
+            }
+            catch (Exception ex)
+            {
+                log.Warn("OpenErrorDataQueryButton_Click 실패", ex);
+                ToastMessage.ToastService.AppToast.Show("에러데이터 조회 화면을 여는 중 문제가 발생했습니다.");
+            }
+        }
+
     }
 }
