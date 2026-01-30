@@ -7,6 +7,7 @@ using log4net;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -63,6 +64,16 @@ namespace BliMonitorTest
         private int retentionDays = 90;     // 에러데이터 보관 기간(일)
         private int maxFiles = 10000;       // 에러데이터 최대 파일 수
 
+        // 자동 저장 디바운스
+        private System.Threading.CancellationTokenSource _autoSaveCts;
+        private TimeSpan _autoSaveDebounce = TimeSpan.FromMilliseconds(400);
+
+        private ICollectionView _fileView;
+        private ICollectionView _errorView;
+
+        // 휴지통 실패 시 하드 삭제 폴백 여부(필요하면 true로 켬)
+        private bool _allowHardDeleteFallback = false;
+
         public MultiParameterWindow()
         {
             InitializeComponent();
@@ -87,30 +98,55 @@ namespace BliMonitorTest
 
         private void SetList()
         {
-            //string path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ParameterSetting";
             string path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ParameterSetting");
 
-            if (!Directory.Exists(path))
+            try
             {
-                if (files == null) files = new List<string>();
+                if (!Directory.Exists(path))
+                {
+                    files = new List<string>();
+                    files.Clear();
+                    FileList.ItemsSource = files;
+                    FileList.Items.Refresh();
+                    return;
+                }
+
+                var ordered = Directory.EnumerateFiles(path, "*.config")
+                                       .Select(p => System.IO.Path.GetFileNameWithoutExtension(p))
+                                       .OrderBy(s => s, StringComparer.OrdinalIgnoreCase)
+                                       .ToList();
+
+                files = new List<string>();
                 files.Clear();
+                files.AddRange(ordered);
+
                 FileList.ItemsSource = files;
                 FileList.Items.Refresh();
-                return;
             }
-
-            var info = new DirectoryInfo(path);
-
-            if (files == null) files = new List<string>();
-            files.Clear();
-
-            foreach (FileInfo file in info.GetFiles("*.config"))
+            catch (Exception ex)
             {
-                files.Add(System.IO.Path.GetFileNameWithoutExtension(file.Name));
+                log.Warn("SetList 처리 중 문제", ex);
+                try
+                {
+                    var info = new DirectoryInfo(path);
+                    files = new List<string>();
+                    files.Clear();
+                    foreach (var fi in info.GetFiles("*.config"))
+                        files.Add(System.IO.Path.GetFileNameWithoutExtension(fi.Name));
+                    FileList.ItemsSource = files;
+                    FileList.Items.Refresh();
+                }
+                catch
+                {
+                    files = new List<string>();
+                    files.Clear();
+                    FileList.ItemsSource = files;
+                    FileList.Items.Refresh();
+                }
             }
 
-            FileList.ItemsSource = files;
-            FileList.Items.Refresh();
+            InitCollectionViews();
+            ApplyFileFilter((FileSearchBox != null) ? FileSearchBox.Text : null);
         }
 
         private void SetErrorList()
@@ -121,27 +157,22 @@ namespace BliMonitorTest
             {
                 if (!Directory.Exists(path))
                 {
-                    if (errorFiles == null) errorFiles = new List<string>();
+                    errorFiles = new List<string>();
                     errorFiles.Clear();
                     ErrorFileList.ItemsSource = errorFiles;
                     ErrorFileList.Items.Refresh();
                     return;
                 }
 
-                var info = new DirectoryInfo(path);
+                var ordered = Directory.EnumerateFiles(path, "*.config")
+                                       .Select(p => new FileInfo(p))
+                                       .OrderByDescending(fi => fi.CreationTimeUtc)
+                                       .Select(fi => System.IO.Path.GetFileNameWithoutExtension(fi.Name))
+                                       .ToList();
 
-                // 최신 생성 파일이 위로 오도록: CreationTimeUtc 기준 내림차순
-                var ordered = info.GetFiles("*.config")
-                                  .OrderByDescending(f => f.CreationTimeUtc)
-                                  .ToList();
-
-                if (errorFiles == null) errorFiles = new List<string>();
+                errorFiles = new List<string>();
                 errorFiles.Clear();
-
-                foreach (FileInfo file in ordered)
-                {
-                    errorFiles.Add(System.IO.Path.GetFileNameWithoutExtension(file.Name));
-                }
+                errorFiles.AddRange(ordered);
 
                 ErrorFileList.ItemsSource = errorFiles;
                 ErrorFileList.Items.Refresh();
@@ -149,29 +180,29 @@ namespace BliMonitorTest
             catch (Exception ex)
             {
                 log.Warn("SetErrorList 정렬 처리 중 문제 발생", ex);
-                // 문제가 발생해도 최소한 기존 방식으로라도 목록을 보여주기 위한 폴백
                 try
                 {
                     var info = new DirectoryInfo(path);
-                    if (errorFiles == null) errorFiles = new List<string>();
+                    errorFiles = new List<string>();
                     errorFiles.Clear();
                     foreach (FileInfo file in info.GetFiles("*.config"))
-                    {
                         errorFiles.Add(System.IO.Path.GetFileNameWithoutExtension(file.Name));
-                    }
                     ErrorFileList.ItemsSource = errorFiles;
                     ErrorFileList.Items.Refresh();
                 }
                 catch
                 {
-                    // 폴백도 실패하면 빈 리스트 표시
-                    if (errorFiles == null) errorFiles = new List<string>();
+                    errorFiles = new List<string>();
                     errorFiles.Clear();
                     ErrorFileList.ItemsSource = errorFiles;
                     ErrorFileList.Items.Refresh();
                 }
             }
+
+            InitCollectionViews();
+            ApplyErrorFilter((ErrorSearchBox != null) ? ErrorSearchBox.Text : null);
         }
+
 
         private void ListDoubleClick(object sender, MouseButtonEventArgs e)
         {
@@ -565,6 +596,10 @@ namespace BliMonitorTest
             ErrorDeleteButton.Click += ErrorDeleteButton_Click;
             ErrorRefreshButton.Click += ErrorRefreshButton_Click;
 
+            // 검색 필터 이벤트 연결 (XAML의 x:Name 동일 가정)
+            FileSearchBox.TextChanged += FileSearchBox_TextChanged;
+            ErrorSearchBox.TextChanged += ErrorSearchBox_TextChanged;
+
             ReadErrorButton.Click += (s, e) =>
             {
                 if (_isReadingError)
@@ -589,7 +624,7 @@ namespace BliMonitorTest
                     ToastMessage.ToastService.AppToast.Show("에러 요청 전송 중 문제가 발생했습니다.");
                 } finally {
                     // 향후 패킷수신시 자동 저장 기능 구현 예정
-                    AutoSaveErrorDataToFile();
+                    AutoSaveErrorDataToFileDebounced();
 
                     // 요청 상태 해제
                     _isReadingError = false;
@@ -599,6 +634,48 @@ namespace BliMonitorTest
 
             WriteParamButton.Click += WriteParamButton_Click;
             ResetErrorButton.Click += ResetErrorButton_Click;
+
+            InitCollectionViews();
+            this.KeyDown += Window_KeyDown;
+        }
+
+        private void Window_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.A && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                if (FileList.IsKeyboardFocusWithin)
+                {
+                    SelectAllInListBox(FileList);
+                    e.Handled = true;
+                }
+                else if (ErrorFileList.IsKeyboardFocusWithin)
+                {
+                    SelectAllInListBox(ErrorFileList);
+                    e.Handled = true;
+                }
+            }
+            else if (e.Key == Key.Delete)
+            {
+                bool hard = (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
+                if (FileList.IsKeyboardFocusWithin && FileList.SelectedItems.Count > 0)
+                {
+                    DeleteSelectedCore(FileList.SelectedItems, hardDelete: hard, kind: "Param");
+                    e.Handled = true;
+                }
+                else if (ErrorFileList.IsKeyboardFocusWithin && ErrorFileList.SelectedItems.Count > 0)
+                {
+                    DeleteSelectedCore(ErrorFileList.SelectedItems, hardDelete: hard, kind: "Error");
+                    e.Handled = true;
+                }
+            }
+        }
+
+        private void SelectAllInListBox(ListBox lb)
+        {
+            if (lb.SelectionMode != SelectionMode.Extended) return;
+            lb.SelectedItems.Clear();
+            foreach (var item in lb.Items)
+                lb.SelectedItems.Add(item);
         }
 
         private void RefreshButton_Click(object sender, RoutedEventArgs e)
@@ -609,29 +686,7 @@ namespace BliMonitorTest
 
         private void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
-            Console.WriteLine("delete");
-            if (FileList.SelectedIndex == -1)
-            {
-                //MessageBox.Show("파일이 선택 되지 않았습니다.");
-                ToastMessage.ToastService.AppToast.Show("파일이 선택 되지 않았습니다.");
-            }
-            else
-            {
-                string name = FileList.SelectedItem.ToString();
-                string path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ParameterSetting");
-                //string path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ParameterSetting";
-
-                path += $"\\{name}.config";
-                Console.WriteLine(path);
-                
-                FileInfo info = new FileInfo(path);
-                if (info.Exists)
-                {
-                    info.Delete();
-                    SetList();
-                    SetErrorList();
-                }
-            }
+            DeleteSelectedCore(FileList.SelectedItems, hardDelete: false, kind: "Param");
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -891,23 +946,7 @@ namespace BliMonitorTest
 
         private void ErrorDeleteButton_Click(object sender, RoutedEventArgs e)
         {
-            if (ErrorFileList.SelectedIndex == -1)
-            {
-                //MessageBox.Show("에러 파일이 선택되지 않았습니다.");
-                ToastMessage.ToastService.AppToast.Show("에러 파일이 선택되지 않았습니다.");
-                return;
-            }
-
-            string name = ErrorFileList.SelectedItem.ToString();
-            string dir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ErrorData");
-            string full = System.IO.Path.Combine(dir, name + ".config");
-
-            var info = new FileInfo(full);
-            if (info.Exists)
-            {
-                info.Delete();
-                SetErrorList();
-            }
+            DeleteSelectedCore(ErrorFileList.SelectedItems, hardDelete: false, kind: "Error");
         }
 
         private SettingItem GetSettingSectionData()
@@ -1542,7 +1581,7 @@ namespace BliMonitorTest
                 RunCount.Content = timesInt;
 
                 // 화면 셋팅 직후 자동 저장 트리거 : 실기구로 부터 에러데이터 수신 시점
-                AutoSaveErrorDataToFile();
+                AutoSaveErrorDataToFileDebounced();
             }));
         }
 
@@ -1774,6 +1813,272 @@ namespace BliMonitorTest
             RangeEnabledObservableCollection<CompileData> list = new RangeEnabledObservableCollection<CompileData>();
             list.Add(new CompileData { Year = year, Month = month, Day = day, Ver = ver });
             return list;
+        }
+
+        // ===== 안전 삭제 유틸리티 =====
+        private static bool TryUnsetReadOnly(FileInfo info)
+        {
+            try
+            {
+                if (info.Attributes.HasFlag(FileAttributes.ReadOnly))
+                {
+                    info.IsReadOnly = false;
+                    info.Refresh();
+                }
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool MoveToRecycleBinSafe(string path, out string error)
+        {
+            error = null;
+            try
+            {
+                var info = new FileInfo(path);
+                if (!info.Exists)
+                {
+                    error = "파일 없음";
+                    return false;
+                }
+
+                TryUnsetReadOnly(info);
+
+                Microsoft.VisualBasic.FileIO.FileSystem.DeleteFile(
+                    path,
+                    Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs,
+                    Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin);
+
+                return true;
+            }
+            catch (IOException)
+            {
+                error = "파일 사용 중";
+                return false;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                error = "권한 부족";
+                return false;
+            }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+                return false;
+            }
+        }
+
+        private static bool HardDeleteSafe(string path, out string error)
+        {
+            error = null;
+            try
+            {
+                var info = new FileInfo(path);
+                if (!info.Exists)
+                {
+                    error = "파일 없음";
+                    return false;
+                }
+                TryUnsetReadOnly(info);
+                info.Delete();
+                return true;
+            }
+            catch (IOException)
+            {
+                error = "파일 사용 중";
+                return false;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                error = "권한 부족";
+                return false;
+            }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+                return false;
+            }
+        }
+
+        // ===== 일괄 삭제 코어 =====
+        private void DeleteSelectedCore(System.Collections.IList selectedItems, bool hardDelete, string kind)
+        {
+            if (selectedItems == null || selectedItems.Count == 0)
+            {
+                ToastMessage.ToastService.AppToast.Show("선택된 항목이 없습니다.");
+                return;
+            }
+
+            var modeText = hardDelete ? "영구 삭제" : "휴지통으로 이동";
+            if (MessageBox.Show($"{selectedItems.Count}개를 {modeText} 하시겠습니까?",
+                                "삭제 확인", MessageBoxButton.YesNo, MessageBoxImage.Warning)
+                != MessageBoxResult.Yes) return;
+
+            // 삭제 전 선택/스크롤 상태 백업
+            PreserveSelectionAndScroll(kind == "Error" ? ErrorFileList : FileList,
+                                       out var selected, out var firstIndex);
+
+            var names = selectedItems.Cast<object>().Select(o => o.ToString()).ToList();
+            int ok = 0, fail = 0;
+            int inUse = 0, noPerm = 0, notFound = 0, unknown = 0;
+
+            foreach (var name in names)
+            {
+                string dir = (kind == "Error")
+                    ? System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ErrorData")
+                    : System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ParameterSetting");
+
+                string full = System.IO.Path.Combine(dir, name + ".config");
+
+                bool result;
+                string err;
+
+                if (hardDelete)
+                {
+                    result = HardDeleteSafe(full, out err);
+                }
+                else
+                {
+                    result = MoveToRecycleBinSafe(full, out err);
+                    if (!result && _allowHardDeleteFallback && err != "파일 사용 중")
+                    {
+                        // 열려있는 파일은 폴백하지 않음
+                        result = HardDeleteSafe(full, out err);
+                    }
+                }
+
+                if (result) ok++;
+                else
+                {
+                    fail++;
+                    switch (err)
+                    {
+                        case "파일 사용 중": inUse++; break;
+                        case "권한 부족": noPerm++; break;
+                        case "파일 없음": notFound++; break;
+                        default: unknown++; break;
+                    }
+                    log.Warn($"삭제 실패 [{name}] → {err}");
+                }
+            }
+
+            // 목록 갱신
+            if (kind == "Error") SetErrorList(); else SetList();
+
+            // 삭제 후 선택/스크롤 복원
+            RestoreSelectionAndScroll(kind == "Error" ? ErrorFileList : FileList,
+                                      selected, firstIndex);
+
+            // 요약 메시지
+            var sb = new StringBuilder();
+            sb.Append($"{ok}개 삭제");
+            if (fail > 0) sb.Append($", 실패 {fail}개");
+            if (inUse > 0) sb.Append($" (열림 {inUse})");
+            if (noPerm > 0) sb.Append($" (권한 {noPerm})");
+            if (notFound > 0) sb.Append($" (없음 {notFound})");
+            ToastMessage.ToastService.AppToast.Show(sb.ToString(), 3000);
+        }
+
+        // ===== 리스트 선택/스크롤 상태 보존 유틸 =====
+        private static T FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+        {
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                if (child is T t) return t;
+                var result = FindVisualChild<T>(child);
+                if (result != null) return result;
+            }
+            return null;
+        }
+
+        private void PreserveSelectionAndScroll(ListBox listBox, out List<string> selected, out int firstIndex)
+        {
+            selected = listBox.SelectedItems.Cast<object>().Select(o => o.ToString()).ToList();
+            int first = 0;
+            var sv = FindVisualChild<ScrollViewer>(listBox);
+            if (sv != null) first = (int)sv.VerticalOffset;
+            firstIndex = first;
+        }
+
+        private void RestoreSelectionAndScroll(ListBox listBox, List<string> selected, int firstIndex)
+        {
+            listBox.UpdateLayout();
+            listBox.SelectedItems.Clear();
+            foreach (var s in selected)
+            {
+                var item = listBox.Items.Cast<object>().FirstOrDefault(o => o.ToString() == s);
+                if (item != null) listBox.SelectedItems.Add(item);
+            }
+            var sv = FindVisualChild<ScrollViewer>(listBox);
+            if (sv != null) sv.ScrollToVerticalOffset(firstIndex);
+        }
+
+        private void AutoSaveErrorDataToFileDebounced()
+        {
+            _autoSaveCts?.Cancel();
+            _autoSaveCts = new System.Threading.CancellationTokenSource();
+            var token = _autoSaveCts.Token;
+
+            Task.Run(async () =>
+            {
+                try
+                {
+                    await Task.Delay(_autoSaveDebounce, token);
+                    if (token.IsCancellationRequested) return;
+
+                    Dispatcher.Invoke(() => AutoSaveErrorDataToFile());
+                }
+                catch (TaskCanceledException) { /* 무시 */ }
+            });
+        }
+
+        private void InitCollectionViews()
+        {
+            // ItemsSource 설정 후에 호출되어야 합니다.
+            _fileView = CollectionViewSource.GetDefaultView(FileList.ItemsSource);
+            _errorView = CollectionViewSource.GetDefaultView(ErrorFileList.ItemsSource);
+        }
+
+        private void ApplyFileFilter(string keyword)
+        {
+            if (_fileView == null) _fileView = CollectionViewSource.GetDefaultView(FileList.ItemsSource);
+            if (_fileView == null) return;
+
+            _fileView.Filter = o =>
+            {
+                var s = o?.ToString() ?? string.Empty;
+                return s.IndexOf(keyword ?? string.Empty, StringComparison.OrdinalIgnoreCase) >= 0;
+            };
+            _fileView.Refresh();
+        }
+
+        private void ApplyErrorFilter(string keyword)
+        {
+            if (_errorView == null) _errorView = CollectionViewSource.GetDefaultView(ErrorFileList.ItemsSource);
+            if (_errorView == null) return;
+
+            _errorView.Filter = o =>
+            {
+                var s = o?.ToString() ?? string.Empty;
+                return s.IndexOf(keyword ?? string.Empty, StringComparison.OrdinalIgnoreCase) >= 0;
+            };
+            _errorView.Refresh();
+        }
+
+        private void FileSearchBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            var tb = sender as TextBox;
+            ApplyFileFilter(tb?.Text);
+        }
+
+        private void ErrorSearchBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            var tb = sender as TextBox;
+            ApplyErrorFilter(tb?.Text);
         }
     }
 }

@@ -144,16 +144,7 @@
                                 </Grid>
 
                                 <!-- ErrorGrid: 폭 고정 대신 Stretch, 마지막에 여백 -->
-                                <DataGrid Grid.Row="2"
-          Style="{StaticResource GridStyle}"
-          HorizontalAlignment="Stretch"
-          Margin="0,4,8,0"
-          BorderThickness="1"
-          HeadersVisibility="None"
-          CanUserAddRows="False"
-          HorizontalScrollBarVisibility="Disabled"
-          AutoGenerateColumns="False"
-          x:Name="ErrorGrid">
+                                <DataGrid Grid.Row="2" Style="{StaticResource GridStyle}" HorizontalAlignment="Stretch" Margin="0,4,8,0" BorderThickness="1" HeadersVisibility="None" CanUserAddRows="False" HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="ErrorGrid">
                                     <DataGrid.Columns>
                                         <!-- 라벨/값 반복 쌍을 너비 비율로 균등 분배 -->
                                         <DataGridTextColumn IsReadOnly="True"  Width="1.2*" Binding="{Binding Name}">
@@ -300,29 +291,72 @@
                         ========================== -->
                         <Border Grid.Row="1" Grid.Column="5" Grid.RowSpan="7" Style="{StaticResource CardBorderStyle}" Margin="0,0,0,12">
                             <Grid>
+                                <Grid.Resources>
+                                    <!-- 행 공통 마진 -->
+                                    <Style x:Key="FormRowGrid" TargetType="Grid">
+                                        <Setter Property="Margin" Value="0,0,0,8"/>
+                                    </Style>
+                                    <!-- 라벨 스타일 -->
+                                    <Style x:Key="FormLabel" TargetType="Label">
+                                        <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                        <Setter Property="Foreground" Value="#6B7280"/>
+                                        <Setter Property="FontSize" Value="12"/>
+                                        <Setter Property="Padding" Value="0"/>
+                                        <Setter Property="Margin" Value="0,0,8,0"/>
+                                        <Setter Property="Height" Value="15"/>
+                                    </Style>
+                                    <!-- 입력칸 스타일: SoftTextBoxStyle 기반 -->
+                                    <Style x:Key="FormTextBox" TargetType="TextBox" BasedOn="{StaticResource SoftTextBoxStyle}">
+                                        <Setter Property="Height" Value="32"/>
+                                        <Setter Property="FontSize" Value="13"/>
+                                        <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                    </Style>
+                                </Grid.Resources>
                                 <Grid.RowDefinitions>
-                                    <!-- 상단: ErrorData 파일 관리 섹션 -->
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="*"/>
                                     <RowDefinition Height="Auto"/>
-                                    <!-- 구분선 여백 -->
-                                    <RowDefinition Height="20"/>
-                                    <!-- 하단: ParameterSetting 파일 관리 섹션 -->
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <!-- 리스트(가변, 내부 스크롤) -->
+                                    <RowDefinition Height="80"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="*"/>
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
 
-                                <!-- 상단 타이틀: 파일(에러) -->
+                                <!-- 파일(에러) 제목 -->
                                 <Label Grid.Row="0" Content="파일(에러)" Style="{StaticResource SectionTitleStyle}"/>
 
-                                <!-- Error 파일명 입력 -->
-                                <TextBox x:Name="ErrorFileName" Grid.Row="1" Margin="0,0,0,10" Style="{StaticResource SoftTextBoxStyle}"/>
+                                <!-- 파일이름(에러): 1행 2열 -->
+                                <Grid Grid.Row="1" Style="{StaticResource FormRowGrid}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="72"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Label Grid.Column="0" Content="파일이름" Style="{StaticResource FormLabel}"/>
+                                    <TextBox Grid.Column="1" x:Name="ErrorFileName" Style="{StaticResource FormTextBox}"/>
+                                </Grid>
 
-                                <!-- Error 파일 리스트 -->
-                                <ListBox x:Name="ErrorFileList" Grid.Row="2" Style="{StaticResource SoftListBoxStyle}">
+                                <!-- 필터(에러): 1행 2열 -->
+                                <Grid Grid.Row="2" Style="{StaticResource FormRowGrid}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="72"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Label Grid.Column="0" Content="필터" Style="{StaticResource FormLabel}"/>
+                                    <TextBox Grid.Column="1" x:Name="ErrorSearchBox" Style="{StaticResource FormTextBox}" TextChanged="ErrorSearchBox_TextChanged"/>
+                                </Grid>
+
+                                <!-- 리스트(에러): 고정 높이 + 내부 스크롤 -->
+                                <ListBox Grid.Row="3" x:Name="ErrorFileList" Height="140" Style="{StaticResource SoftListBoxStyle}" SelectionMode="Extended" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                            ScrollViewer.CanContentScroll="True" VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling">
                                     <ListBox.ItemContainerStyle>
                                         <Style TargetType="ListBoxItem">
                                             <EventSetter Event="MouseDoubleClick" Handler="ErrorListDoubleClick"/>
@@ -330,8 +364,8 @@
                                     </ListBox.ItemContainerStyle>
                                 </ListBox>
 
-                                <!-- Error 버튼들 -->
-                                <Grid Grid.Row="3" Margin="0,12,0,0">
+                                <!-- 버튼(에러) -->
+                                <Grid Grid.Row="4" Margin="0,10,0,0">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition/>
                                         <ColumnDefinition Width="10"/>
@@ -339,30 +373,40 @@
                                         <ColumnDefinition Width="10"/>
                                         <ColumnDefinition/>
                                     </Grid.ColumnDefinitions>
-
                                     <Button Content="저장" x:Name="ErrorSaveButton" Style="{StaticResource SoftButtonStyle}"/>
                                     <Button Grid.Column="2" x:Name="ErrorDeleteButton" Content="삭제" Style="{StaticResource SoftButtonStyle}"/>
                                     <Button Grid.Column="4" x:Name="ErrorRefreshButton" Content="새로고침" Style="{StaticResource SoftButtonStyle}"/>
                                 </Grid>
 
-                                <!-- 구분 여백 -->
-                                <Border Grid.Row="4" Height="1" Background="#E5E7EB" Margin="0,10,0,10"/>
+                                <!-- 구분선 -->
+                                <Border Grid.Row="5" Height="1" Background="#E5E7EB" Margin="0,3,0,3"/>
 
-                                <!-- 하단 타이틀: 파일(파라미터) -->
-                                <Label Grid.Row="5"
-           Content="파일(파라미터)"
-           Style="{StaticResource SectionTitleStyle}"/>
+                                <!-- 파일(파라미터) 제목 -->
+                                <Label Grid.Row="6" Content="파일(파라미터)" Style="{StaticResource SectionTitleStyle}"/>
 
-                                <!-- 기존 파라미터 파일명 입력 -->
-                                <TextBox x:Name="FileName"
-             Grid.Row="6"
-             Margin="0,0,0,10"
-             Style="{StaticResource SoftTextBoxStyle}"/>
+                                <!-- 파일이름(파라미터): 1행 2열 -->
+                                <Grid Grid.Row="7" Style="{StaticResource FormRowGrid}" >
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="72"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Label Grid.Column="0" Content="파일이름" Style="{StaticResource FormLabel}"/>
+                                    <TextBox Grid.Column="1" x:Name="FileName" Style="{StaticResource FormTextBox}"/>
+                                </Grid>
 
-                                <!-- 기존 파라미터 파일 리스트 -->
-                                <ListBox x:Name="FileList"
-             Grid.Row="7"
-             Style="{StaticResource SoftListBoxStyle}">
+                                <!-- 필터(파라미터): 1행 2열 -->
+                                <Grid Grid.Row="8" Style="{StaticResource FormRowGrid}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="72"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Label Grid.Column="0" Content="필터" Style="{StaticResource FormLabel}"/>
+                                    <TextBox Grid.Column="1" x:Name="FileSearchBox" Style="{StaticResource FormTextBox}" TextChanged="FileSearchBox_TextChanged"/>
+                                </Grid>
+
+                                <!-- 리스트(파라미터): 고정 높이 + 내부 스크롤 -->
+                                <ListBox Grid.Row="9" x:Name="FileList" Height="500" Style="{StaticResource SoftListBoxStyle}" SelectionMode="Extended" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                        ScrollViewer.CanContentScroll="True" VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling">
                                     <ListBox.ItemContainerStyle>
                                         <Style TargetType="ListBoxItem">
                                             <EventSetter Event="MouseDoubleClick" Handler="ListDoubleClick"/>
@@ -370,8 +414,8 @@
                                     </ListBox.ItemContainerStyle>
                                 </ListBox>
 
-                                <!-- 기존 파라미터 버튼들 -->
-                                <Grid Grid.Row="8" Margin="0,12,0,0">
+                                <!-- 버튼(파라미터) -->
+                                <Grid Grid.Row="10" Margin="0,10,0,0">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition/>
                                         <ColumnDefinition Width="10"/>
@@ -379,7 +423,6 @@
                                         <ColumnDefinition Width="10"/>
                                         <ColumnDefinition/>
                                     </Grid.ColumnDefinitions>
-
                                     <Button Content="저장" x:Name="SaveButton" Style="{StaticResource SoftButtonStyle}"/>
                                     <Button Grid.Column="2" x:Name="DeleteButton" Content="삭제" Style="{StaticResource SoftButtonStyle}"/>
                                     <Button Grid.Column="4" x:Name="RefreshButton" Content="새로고침" Style="{StaticResource SoftButtonStyle}"/>
@@ -390,22 +433,13 @@
                         <!-- =========================
                              중단: Micom Parameter 섹션 타이틀(카드 밖에서 정렬 유지)
                         ========================== -->
-                        <Label Grid.Row="4"
-                               Grid.Column="1"
-                               Content="Micom Parameter"
-                               Style="{StaticResource SectionTitleStyle}"
-                               Margin="0,6,0,10"/>
+                        <Label Grid.Row="4" Grid.Column="1" Content="Micom Parameter" Style="{StaticResource SectionTitleStyle}" Margin="0,6,0,10"/>
 
                         <!-- =========================
                              Micom Parameter 메인 그리드(카드)
                              - 내부 컨트롤/배치는 원본 그대로 유지
                         ========================== -->
-                        <Border Grid.Row="5"
-                                Grid.Column="1"
-                                Grid.RowSpan="2"
-                                Grid.ColumnSpan="3"
-                                Style="{StaticResource CardBorderStyle}"
-                                Margin="0,0,0,12">
+                        <Border Grid.Row="5" Grid.Column="1" Grid.RowSpan="2" Grid.ColumnSpan="3" Style="{StaticResource CardBorderStyle}" Margin="0,0,0,12">
 
                             <!-- ✅ 원본 Grid 그대로 복사 -->
                             <Grid ShowGridLines="False">
