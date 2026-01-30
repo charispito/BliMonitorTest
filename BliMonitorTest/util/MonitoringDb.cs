@@ -73,7 +73,35 @@ namespace BliMonitorTest.util.MonitoringDb
 
                     CREATE INDEX IF NOT EXISTS idx_receive_data_source_channel_time
                     ON receive_data(source_type, channel_no, created_at_ms);
-                    ";
+
+                    CREATE TABLE IF NOT EXISTS error_events (
+                        id               INTEGER PRIMARY KEY AUTOINCREMENT,
+                        source_type      INTEGER NOT NULL,
+                        channel_no       INTEGER NOT NULL,
+                        created_at       TEXT    NOT NULL,
+                        created_at_ms    INTEGER NOT NULL,
+                        snapshot_id      TEXT    NOT NULL,
+                        file_name        TEXT,
+                        error_slot       INTEGER NOT NULL,
+                        error_text       TEXT,
+                        run_mode         INTEGER,
+                        heater_temp      REAL,
+                        heater_off_time  REAL,
+                        hot_air_temp     REAL,
+                        hot_air_on_time  REAL,
+                        run_count        INTEGER,
+                        exhaust_temp     REAL
+                    );
+
+                    CREATE INDEX IF NOT EXISTS idx_error_events_time
+                      ON error_events(created_at_ms);
+
+                    CREATE INDEX IF NOT EXISTS idx_error_events_group
+                      ON error_events(snapshot_id);
+
+                    CREATE INDEX IF NOT EXISTS idx_error_events_source_channel_time
+                      ON error_events(source_type, channel_no, created_at_ms);
+                ";
                 cmd.ExecuteNonQuery();
             }
 
@@ -95,7 +123,7 @@ namespace BliMonitorTest.util.MonitoringDb
             DateTime now = DateTime.Now;
             DateTime createdAt = TryParseCreatedAt(data.date, out var parsed) ? parsed : now;
             long createdAtMs = ToUnixMs(createdAt);
-            string createdAtIso = createdAt.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
+            string createdAtIso = createdAt.ToString("yyyy -MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
 
             // remain_time 처리: "MM:SS" -> seconds
             string remainText = data.remain_time; // 원본 보관
@@ -184,7 +212,6 @@ namespace BliMonitorTest.util.MonitoringDb
 
                 try {
                     cmd.ExecuteNonQuery();
-                    //log.Debug(MonitoringDb.FormatSqlLog(cmd, "JSJSJ >> "));
                 } catch(Exception ex)
                 {
                     log.Error("InsertDb 예외 : " + ex.ToString());
@@ -231,15 +258,7 @@ namespace BliMonitorTest.util.MonitoringDb
         /// - sourceType: 0=전체, 1=단일, 2=다채널
         /// - channelNo: 0=전체
         /// </summary>
-        public static System.Collections.Generic.List<ReceiveDataRow> QueryReceiveData(
-            ref SqliteConnection db,
-            string dbPath,
-            ref bool dbReady,
-            DateTime from,
-            DateTime to,
-            int sourceType,
-            int channelNo,
-            int limit
+        public static System.Collections.Generic.List<ReceiveDataRow> QueryReceiveData( ref SqliteConnection db, string dbPath, ref bool dbReady, DateTime from, DateTime to, int sourceType, int channelNo, int limit
         )
         {
             EnsureDb(ref db, dbPath, ref dbReady);
@@ -318,10 +337,68 @@ namespace BliMonitorTest.util.MonitoringDb
             return rows;
         }
 
+        public static void InsertErrorEvent( ref SqliteConnection db, string dbPath, ref bool dbReady, int sourceType, int channelNo, DateTime createdAt, string snapshotId, string fileName,
+            int errorSlot, string errorText, int? runMode, double? heaterTemp, double? heaterOffTime, double? hotAirTemp, double? hotAirOnTime, int? runCount, double? exhaustTemp
+        )
+        {
+            EnsureDb(ref db, dbPath, ref dbReady);
+
+            long createdAtMs = new DateTimeOffset(createdAt).ToUnixTimeMilliseconds();
+            string createdAtIso = createdAt.ToString("yyyy-MM-dd HH:mm:ss.fff", System.Globalization.CultureInfo.InvariantCulture);
+
+            // NULL → 0 정규화 (숫자 필드)
+            int runModeV = runMode ?? 0;
+            double heaterTempV = heaterTemp ?? 0;
+            double heaterOffV = heaterOffTime ?? 0;
+            double hotAirTempV = hotAirTemp ?? 0;
+            double hotAirOnV = hotAirOnTime ?? 0;
+            int runCountV = runCount ?? 0;
+            double exhaustTempV = exhaustTemp ?? 0;
+
+            using (var cmd = db.CreateCommand())
+            {
+                cmd.CommandText = @"
+                    INSERT INTO error_events(
+                        source_type, channel_no, created_at, created_at_ms,
+                        snapshot_id, file_name, error_slot, error_text,
+                        run_mode, heater_temp, heater_off_time,
+                        hot_air_temp, hot_air_on_time,
+                        run_count, exhaust_temp
+                    ) VALUES(
+                        $source_type, $channel_no, $created_at, $created_at_ms,
+                        $snapshot_id, $file_name, $error_slot, $error_text,
+                        $run_mode, $heater_temp, $heater_off_time,
+                        $hot_air_temp, $hot_air_on_time,
+                        $run_count, $exhaust_temp
+                    );
+                ";
+
+                cmd.Parameters.AddWithValue("$source_type", sourceType);
+                cmd.Parameters.AddWithValue("$channel_no", channelNo);
+                cmd.Parameters.AddWithValue("$created_at", createdAtIso);
+                cmd.Parameters.AddWithValue("$created_at_ms", createdAtMs);
+                cmd.Parameters.AddWithValue("$snapshot_id", snapshotId ?? "");
+                cmd.Parameters.AddWithValue("$file_name", (object)fileName ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("$error_slot", errorSlot);
+                cmd.Parameters.AddWithValue("$error_text", (object)(errorText ?? "")); // 빈 문자열로 통일
+
+                // 숫자들은 절대 NULL 안 보냄
+                cmd.Parameters.AddWithValue("$run_mode", runModeV);
+                cmd.Parameters.AddWithValue("$heater_temp", heaterTempV);
+                cmd.Parameters.AddWithValue("$heater_off_time", heaterOffV);
+                cmd.Parameters.AddWithValue("$hot_air_temp", hotAirTempV);
+                cmd.Parameters.AddWithValue("$hot_air_on_time", hotAirOnV);
+                cmd.Parameters.AddWithValue("$run_count", runCountV);
+                cmd.Parameters.AddWithValue("$exhaust_temp", exhaustTempV);
+
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        /// 하부는 내부 헬퍼 및 로그 유틸
         // ---------------------------
         // 내부 헬퍼
         // ---------------------------
-
         private static long ToUnixMs(DateTime dt)
         {
             // 로컬 시간을 기준으로 epoch 변환(조회도 같은 기준을 쓸 것)
@@ -347,13 +424,7 @@ namespace BliMonitorTest.util.MonitoringDb
                 "yyyy-MM-dd_HH_mm_ss_fff"
             };
 
-            return DateTime.TryParseExact(
-                s,
-                formats,
-                CultureInfo.InvariantCulture,
-                DateTimeStyles.AllowWhiteSpaces,
-                out dt
-            );
+            return DateTime.TryParseExact( s, formats, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out dt );
         }
 
         private static bool TryParseRemainSeconds(string remainText, out int seconds)
@@ -430,10 +501,7 @@ namespace BliMonitorTest.util.MonitoringDb
 
         public static string RenderFinalSqlForLog(Microsoft.Data.Sqlite.SqliteCommand cmd)
         {
-            var parameters = cmd.Parameters
-                .Cast<Microsoft.Data.Sqlite.SqliteParameter>()
-                .OrderByDescending(p => p.ParameterName == null ? 0 : p.ParameterName.Length)
-                .ToList();
+            var parameters = cmd.Parameters.Cast<Microsoft.Data.Sqlite.SqliteParameter>().OrderByDescending(p => p.ParameterName == null ? 0 : p.ParameterName.Length).ToList();
 
             string sql = cmd.CommandText ?? "";
 
@@ -475,9 +543,7 @@ namespace BliMonitorTest.util.MonitoringDb
                     string raw = (v == null || v == DBNull.Value) ? "NULL" : v.ToString();
                     string lit = ToSqlLiteral(v);
 
-                    sb.AppendLine(string.Format(
-                        "- {0} = {1}  | literal={2}  | DbType={3}",
-                        p.ParameterName, raw, lit, p.DbType));
+                    sb.AppendLine(string.Format("- {0} = {1}  | literal={2}  | DbType={3}", p.ParameterName, raw, lit, p.DbType));
                 }
             }
 

@@ -2,6 +2,7 @@
 using BliMonitorTest.data;
 using BliMonitorTest.setting;
 using BliMonitorTest.util;
+using BliMonitorTest.util.MonitoringDb;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -74,6 +75,9 @@ namespace BliMonitorTest
 
         // 휴지통 실패 시 하드 삭제 폴백 여부(필요하면 true로 켬)
         private bool _allowHardDeleteFallback = false;
+
+        // 에러 데이터 DB저장 관련 상수
+        private readonly int _channelNoForDb = 1;
 
         public ParameterWindow(SerialPort port, OneChannelValueDetail detail)
         {
@@ -911,7 +915,12 @@ namespace BliMonitorTest
 
             File.WriteAllText(full, sb.ToString(), Encoding.UTF8);
             SetErrorList();
-            //MessageBox.Show("에러 데이터가 저장되었습니다.");
+
+            // 에러데이터 DB에 적재
+            string fileOnly = System.IO.Path.GetFileNameWithoutExtension(full);
+            EnqueueErrorEventsFromGrid( fileNameForSnapshot: fileOnly, sourceType: BliMonitorTest.util.MonitoringDb.MonitoringDb.SOURCE_SINGLE, channelNo: _channelNoForDb
+            );
+
             ToastMessage.ToastService.AppToast.Show("에러 데이터가 저장되었습니다.");
         }
 
@@ -1537,7 +1546,12 @@ namespace BliMonitorTest
                 SetErrorList();
 
                 // 보존 정책 실행(90일 + 개수 상한)
-                EnforceErrorDataRetention(dir, retentionDays: 90, maxFiles: 10000);
+                EnforceErrorDataRetention(dir, retentionDays, maxFiles);
+
+                // 에러 스냅샷 DB 큐 적재
+                string fileOnly = System.IO.Path.GetFileNameWithoutExtension(full);
+                EnqueueErrorEventsFromGrid( fileNameForSnapshot: fileOnly, sourceType: BliMonitorTest.util.MonitoringDb.MonitoringDb.SOURCE_SINGLE, channelNo: _channelNoForDb
+                );
 
                 log.Info($"AutoSaveErrorDataToFile: 자동 저장 완료 → {full}");
             }
@@ -1875,5 +1889,101 @@ namespace BliMonitorTest
             ApplyErrorFilter(tb?.Text);
         }
 
+        private void EnqueueErrorEventsFromGrid(string fileNameForSnapshot, int sourceType, int channelNo)
+        {
+            try
+            {
+                var src = ErrorGrid.ItemsSource as System.Collections.IEnumerable;
+                if (src == null) return;
+
+                // 5슬롯 버퍼(비-nullable)
+                string[] errorText = new string[5];
+                int[] runMode = new int[5];
+                double[] heaterTemp = new double[5];
+                double[] heaterOff = new double[5];
+                double[] hotAirTemp = new double[5];
+                double[] hotAirOn = new double[5];
+                int[] runCount = new int[5];
+                double[] exhaustTemp = new double[5];
+
+                foreach (var row in src)
+                {
+                    if (row is ErrorData ed)
+                    {
+                        switch (ed.Name)
+                        {
+                            case "에러 내용":
+                                errorText[0] = ed.Value; errorText[1] = ed.Value2; errorText[2] = ed.Value3; errorText[3] = ed.Value4; errorText[4] = ed.Value5;
+                                break;
+                            case "운전 모드":
+                                runMode[0] = TryInt0(ed.Value); runMode[1] = TryInt0(ed.Value2); runMode[2] = TryInt0(ed.Value3); runMode[3] = TryInt0(ed.Value4); runMode[4] = TryInt0(ed.Value5);
+                                break;
+                            case "히터 온도":
+                                heaterTemp[0] = TryDouble0(ed.Value); heaterTemp[1] = TryDouble0(ed.Value2); heaterTemp[2] = TryDouble0(ed.Value3); heaterTemp[3] = TryDouble0(ed.Value4); heaterTemp[4] = TryDouble0(ed.Value5);
+                                break;
+                            case "히터 오프 타임":
+                                heaterOff[0] = TryDouble0(ed.Value); heaterOff[1] = TryDouble0(ed.Value2); heaterOff[2] = TryDouble0(ed.Value3); heaterOff[3] = TryDouble0(ed.Value4); heaterOff[4] = TryDouble0(ed.Value5);
+                                break;
+                            case "배기 온도":
+                                exhaustTemp[0] = TryDouble0(ed.Value); exhaustTemp[1] = TryDouble0(ed.Value2); exhaustTemp[2] = TryDouble0(ed.Value3); exhaustTemp[3] = TryDouble0(ed.Value4); exhaustTemp[4] = TryDouble0(ed.Value5);
+                                break;
+                            case "열풍 온도":
+                                hotAirTemp[0] = TryDouble0(ed.Value); hotAirTemp[1] = TryDouble0(ed.Value2); hotAirTemp[2] = TryDouble0(ed.Value3); hotAirTemp[3] = TryDouble0(ed.Value4); hotAirTemp[4] = TryDouble0(ed.Value5);
+                                break;
+                            case "열풍 On Time":
+                                hotAirOn[0] = TryDouble0(ed.Value); hotAirOn[1] = TryDouble0(ed.Value2); hotAirOn[2] = TryDouble0(ed.Value3); hotAirOn[3] = TryDouble0(ed.Value4); hotAirOn[4] = TryDouble0(ed.Value5);
+                                break;
+                            case "운전 횟수":
+                                runCount[0] = TryInt0(ed.Value); runCount[1] = TryInt0(ed.Value2); runCount[2] = TryInt0(ed.Value3); runCount[3] = TryInt0(ed.Value4); runCount[4] = TryInt0(ed.Value5);
+                                break;
+                        }
+                    }
+                }
+
+                var now = DateTime.Now;
+                string snapshotId = now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "/" + Guid.NewGuid().ToString("N");
+
+                for (int slot = 0; slot < 5; slot++)
+                {
+                    BliMonitorTest.util.MonitoringDb.MonitoringDbWriteService.Instance.EnqueueErrorEvent(
+                        sourceType: sourceType,
+                        channelNo: channelNo,
+                        createdAt: now,
+                        snapshotId: snapshotId,
+                        fileName: fileNameForSnapshot,
+                        errorSlot: slot + 1,
+                        errorText: errorText[slot] ?? "",
+                        runMode: runMode[slot],
+                        heaterTemp: heaterTemp[slot],
+                        heaterOffTime: heaterOff[slot],
+                        hotAirTemp: hotAirTemp[slot],
+                        hotAirOnTime: hotAirOn[slot],
+                        runCount: runCount[slot],
+                        exhaustTemp: exhaustTemp[slot]
+                    );
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Warn("EnqueueErrorEventsFromGrid 실패", ex);
+            }
+        }
+
+        private static int TryInt0(string s)
+        {
+            if (int.TryParse((s ?? "").Trim(), out int v)) return v;
+            return 0;
+        }
+
+        // 문자열 → double (실패/빈칸은 0)
+        private static double TryDouble0(string s)
+        {
+            if (double.TryParse((s ?? "").Trim(),
+                System.Globalization.NumberStyles.Any,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out double v)) return v;
+            if (double.TryParse((s ?? "").Trim(), out v)) return v;
+            return 0;
+        }
     }
 }

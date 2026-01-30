@@ -11,8 +11,11 @@ namespace BliMonitorTest.util.MonitoringDb
         // 싱글톤
         public static MonitoringDbWriteService Instance { get; } = new MonitoringDbWriteService();
 
-        private readonly BlockingCollection<InsertItem> _queue =
-            new BlockingCollection<InsertItem>(boundedCapacity: 20000);
+        // 상태 스트림 큐
+        private readonly BlockingCollection<InsertItem> _queue = new BlockingCollection<InsertItem>(boundedCapacity: 20000);
+
+        // 에러 이벤트 큐
+        private readonly BlockingCollection<ErrorEventItem> _errorQueue = new BlockingCollection<ErrorEventItem>(boundedCapacity: 5000);
 
         private readonly object _startLock = new object();
 
@@ -24,10 +27,14 @@ namespace BliMonitorTest.util.MonitoringDb
         private Task _worker;
 
         // 튜닝 포인트
-        private int _batchSize = 200;             // 한 번에 커밋할 레코드 수
-        private int _flushIntervalMs = 300;       // batch가 덜 차도 일정 주기로 커밋
+        private int _batchSize = 200;       // 한 번에 커밋할 레코드 수
+        private int _flushIntervalMs = 300; // batch가 덜 차도 일정 주기로 커밋
 
         private MonitoringDbWriteService() { }
+
+        // ---------------------------
+        // 외부 공개 API
+        // ---------------------------
 
         public void Start(string dbPath, int batchSize = 200, int flushIntervalMs = 300)
         {
@@ -55,6 +62,7 @@ namespace BliMonitorTest.util.MonitoringDb
 
                 try { _cts.Cancel(); } catch { }
                 try { _queue.CompleteAdding(); } catch { }
+                try { _errorQueue.CompleteAdding(); } catch { }
 
                 try { _worker.Wait(3000); } catch { }
 
@@ -70,29 +78,42 @@ namespace BliMonitorTest.util.MonitoringDb
 
         public void Dispose() => Stop();
 
-        /// <summary>
-        /// 호출 측(다채널/단일채널)에서는 이것만 호출하면 됩니다.
-        /// DB 쓰기는 백그라운드에서 배치 처리됩니다.
-        /// </summary>
-        public void Enqueue( bool isNewVersion, BliMonitorTest.data.ReadData data, int number, float off_sum, int air_sum, int channelNo, int sourceType )
+        // 상태 데이터(기존 ReadData) 적재
+        public void Enqueue(bool isNewVersion, BliMonitorTest.data.ReadData data,
+                            int number, float off_sum, int air_sum,
+                            int channelNo, int sourceType)
         {
             if (data == null) return;
 
-            // Start 안 했으면 즉시 시작(방어)
             if (_worker == null)
                 Start(_dbPath ?? BliMonitorTest.util.StoragePathUtil.StoragePathUtil.GetDbPath());
 
-            // 큐가 꽉 차면 Drop(혹은 Block) 정책 선택 가능
-            // 지금은 “Block 대신 Drop + 로그”가 안전한 편
-            if (!_queue.TryAdd(new InsertItem(isNewVersion, data, number, off_sum, air_sum, channelNo, sourceType)))
-            {
-                System.Diagnostics.Debug.WriteLine("DB queue full -> drop");
-            }
+            _queue.TryAdd(new InsertItem(isNewVersion, data, number, off_sum, air_sum, channelNo, sourceType));
         }
 
-        // -------------------------
-        // 내부 워커
-        // -------------------------
+        // 에러 이벤트 적재(error_events 테이블)
+        public void EnqueueErrorEvent(
+            int sourceType, int channelNo,
+            DateTime createdAt, string snapshotId, string fileName,
+            int errorSlot, string errorText,
+            int? runMode, double? heaterTemp, double? heaterOffTime,
+            double? hotAirTemp, double? hotAirOnTime,
+            int? runCount, double? exhaustTemp)
+        {
+            if (_worker == null)
+                Start(_dbPath ?? BliMonitorTest.util.StoragePathUtil.StoragePathUtil.GetDbPath());
+
+            _errorQueue.TryAdd(new ErrorEventItem(
+                sourceType, channelNo, createdAt, snapshotId, fileName,
+                errorSlot, errorText,
+                runMode, heaterTemp, heaterOffTime,
+                hotAirTemp, hotAirOnTime,
+                runCount, exhaustTemp));
+        }
+
+        // ---------------------------
+        // 내부 워커/플러시
+        // ---------------------------
 
         private void EnsureOpen()
         {
@@ -101,18 +122,16 @@ namespace BliMonitorTest.util.MonitoringDb
             _db = new SqliteConnection($"Data Source={_dbPath};");
             _db.Open();
 
-            // 동시성/안정성 PRAGMA
             using (var cmd = _db.CreateCommand())
             {
                 cmd.CommandText = @"
                     PRAGMA journal_mode=WAL;
                     PRAGMA synchronous=NORMAL;
                     PRAGMA busy_timeout=5000;
-                    ";
+                ";
                 cmd.ExecuteNonQuery();
             }
 
-            // 테이블 생성
             MonitoringDb.EnsureDb(ref _db, _dbPath, ref _dbReady);
         }
 
@@ -120,25 +139,48 @@ namespace BliMonitorTest.util.MonitoringDb
         {
             EnsureOpen();
 
-            var buffer = new System.Collections.Generic.List<InsertItem>(_batchSize);
+            var stateBuffer = new System.Collections.Generic.List<InsertItem>(_batchSize);
+            var errorBuffer = new System.Collections.Generic.List<ErrorEventItem>(_batchSize);
             DateTime lastFlush = DateTime.UtcNow;
 
             while (!token.IsCancellationRequested)
             {
                 try
                 {
-                    // 1) 하나를 기다림(타임아웃으로 주기 flush)
+                    // 상태 데이터: 타임아웃 대기
                     if (_queue.TryTake(out var item, millisecondsTimeout: _flushIntervalMs, cancellationToken: token))
-                    {
-                        buffer.Add(item);
-                    }
+                        stateBuffer.Add(item);
 
-                    // 2) batchSize 채웠거나, 시간 지나면 flush
+                    // 에러 데이터: 가능한 많이 수집
+                    while (_errorQueue.TryTake(out var ev))
+                        errorBuffer.Add(ev);
+
                     bool timeToFlush = (DateTime.UtcNow - lastFlush).TotalMilliseconds >= _flushIntervalMs;
-                    if (buffer.Count >= _batchSize || (buffer.Count > 0 && timeToFlush))
+                    if (stateBuffer.Count >= _batchSize || errorBuffer.Count >= _batchSize || timeToFlush)
                     {
-                        Flush(buffer);
-                        buffer.Clear();
+                        using (var tx = _db.BeginTransaction())
+                        {
+                            // 상태 배치
+                            foreach (var it in stateBuffer)
+                            {
+                                MonitoringDb.InsertDb(ref _db, _dbPath, ref _dbReady,
+                                    it.IsNewVersion, it.Data, it.Number, it.OffSum, it.AirSum, it.ChannelNo, it.SourceType);
+                            }
+
+                            // 에러 배치
+                            foreach (var ev in errorBuffer)
+                            {
+                                MonitoringDb.InsertErrorEvent(ref _db, _dbPath, ref _dbReady,
+                                    ev.SourceType, ev.ChannelNo, ev.CreatedAt, ev.SnapshotId, ev.FileName,
+                                    ev.ErrorSlot, ev.ErrorText, ev.RunMode, ev.HeaterTemp, ev.HeaterOffTime,
+                                    ev.HotAirTemp, ev.HotAirOnTime, ev.RunCount, ev.ExhaustTemp);
+                            }
+
+                            tx.Commit();
+                        }
+
+                        stateBuffer.Clear();
+                        errorBuffer.Clear();
                         lastFlush = DateTime.UtcNow;
                     }
                 }
@@ -148,41 +190,41 @@ namespace BliMonitorTest.util.MonitoringDb
                 }
                 catch
                 {
-                    // DB 오류가 나면 잠깐 쉬고 재시도(필요하면 로그)
                     Thread.Sleep(200);
                 }
             }
 
-            // 종료 전 잔여 flush
+            // 종료 전 잔여 플러시
             try
             {
-                if (buffer.Count > 0)
+                if (stateBuffer.Count > 0 || errorBuffer.Count > 0)
                 {
-                    Flush(buffer);
-                    buffer.Clear();
+                    using (var tx = _db.BeginTransaction())
+                    {
+                        foreach (var it in stateBuffer)
+                        {
+                            MonitoringDb.InsertDb(ref _db, _dbPath, ref _dbReady,
+                                it.IsNewVersion, it.Data, it.Number, it.OffSum, it.AirSum, it.ChannelNo, it.SourceType);
+                        }
+
+                        foreach (var ev in errorBuffer)
+                        {
+                            MonitoringDb.InsertErrorEvent(ref _db, _dbPath, ref _dbReady,
+                                ev.SourceType, ev.ChannelNo, ev.CreatedAt, ev.SnapshotId, ev.FileName,
+                                ev.ErrorSlot, ev.ErrorText, ev.RunMode, ev.HeaterTemp, ev.HeaterOffTime,
+                                ev.HotAirTemp, ev.HotAirOnTime, ev.RunCount, ev.ExhaustTemp);
+                        }
+
+                        tx.Commit();
+                    }
                 }
             }
             catch { }
         }
 
-        private void Flush(System.Collections.Generic.List<InsertItem> items)
-        {
-            // 하나의 트랜잭션으로 묶어서 성능 + 안정성 확보
-            using (var tx = _db.BeginTransaction())
-            {
-                for (int i = 0; i < items.Count; i++)
-                {
-                    var it = items[i];
-
-                    // IMPORTANT:
-                    // 아래는 기존 MonitoringDb.InsertDb를 그대로 재사용(하지만 EnsureDb를 또 타지 않게 해야 더 좋음)
-                    // 지금 단계에서는 “동작 우선”으로 ref _db를 넘겨도 OK.
-                    MonitoringDb.InsertDb( ref _db, _dbPath, ref _dbReady, it.IsNewVersion, it.Data, it.Number, it.OffSum, it.AirSum, it.ChannelNo, it.SourceType );
-                }
-
-                tx.Commit();
-            }
-        }
+        // ---------------------------
+        // 내부 버퍼 타입(외부 비공개)
+        // ---------------------------
 
         private readonly struct InsertItem
         {
@@ -194,7 +236,8 @@ namespace BliMonitorTest.util.MonitoringDb
             public readonly int ChannelNo;
             public readonly int SourceType;
 
-            public InsertItem(bool isNewVersion, BliMonitorTest.data.ReadData data, int number, float offSum, int airSum, int channelNo, int sourceType)
+            public InsertItem(bool isNewVersion, BliMonitorTest.data.ReadData data, int number,
+                              float offSum, int airSum, int channelNo, int sourceType)
             {
                 IsNewVersion = isNewVersion;
                 Data = data;
@@ -203,6 +246,32 @@ namespace BliMonitorTest.util.MonitoringDb
                 AirSum = airSum;
                 ChannelNo = channelNo;
                 SourceType = sourceType;
+            }
+        }
+
+        private readonly struct ErrorEventItem
+        {
+            public readonly int SourceType, ChannelNo;
+            public readonly DateTime CreatedAt;
+            public readonly string SnapshotId, FileName;
+            public readonly int ErrorSlot;
+            public readonly string ErrorText;
+            public readonly int? RunMode;
+            public readonly double? HeaterTemp, HeaterOffTime, HotAirTemp, HotAirOnTime;
+            public readonly int? RunCount;
+            public readonly double? ExhaustTemp;
+
+            public ErrorEventItem(
+                int sourceType, int channelNo, DateTime createdAt, string snapshotId, string fileName,
+                int errorSlot, string errorText, int? runMode, double? heaterTemp, double? heaterOffTime,
+                double? hotAirTemp, double? hotAirOnTime, int? runCount, double? exhaustTemp)
+            {
+                SourceType = sourceType; ChannelNo = channelNo;
+                CreatedAt = createdAt; SnapshotId = snapshotId; FileName = fileName;
+                ErrorSlot = errorSlot; ErrorText = errorText;
+                RunMode = runMode; HeaterTemp = heaterTemp; HeaterOffTime = heaterOffTime;
+                HotAirTemp = hotAirTemp; HotAirOnTime = hotAirOnTime;
+                RunCount = runCount; ExhaustTemp = exhaustTemp;
             }
         }
     }

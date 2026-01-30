@@ -341,7 +341,7 @@ namespace BliMonitorTest.controls
             Task.Delay(200).ContinueWith(_ =>
             {
                 Dispatcher.BeginInvoke(new Action(() => {
-                    ParameterWindow = new MultiParameterWindow(this);
+                    ParameterWindow = new MultiParameterWindow(this, this._Channel);
                     ParameterWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                     ParameterWindow.Show();
 
