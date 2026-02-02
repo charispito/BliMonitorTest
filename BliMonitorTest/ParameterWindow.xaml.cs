@@ -158,6 +158,7 @@ namespace BliMonitorTest
             ErrorSaveButton.Click += ErrorSaveButton_Click;
             ErrorDeleteButton.Click += ErrorDeleteButton_Click;
             ErrorRefreshButton.Click += ErrorRefreshButton_Click;
+            OpenErrorDataQueryButton.Click += OpenErrorDataQueryButton_Click;
 
             // 검색 필터 이벤트 연결 (XAML의 x:Name 동일 가정)
             FileSearchBox.TextChanged += FileSearchBox_TextChanged;
@@ -1990,17 +1991,26 @@ namespace BliMonitorTest
         {
             try
             {
+                // 팝업 인스턴스 생성 (리소스 파싱 시점)
                 var win = new ErrorDataQueryWindow
                 {
                     Owner = this,
                     WindowStartupLocation = WindowStartupLocation.CenterOwner
                 };
-                win.Show();
 
-                // 다채널 + 현재 채널 기본 필터 세팅
-                // 파일명 필터는 필요 시 팝업의 ErrorFileName.Text를 넘겨도 좋음
-                int currentChannel = _channelNoForDb;
-                win.SetInitialFilter(sourceType: BliMonitorTest.util.MonitoringDb.MonitoringDb.SOURCE_SINGLE, channelNo: currentChannel, fileNameLike: null);
+                // 파일명 필터 프리필(선택): ErrorFileName 텍스트가 있으면 전달
+                string fileLike = (ErrorFileName?.Text ?? string.Empty).Trim();
+                if (fileLike.Length == 0) fileLike = null;
+
+                // 초기 필터 세팅: 단일채널(SOURCE_SINGLE), 현재 채널 번호(_channelNoForDb)
+                win.SetInitialFilter(
+                    sourceType: BliMonitorTest.util.MonitoringDb.MonitoringDb.SOURCE_SINGLE,
+                    channelNo: _channelNoForDb,
+                    fileNameLike: fileLike
+                );
+
+                // 마지막에 Show
+                win.Show();
             }
             catch (Exception ex)
             {

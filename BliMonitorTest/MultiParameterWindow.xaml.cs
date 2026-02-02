@@ -2195,20 +2195,24 @@ namespace BliMonitorTest
         {
             try
             {
-                // 먼저 인스턴스 생성 (여기서 리소스 파싱이 일어남)
+                // 팝업 인스턴스 생성 (리소스 파싱 시점)
                 var win = new ErrorDataQueryWindow
                 {
                     Owner = this,
                     WindowStartupLocation = WindowStartupLocation.CenterOwner
                 };
 
-                // 초기 필터 세팅: 규약은 0(전체)/1(단일)/2(다채널)
-                // MonitoringDb.SOURCE_MULTI가 2가 아닐 수 있으므로 “2”로 강제 전달
-                int currentChannel = _channelNoForDb;
-                string fileLike = (ErrorFileName?.Text ?? "").Trim();
+                // 파일명 필터 프리필(선택): ErrorFileName 텍스트가 있으면 전달
+                string fileLike = (ErrorFileName?.Text ?? string.Empty).Trim();
                 if (fileLike.Length == 0) fileLike = null;
 
-                win.SetInitialFilter(sourceType: 2, channelNo: currentChannel, fileNameLike: fileLike);
+                // 초기 필터 세팅: 단일채널(SOURCE_SINGLE), 현재 채널 번호(_channelNoForDb)
+                // SetInitialFilter 시그니처: (int sourceType, int channelNo, string fileNameLike)
+                win.SetInitialFilter(
+                    sourceType: BliMonitorTest.util.MonitoringDb.MonitoringDb.SOURCE_SINGLE,
+                    channelNo: _channelNoForDb,
+                    fileNameLike: fileLike
+                );
 
                 // 마지막에 Show
                 win.Show();

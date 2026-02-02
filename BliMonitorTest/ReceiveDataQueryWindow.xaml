@@ -41,7 +41,6 @@
 
                                 <TextBlock Grid.Column="0" Text="기간 :" Style="{StaticResource FieldLabelStyle}" VerticalAlignment="Top" Grid.ColumnSpan="2" Margin="0,6,8,0"/>
                                 <DatePicker Grid.Column="2" x:Name="dpFrom" Width="140" />
-
                                 <TextBlock Grid.Column="4" Text="~" VerticalAlignment="Center" />
                                 <DatePicker Grid.Column="6" x:Name="dpTo" Width="140" />
                             </Grid>
@@ -80,9 +79,9 @@
                     </StackPanel>
 
                     <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right" Orientation="Horizontal">
-                        <Button Content="조회" Width="90" Style="{StaticResource PrimaryButtonStyle}" Click="Search_Click"/>
-                        <Button x:Name="btnExcel" Content="엑셀" Width="80" Margin="5,0,0,0" Style="{StaticResource SecondaryButtonStyle}" Click="ExcelDownload_Click"/>
-                        <Button x:Name="btnCancelBusy" Content="취소" Width="80" Margin="5,0,0,0" Style="{StaticResource SecondaryButtonStyle}" Click="CancelBusy_Click" Background="#0EA5E9" Visibility="Collapsed"/>
+                        <Button Content="조회" Width="90" Style="{StaticResource SoftButtonStyle}" Click="Search_Click"/>
+                        <Button x:Name="btnExcel" Content="엑셀" Width="80" Margin="5,0,0,0" Style="{StaticResource SoftButtonStyle}" Click="ExcelDownload_Click"/>
+                        <Button x:Name="btnCancelBusy" Content="취소" Width="80" Margin="5,0,0,0" Style="{StaticResource SoftButtonStyle}" Click="CancelBusy_Click" Visibility="Collapsed"/>
                     </StackPanel>
                 </Grid>
             </Border>

@@ -49,6 +49,8 @@ namespace BliMonitorTest
 
             dpFrom.SelectedDate = DateTime.Today.AddDays(-1);
             dpTo.SelectedDate = DateTime.Today;
+            if (dpFromTime != null) dpFromTime.Text = "00:00";
+            if (dpToTime != null) dpToTime.Text = "23:59";
 
             Loaded += async (s, e) => await RefreshGridAsync();
         }
@@ -142,24 +144,39 @@ namespace BliMonitorTest
             if (_isBusy) return;
             if (grid == null || txtPageInfo == null) return;
 
-            // ✅ UI 컨트롤 값은 "여기(UI 스레드)"에서만 읽고
-            DateTime fromDate = (dpFrom.SelectedDate ?? DateTime.Today).Date;
-            DateTime toDate = (dpTo.SelectedDate ?? DateTime.Today).Date;
-            DateTime toExclusive = toDate.AddDays(1);
+            DateTime baseFrom = (dpFrom.SelectedDate ?? DateTime.Today).Date;
+            DateTime baseTo = (dpTo.SelectedDate ?? DateTime.Today).Date;
 
-            if (toExclusive <= fromDate)
+            if (!TryParseHHmm(dpFromTime?.Text, out var fromTs))
             {
-                //MessageBox.Show("기간이 올바르지 않습니다.");
+                ToastMessage.ToastService.AppToast.Show("시작 시간 형식이 올바르지 않습니다. (예: 09:30)");
+                return;
+            }
+            if (!TryParseHHmm(dpToTime?.Text, out var toTs))
+            {
+                ToastMessage.ToastService.AppToast.Show("종료 시간 형식이 올바르지 않습니다. (예: 18:00)");
+                return;
+            }
+
+            DateTime fromDateTime = baseFrom.Add(fromTs);
+            DateTime toDateTime = baseTo.Add(toTs);
+
+            // to를 “종료 시각 포함”으로 해석 → 질의는 [from, toExclusive) 범위 사용
+            DateTime toExclusive = toDateTime.AddMinutes(1); // 또는 AddSeconds(1) 등 정책 택1
+
+            if (toExclusive <= fromDateTime)
+            {
                 ToastMessage.ToastService.AppToast.Show("기간이 올바르지 않습니다.");
                 return;
             }
-
-            if ((toExclusive - fromDate).TotalDays > 31)
+            if ((toExclusive - fromDateTime).TotalDays > 31)
             {
-                //MessageBox.Show("기간 조회는 최대 1달(31일)까지만 가능합니다.");
                 ToastMessage.ToastService.AppToast.Show("기간 조회는 최대 1달(31일)까지만 가능합니다.");
                 return;
             }
+
+            long fromMs = new DateTimeOffset(fromDateTime).ToUnixTimeMilliseconds();
+            long toMs = new DateTimeOffset(toExclusive).ToUnixTimeMilliseconds();
 
             int? mode = TryParseNullableInt(tbMode.Text);
             double? heaterMin = TryParseNullableDouble(tbHeaterMin.Text);
@@ -175,10 +192,6 @@ namespace BliMonitorTest
                 int.TryParse(srcItem.Tag.ToString(), out sourceType);
 
             int? channelNo = TryParseNullableInt(tbChannelNo.Text);
-
-            // ✅ created_at_ms 범위 검색용 파라미터
-            long fromMs = new DateTimeOffset(fromDate).ToUnixTimeMilliseconds();
-            long toMs = new DateTimeOffset(toExclusive).ToUnixTimeMilliseconds();
 
             string dbPath = StoragePathUtil.GetDbPath();
 
@@ -749,6 +762,12 @@ namespace BliMonitorTest
             }
         }
 
+        private static bool TryParseHHmm(string s, out TimeSpan ts)
+        {
+            return TimeSpan.TryParseExact((s ?? "").Trim(), "hh\\:mm", CultureInfo.InvariantCulture, out ts)
+                || TimeSpan.TryParseExact((s ?? "").Trim(), "h\\:mm", CultureInfo.InvariantCulture, out ts)
+                || TimeSpan.TryParseExact((s ?? "").Trim(), "HH\\:mm", CultureInfo.InvariantCulture, out ts);
+        }
 
     }
 }

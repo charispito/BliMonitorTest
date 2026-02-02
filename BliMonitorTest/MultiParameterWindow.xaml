@@ -11,15 +11,6 @@
         SizeToContent="WidthAndHeight"
         Background="Transparent">
     <Window.Resources>
-        <!-- 섹션 타이틀 -->
-        <Style x:Key="SectionTitleStyle" TargetType="Label">
-            <Setter Property="FontSize" Value="18"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Foreground" Value="#111827"/>
-            <Setter Property="Padding" Value="0"/>
-            <Setter Property="Margin" Value="0,0,0,10"/>
-        </Style>
-
         <!-- DataGrid 공통 스타일 (ParameterWindow에서 사용하는 GridStyle 키 제공) -->
         <Style x:Key="GridStyle" TargetType="DataGrid">
             <Setter Property="Background" Value="White"/>
@@ -129,7 +120,7 @@
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
 
-                                    <Label Grid.Row="0" Content="검사 항목 설정" Style="{StaticResource SectionTitleStyle}"/>
+                                    <Label Grid.Row="0" Content="검사 항목 설정" Style="{StaticResource SectionTitleStyleLabel}"/>
 
                                     <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Right">
                                         <Button x:Name="OpenErrorDataQueryButton" Content="에러이력 조회" Width="150" Height="28" Margin="0,0,20,0" Style="{StaticResource OutlineBlueButtonStyle}"/>
@@ -153,16 +144,8 @@
                                     </Grid>
 
                                     <!-- ErrorGrid: 폭 고정 대신 Stretch, 마지막에 여백 -->
-                                    <DataGrid Grid.Row="2"
-          Style="{StaticResource GridStyle}"
-          HorizontalAlignment="Stretch"
-          Margin="0,4,8,0"
-          BorderThickness="1"
-          HeadersVisibility="None"
-          CanUserAddRows="False"
-          HorizontalScrollBarVisibility="Disabled"
-          AutoGenerateColumns="False"
-          x:Name="ErrorGrid">
+                                    <DataGrid Grid.Row="2" Style="{StaticResource GridStyle}" HorizontalAlignment="Stretch" Margin="0,4,8,0" BorderThickness="1" HeadersVisibility="None" CanUserAddRows="False"
+                                            HorizontalScrollBarVisibility="Disabled" AutoGenerateColumns="False" x:Name="ErrorGrid">
                                         <DataGrid.Columns>
                                             <!-- 라벨/값 반복 쌍을 너비 비율로 균등 분배 -->
                                             <DataGridTextColumn IsReadOnly="True"  Width="1.2*" Binding="{Binding Name}">
@@ -291,7 +274,9 @@
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
-                                    <Label Content="운전" Style="{StaticResource SectionTitleStyle}" Margin="0,0,0,6"/>
+                                    
+                                    <Label Content="운전" Style="{StaticResource SectionTitleStyleLabel}" Margin="0,0,0,6"/>
+                                    
                                     <Label Grid.Row="1" Content="정상 운전" FontSize="15" Margin="0,6,0,6" FontWeight="Black"/>
                                     <Border Grid.Row="2" Grid.ColumnSpan="2" BorderBrush="{StaticResource SoftBorderBrush}" BorderThickness="1" CornerRadius="10" Background="#FBFDFF" Padding="2" Margin="0,0,33,8">
                                         <Grid>
@@ -354,7 +339,7 @@
                                     </Grid.RowDefinitions>
 
                                     <!-- 파일(에러) 제목 -->
-                                    <Label Grid.Row="0" Content="파일(에러)" Style="{StaticResource SectionTitleStyle}"/>
+                                    <Label Grid.Row="0" Content="파일(에러)" Style="{StaticResource SectionTitleStyleLabel}"/>
 
                                     <!-- 파일이름(에러): 1행 2열 -->
                                     <Grid Grid.Row="1" Style="{StaticResource FormRowGrid}">
@@ -404,7 +389,7 @@
                                     <Border Grid.Row="5" Height="1" Background="#E5E7EB" Margin="0,3,0,3"/>
 
                                     <!-- 파일(파라미터) 제목 -->
-                                    <Label Grid.Row="6" Content="파일(파라미터)" Style="{StaticResource SectionTitleStyle}"/>
+                                    <Label Grid.Row="6" Content="파일(파라미터)" Style="{StaticResource SectionTitleStyleLabel}"/>
 
                                     <!-- 파일이름(파라미터): 1행 2열 -->
                                     <Grid Grid.Row="7" Style="{StaticResource FormRowGrid}" >
@@ -455,22 +440,13 @@
                             <!-- =========================
                              중단: Micom Parameter 섹션 타이틀(카드 밖에서 정렬 유지)
                             ========================== -->
-                            <Label Grid.Row="4"
-                               Grid.Column="1"
-                               Content="Micom Parameter"
-                               Style="{StaticResource SectionTitleStyle}"
-                               Margin="0,6,0,10"/>
+                            <Label Grid.Row="4" Grid.Column="1" Content="Micom Parameter" Style="{StaticResource SectionTitleStyleLabel}" Margin="0,6,0,10"/>
 
                             <!-- =========================
                              Micom Parameter 메인 그리드(카드)
                              - 내부 컨트롤/배치는 원본 그대로 유지
                             ========================== -->
-                            <Border Grid.Row="5"
-                                Grid.Column="1"
-                                Grid.RowSpan="2"
-                                Grid.ColumnSpan="3"
-                                Style="{StaticResource CardBorderStyle}"
-                                Margin="0,0,0,12">
+                            <Border Grid.Row="5" Grid.Column="1" Grid.RowSpan="2" Grid.ColumnSpan="3" Style="{StaticResource CardBorderStyle}" Margin="0,0,0,12">
 
                                 <!-- ✅ 원본 Grid 그대로 복사 -->
                                 <Grid ShowGridLines="False">
