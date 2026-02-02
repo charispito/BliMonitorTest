@@ -42,6 +42,18 @@ namespace BliMonitorTest
             dpFrom.SelectedDate = DateTime.Today.AddDays(-1);
             dpTo.SelectedDate = DateTime.Today;
 
+            // 시간 콤보 초기화
+            FillHourCombo(cbFromHour);
+            FillMinuteCombo5(cbFromMinute);
+            FillHourCombo(cbToHour);
+            FillMinuteCombo5(cbToMinute);
+
+            // 기본 범위: 00:00 ~ 23:55
+            cbFromHour.SelectedItem = "00";
+            cbFromMinute.SelectedItem = "00";
+            cbToHour.SelectedItem = "23";
+            cbToMinute.SelectedItem = "55";
+
             Loaded += async (s, e) => await RefreshGridAsync();
         }
 
@@ -131,20 +143,39 @@ namespace BliMonitorTest
             if (_isBusy) return;
             if (grid == null || txtPageInfo == null) return;
 
-            DateTime fromDate = (dpFrom.SelectedDate ?? DateTime.Today).Date;
-            DateTime toDate = (dpTo.SelectedDate ?? DateTime.Today).Date;
-            DateTime toExclusive = toDate.AddDays(1);
+            DateTime baseFrom = (dpFrom.SelectedDate ?? DateTime.Today).Date;
+            DateTime baseTo = (dpTo.SelectedDate ?? DateTime.Today).Date;
 
-            if (toExclusive <= fromDate)
+            if (!TryGetTimeFromCombos(cbFromHour, cbFromMinute, out var fromTs))
+            {
+                ToastMessage.ToastService.AppToast.Show("시작 시간을 선택하세요.");
+                return;
+            }
+            if (!TryGetTimeFromCombos(cbToHour, cbToMinute, out var toTs))
+            {
+                ToastMessage.ToastService.AppToast.Show("종료 시간을 선택하세요.");
+                return;
+            }
+
+            DateTime fromDateTime = baseFrom.Add(fromTs);
+            DateTime toDateTime = baseTo.Add(toTs);
+
+            // 종료 시각 포함 → [from, toExclusive)
+            DateTime toExclusive = toDateTime.AddMinutes(5);
+
+            if (toExclusive <= fromDateTime)
             {
                 ToastMessage.ToastService.AppToast.Show("기간이 올바르지 않습니다.");
                 return;
             }
-            if ((toExclusive - fromDate).TotalDays > 31)
+            if ((toExclusive - fromDateTime).TotalDays > 31)
             {
                 ToastMessage.ToastService.AppToast.Show("기간 조회는 최대 1달(31일)까지만 가능합니다.");
                 return;
             }
+
+            long fromMs = new DateTimeOffset(fromDateTime).ToUnixTimeMilliseconds();
+            long toMs = new DateTimeOffset(toExclusive).ToUnixTimeMilliseconds();
 
             int sourceType = 0; // 0=전체, 1=단일, 2=다채널
             if (cbSourceType?.SelectedItem is ComboBoxItem srcItem && srcItem.Tag != null)
@@ -168,9 +199,6 @@ namespace BliMonitorTest
             double? onMin = TryParseNullableDouble(tbOnMin.Text);
             double? onMax = TryParseNullableDouble(tbOnMax.Text);
             int? runMin = TryParseNullableInt(tbRunMin.Text);
-
-            long fromMs = new DateTimeOffset(fromDate).ToUnixTimeMilliseconds();
-            long toMs = new DateTimeOffset(toExclusive).ToUnixTimeMilliseconds();
 
             string dbPath = StoragePathUtil.GetDbPath();
             if (!File.Exists(dbPath))
@@ -339,9 +367,37 @@ namespace BliMonitorTest
             if (_isBusy) return;
             if (_excelBuilding) return;
 
-            DateTime fromDate = (dpFrom.SelectedDate ?? DateTime.Today).Date;
-            DateTime toDate = (dpTo.SelectedDate ?? DateTime.Today).Date;
-            DateTime toExclusive = toDate.AddDays(1);
+            DateTime baseFrom = (dpFrom.SelectedDate ?? DateTime.Today).Date;
+            DateTime baseTo = (dpTo.SelectedDate ?? DateTime.Today).Date;
+
+            if (!TryGetTimeFromCombos(cbFromHour, cbFromMinute, out var fromTs))
+            {
+                ToastMessage.ToastService.AppToast.Show("시작 시간을 선택하세요.");
+                return;
+            }
+            if (!TryGetTimeFromCombos(cbToHour, cbToMinute, out var toTs))
+            {
+                ToastMessage.ToastService.AppToast.Show("종료 시간을 선택하세요.");
+                return;
+            }
+
+            DateTime fromDateTime = baseFrom.Add(fromTs);
+            DateTime toDateTime = baseTo.Add(toTs);
+            DateTime toExclusive = toDateTime.AddMinutes(5);
+
+            if (toExclusive <= fromDateTime)
+            {
+                ToastMessage.ToastService.AppToast.Show("기간이 올바르지 않습니다.");
+                return;
+            }
+            if ((toExclusive - fromDateTime).TotalDays > 31)
+            {
+                ToastMessage.ToastService.AppToast.Show("기간 조회는 최대 1달(31일)까지만 가능합니다.");
+                return;
+            }
+
+            long fromMs = new DateTimeOffset(fromDateTime).ToUnixTimeMilliseconds();
+            long toMs = new DateTimeOffset(toExclusive).ToUnixTimeMilliseconds();
 
             int sourceType = 0;
             if (cbSourceType?.SelectedItem is ComboBoxItem srcItem && srcItem.Tag != null)
@@ -364,9 +420,6 @@ namespace BliMonitorTest
             double? onMin = TryParseNullableDouble(tbOnMin.Text);
             double? onMax = TryParseNullableDouble(tbOnMax.Text);
             int? runMin = TryParseNullableInt(tbRunMin.Text);
-
-            long fromMs = new DateTimeOffset(fromDate).ToUnixTimeMilliseconds();
-            long toMs = new DateTimeOffset(toExclusive).ToUnixTimeMilliseconds();
 
             string dbPath = StoragePathUtil.GetDbPath();
             if (!File.Exists(dbPath))
@@ -715,5 +768,33 @@ namespace BliMonitorTest
                 btnExcel.ToolTip = null;
             }
         }
+
+        private static void FillHourCombo(ComboBox cb)
+        {
+            cb.Items.Clear();
+            for (int h = 0; h <= 23; h++)
+                cb.Items.Add(h.ToString("00"));
+            cb.SelectedIndex = 0;
+        }
+
+        private static void FillMinuteCombo5(ComboBox cb)
+        {
+            cb.Items.Clear();
+            for (int m = 0; m < 60; m += 5)
+                cb.Items.Add(m.ToString("00"));
+            cb.SelectedIndex = 0;
+        }
+
+        private static bool TryGetTimeFromCombos(ComboBox cbHour, ComboBox cbMinute, out TimeSpan ts)
+        {
+            ts = TimeSpan.Zero;
+            if (cbHour?.SelectedItem == null || cbMinute?.SelectedItem == null) return false;
+            if (!int.TryParse(cbHour.SelectedItem.ToString(), out int h)) return false;
+            if (!int.TryParse(cbMinute.SelectedItem.ToString(), out int m)) return false;
+            ts = new TimeSpan(h, m, 0);
+            return true;
+        }
+
+
     }
 }

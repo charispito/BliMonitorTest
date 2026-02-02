@@ -33,15 +33,42 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="8"/>
                                     <ColumnDefinition Width="140"/>
+                                    <!-- dpFrom -->
                                     <ColumnDefinition Width="6"/>
+                                    <ColumnDefinition Width="60"/>
+                                    <!-- cbFromHour -->
+                                    <ColumnDefinition Width="6"/>
+                                    <ColumnDefinition Width="60"/>
+                                    <!-- cbFromMinute -->
+                                    <ColumnDefinition Width="10"/>
                                     <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="6"/>
+                                    <!-- ~ -->
+                                    <ColumnDefinition Width="10"/>
                                     <ColumnDefinition Width="140"/>
+                                    <!-- dpTo -->
+                                    <ColumnDefinition Width="6"/>
+                                    <ColumnDefinition Width="60"/>
+                                    <!-- cbToHour -->
+                                    <ColumnDefinition Width="6"/>
+                                    <ColumnDefinition Width="60"/>
+                                    <!-- cbToMinute -->
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="기간 :" Style="{StaticResource FieldLabelStyle}" VerticalAlignment="Top" Grid.ColumnSpan="2" Margin="0,6,8,0"/>
-                                <DatePicker Grid.Column="2" x:Name="dpFrom" Width="140" />
-                                <TextBlock Grid.Column="4" Text="~" VerticalAlignment="Center" />
-                                <DatePicker Grid.Column="6" x:Name="dpTo" Width="140" />
+
+                                <TextBlock Grid.Column="0" Text="기간 :" Style="{StaticResource FieldLabelStyle}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+
+                                <DatePicker Grid.Column="2" x:Name="dpFrom" Width="140"/>
+
+                                <!-- 시간(시/분) From -->
+                                <ComboBox Grid.Column="4" x:Name="cbFromHour" Width="60" Style="{StaticResource PrettyComboBoxStyle}" />
+                                <ComboBox Grid.Column="6" x:Name="cbFromMinute" Width="60" Style="{StaticResource PrettyComboBoxStyle}" />
+
+                                <TextBlock Grid.Column="8" Text="~" VerticalAlignment="Center"/>
+
+                                <DatePicker Grid.Column="10" x:Name="dpTo" Width="140"/>
+
+                                <!-- 시간(시/분) To -->
+                                <ComboBox Grid.Column="12" x:Name="cbToHour" Width="60" Style="{StaticResource PrettyComboBoxStyle}" />
+                                <ComboBox Grid.Column="14" x:Name="cbToMinute" Width="60" Style="{StaticResource PrettyComboBoxStyle}" />
                             </Grid>
 
                             <!-- 소스·채널 -->
