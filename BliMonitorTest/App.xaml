@@ -5,10 +5,8 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <!-- 공통 테마 -->
-                <ResourceDictionary Source="pack://application:,,,/Resources/Styles/AppTheme.xaml"/>
-                <!-- 콤보박스 스타일 -->
-                <ResourceDictionary Source="pack://application:,,,/Resources/Styles/ComboBoxStyles.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/Resources/Styles/AppTheme.xaml"/>                    <!-- 공통 테마 -->
+                <ResourceDictionary Source="pack://application:,,,/Resources/Styles/ComboBoxStyles.xaml"/>              <!-- 콤보박스 스타일 -->
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>
