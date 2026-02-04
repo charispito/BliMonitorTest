@@ -2,7 +2,7 @@
 
 namespace BliMonitorTest.ProtocolDuo
 {
-    public static class DuoV1_2
+    public static class DuoProtocol
     {
         // 공통
         public const byte STX = 0x12;

@@ -192,25 +192,22 @@ namespace BliMonitorTest
         private void setItems(ChannelItem item)
         {
             item.Item1.label.Content = "히터 온도";
-            item.Item2.label.Content = "배기 온도";
-            item.Item3.label.Content = "열풍히터온도";
-            item.Item4.label.Content = "메인모터운전";
-            item.Item5.label.Content = "배기팬 풍량";
-            item.Item6.label.Content = "운전 시간";
+            item.Item2.label.Content = "냉수 온도";
+            item.Item3.label.Content = "수위센서";
+            item.Item4.label.Content = "플로어센서";
+            item.Item5.label.Content = "UV LED";
+            item.Item6.label.Content = "3방 SOL";
 
-            item.Item11.label.Content = "히터오프타임";
-            item.Item12.label.Content = "배기온도평균";
-            item.Item13.label.Content = "열풍히터Duty";
-            item.Item14.label.Content = "메인모터전류";
-            item.Item15.label.Content = "열풍팬 풍량";
-            item.Item16.label.Content = "만수 감지";
+            item.Item11.label.Content = "Air Vent Sol";
+            item.Item12.label.Content = "C/V";
+            item.Item13.label.Content = "PUMP";
+            item.Item14.label.Content = "Cold Sol";
+            item.Item15.label.Content = "Normal Sol";
+            item.Item16.label.Content = "Hot Sol";
 
-            item.VersionBox.label.Content = "Model";
-            item.CompileBox.label.Content = "Compile";
+            item.Item17.label.Content = "Needle 위치";
+            item.Item18.label.Content = "Model";
             item.StateBox.label.Content = "상태";
-            //item.Item24.label.Content = "남은시간";
-            ////item.Item25.label.Content = "Error";
-            //item.Item26.label.Content = "MODE";
         }
 
         private void MultiWindow1_Loaded(object sender, RoutedEventArgs e)

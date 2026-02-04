@@ -138,12 +138,11 @@ namespace BliMonitorTest.controls
             Item14.cont.Content = "";
             Item15.cont.Content = "";
             Item16.cont.Content = "";
-            VersionBox.cont.Content = "";
-            CompileBox.cont.Content = "";
+            Item17.cont.Content = "";
+            Item18.cont.Content = "";
             StateBox.cont.Content = "";
             ModeTimeView.cont.Content = "";
             ModeTimeView.label.Content = "";
-            //ChannelView.cont.Content = "";
             TestTime = TimeSpan.Zero;
         }
 
@@ -492,16 +491,8 @@ namespace BliMonitorTest.controls
             int hot_air_fan_duty = data[30];
             int[] binary0 = Enumerable.Range(1, 8).Select(i => error0 / (1 << (8 - i)) % 2).ToArray();
             int[] binary1 = Enumerable.Range(1, 8).Select(i => error1 / (1 << (8 - i)) % 2).ToArray();
-            //Array.Reverse(binary0);
-            //Array.Reverse(binary1);
             float heateroffTime = (float)(heateroff / 10.0f);
             float averOffTime = (float)(airheatertemp / 10.0f);
-            //5 = 0101 RUN CCW
-            //9 = 1001 RUN STOP
-            //3 = 0011 RUN CW
-            //8 = 1000 STOP 
-            //2 = 0010 CW
-            //4 = 0100 CCW
             bool[] errors0 = new bool[8];
             bool[] errors1 = new bool[8];
             int motorRunTime = data[12];
@@ -554,21 +545,23 @@ namespace BliMonitorTest.controls
 
             string errorStr = GetErrorName(binary0, binary1);
             StateContent.Content = errorStr;
-            VersionBox.cont.Content = getModelName(model);
-            CompileBox.cont.Content = micom;
-            ModeTimeView.cont.Content = time;
+
             Item1.cont.Content = heatertemp + "ºC";
             Item2.cont.Content = airtemp + "ºC";
             Item3.cont.Content = averOffTime + "ms";
+            Item4.Title = getMotorState(motorRun);
+            Item4.cont.Content = motorRunTime.ToString() + "s";
             Item5.cont.Content = fan_duty + "%";
-            Item15.cont.Content = hot_air_fan_duty + "%";
+            Item6.cont.Content = t_time;
             Item11.cont.Content = heateroffTime + "ms";
             Item12.cont.Content = airaverage + "ºC";
             Item13.cont.Content = heaterduty;
             Item14.cont.Content = string.Format("{0:0.00A}", currentfloat / 2.0);
-            Item6.cont.Content = t_time;
-            Item4.Title = getMotorState(motorRun);
-            Item4.cont.Content = motorRunTime.ToString() + "s";
+            Item15.cont.Content = hot_air_fan_duty + "%";
+            Item17.cont.Content = micom;
+            Item18.cont.Content = getModelName(model);
+
+            ModeTimeView.cont.Content = time;
             ModeTimeView.label.Content = string.Format("모드{0}", mode + 1);
             DateTime now = DateTime.Now;
 

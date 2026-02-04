@@ -50,8 +50,8 @@
             <CheckBox x:Name="Item7Check" Grid.Row="3" Grid.Column="3" VerticalAlignment="Center"/>
             <CheckBox x:Name="Item8Check" Grid.Row="4" Grid.Column="3" VerticalAlignment="Center"/>
 
-            <local:DoubleLabel Grid.Row="4" Grid.Column="5" Margin="5, 3" x:Name="VersionBox" TitleBackground="#652822E8"/>
-            <local:DoubleLabel Grid.Row="5" Grid.Column="5" Margin="5, 3" x:Name="CompileBox" TitleBackground="#652822E8"/>
+            <local:DoubleLabel Grid.Row="4" Grid.Column="5" Margin="5, 3" x:Name="Item17" TitleBackground="#652822E8"/>
+            <local:DoubleLabel Grid.Row="5" Grid.Column="5" Margin="5, 3" x:Name="Item18" TitleBackground="#652822E8"/>
             <local:DoubleLabel Grid.Row="6" Grid.Column="5" Margin="5, 3" x:Name="Statebox" TitleBackground="#652822E8"/>
             <local:ModeTimeLabel Grid.Row="1" Grid.RowSpan="2" Grid.Column="6" Margin="5,3,5,3" x:Name="ModeTimeView"/>
             <Label Grid.Row="2" Grid.RowSpan="2" Grid.Column="5" Padding="0" BorderBrush="#000" BorderThickness="1" x:Name="StateContent" FontSize="13" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" MaxWidth="176"/>

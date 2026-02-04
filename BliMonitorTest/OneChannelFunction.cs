@@ -120,30 +120,6 @@ namespace BliMonitorTest
                 total_minute += remain_second;
             }
 
-            /*
-            // 더미일경우
-            if (IsDummyEnabled)
-            {
-                // null일 때만 1회 설정 (핵심)
-                if (_dummyStartTime == null)
-                    _dummyStartTime = DateTime.Now;
-
-                TimeSpan elapsed = DateTime.Now - _dummyStartTime.Value;
-
-                total_second = (long)elapsed.TotalSeconds;
-                total_minute = elapsed.TotalMinutes;   // 분 단위 double (가장 깔끔)
-            }
-            else
-            {
-                // 더미 해제 시 리셋(선택)
-                _dummyStartTime = null;
-
-                // 다시 TestTime 기반으로 (원래 의미 유지)
-                total_second = (long)TestTime.TotalSeconds;
-                total_minute = TestTime.TotalMinutes;
-            }
-            */
-
             // null일 때만 1회 설정 (핵심)
             if (_dummyStartTime == null)
                 _dummyStartTime = DateTime.Now;
@@ -174,6 +150,7 @@ namespace BliMonitorTest
                     channel.run = true;
                 }
             }
+
             int t_hour = data[18];
             int t_min = data[19];
             int t_sec = data[20];
@@ -194,23 +171,17 @@ namespace BliMonitorTest
             int day = data[53];
             int version = data[54];
             string micom = $"{year}.{month}.{day} ver {version}";
-            //string micom = $"{year}.{month}.{day}. ver {version}";
             byte error0 = data[49];
             byte error1 = data[50];
             int[] binary0 = Enumerable.Range(1, 8).Select(i => error0 / (1 << (8 - i)) % 2).ToArray();
             int[] binary1 = Enumerable.Range(1, 8).Select(i => error1 / (1 << (8 - i)) % 2).ToArray();
-            //Array.Reverse(binary0);
-            //Array.Reverse(binary1);
+
             string errorStr = GetErrorName(binary0, binary1);
             channel.StateContent.Content = errorStr;
-            //5 = 0101 RUN CCW
-            //9 = 1001 RUN STOP
-            //3 = 0011 RUN CW
-            //8 = 1000 STOP 
-            //2 = 0010 CW
-            //4 = 0100 CCW
+
             bool[] errors0 = new bool[8];
             bool[] errors1 = new bool[8];
+
             for (int i = 0; i < 8; i++)
             {
                 if (binary0[i] == 0)
@@ -295,83 +266,56 @@ namespace BliMonitorTest
             DetailView.heater.Value1.Content = airheatertemp;
             DetailView.heater.Value2.Content = heaterduty;
 
-            
-            channel.VersionBox.cont.Content = getModelName(data[48]);
-            channel.CompileBox.cont.Content = micom;
             channel.Item1.cont.Content = heatertemp + "ºC";
             channel.Item2.cont.Content = airtemp + "ºC";
             channel.Item3.cont.Content = averOffTime + "ms";
+            channel.Item4.Title = getMotorState(motorRun);
+            channel.Item4.cont.Content = motorRunTime.ToString() + "s";
             channel.Item5.cont.Content = fan_duty + "%";
-            channel.Item15.cont.Content = hot_air_fan_duty + "%";
+            channel.Item6.cont.Content = t_time;
             channel.Item11.cont.Content = heateroffTime + "ms";
             channel.Item12.cont.Content = airaverage + "ºC";
             channel.Item13.cont.Content = heaterduty;
             channel.Item14.cont.Content = string.Format("{0:0.00A}", currentfloat / 2.0);
-            channel.Item6.cont.Content = t_time;
-            channel.Item4.Title = getMotorState(motorRun);
-            channel.Item4.cont.Content = motorRunTime.ToString() + "s";
+            channel.Item15.cont.Content = hot_air_fan_duty + "%";
+            channel.Item17.cont.Content = micom;
+            channel.Item18.cont.Content = getModelName(data[48]);
+
             channel.ModeTimeView.label.Content = string.Format("모드{0}", mode + 1);
             channel.ModeTimeView.cont.Content = time;
             
-            Console.WriteLine("NOW: " + DateTime.Now.ToFileTime());
             if (channel.Item1Check.IsChecked.Value)
             {
                 channel.chartView.ViewModel.AddData(seriesList[10], new DataPoint(total_minute, heatertemp));
-                //channel.list1.Add(new KeyValuePair<double, int>(total_minute, heatertemp));
             }
             if (channel.Item2Check.IsChecked.Value)
             {
                 channel.chartView.ViewModel.AddData(seriesList[11], new DataPoint(total_minute, airtemp));
-                //channel.list2.Add(new KeyValuePair<double, int>(total_minute, airtemp));
             }
             if (channel.Item3Check.IsChecked.Value)
             {
                 channel.chartView.ViewModel.AddData(seriesList[12], new DataPoint(total_minute, airheatertemp));
-                //channel.list3.Add(new KeyValuePair<double, int>(total_minute, airheatertemp));
             }
             if (channel.Item4Check.IsChecked.Value)
             {
                 channel.chartView.ViewModel.AddData(seriesList[13], new DataPoint(total_minute, getMotorValue(motorRun)));
-                //channel.list4.Add(new KeyValuePair<double, int>(total_minute, getMotorValue(motorRun)));
             }
             if (channel.Item5Check.IsChecked.Value)
             {
                 channel.chartView.ViewModel.AddData(seriesList[14], new DataPoint(total_minute, heateroff));
-                //channel.list5.Add(new KeyValuePair<double, int>(total_minute, heateroff));
             }
             if (channel.Item6Check.IsChecked.Value)
             {
                 channel.chartView.ViewModel.AddData(seriesList[15], new DataPoint(total_minute, airaverage));
-                //channel.list6.Add(new KeyValuePair<double, int>(total_minute, airaverage));
             }
             if (channel.Item7Check.IsChecked.Value)
             {
                 channel.chartView.ViewModel.AddData(seriesList[16], new DataPoint(total_minute, heaterduty));
-                //channel.list7.Add(new KeyValuePair<double, int>(total_minute, heaterduty));
             }
             if (channel.Item8Check.IsChecked.Value)
             {
                 channel.chartView.ViewModel.AddData(seriesList[17], new DataPoint(total_minute, currnetDouble / 2.0));
-                //channel.list8.Add(new KeyValuePair<double, double>(total_minute, currnetDouble / 2.0));
             }
-
-            /*
-            EnsureChartEnhancements();
-            
-            double x = total_minute;                // x축이 total_minute를 쓰고 있다면:
-            double y = heatertemp;                  // y는 "현재 선택된 항목의 값"으로 (예: heater temp)
-            var line = GetFirstLineSeriesOrNull();  // 기존 라인 시리즈 찾아서 trim (선택)
-
-            AddAnomalyPointIfNeeded(x, y);
-            TrimIfNeeded(line);
-
-            _warnLow = 150;
-            _warnHigh = 185;
-            //_spikeDelta = 2;
-            ApplyWarnLinesVisibility();
-
-            GetPlotModelOrNull()?.InvalidatePlot(true);
-            */
 
             log.Debug($"isDummy={IsDummyEnabled} total_second={total_second} total_minute={total_minute:F3} start={_dummyStartTime:HH:mm:ss.fff}");
             channel.chartView.ViewModel.panXAxis(total_minute);
@@ -475,23 +419,21 @@ namespace BliMonitorTest
             switch (model)
             {
                 case 0:
-                    return "PCS400";
+                    return "BSH-311";
                 case 1:
-                    return "PCS500";
+                    return "BSS-311";
                 case 2:
-                    return "PCS350";
+                    return "BSS-314";
                 case 3:
-                    return "PCS400_T";
+                    return "BSS-310";
                 case 4:
-                    return "PCS400P";
+                    return "BSS-330";
                 case 5:
-                    return "PCS400P_T";
+                    return "BSS-341";
                 case 6:
-                    return "PCS500N";
+                    return "DUO 8";
                 case 7:
-                    return "PCS400A_T_E";
-                case 8:
-                    return "PCS400P_T_E";
+                    return "Hybrid";
                 default:
                     return "";
             }
