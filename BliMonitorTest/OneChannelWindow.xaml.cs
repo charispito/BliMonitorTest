@@ -168,7 +168,6 @@ namespace BliMonitorTest
                     {
                         TestTime += TimeSpan.FromSeconds(1);
 
-                        //if (!channel.ParameterMode)
                         if (parameterCnt > 0)
                         {
                             Console.WriteLine("ParameterLoad");
@@ -245,26 +244,6 @@ namespace BliMonitorTest
                 System.Diagnostics.Debug.WriteLine(ex);
             }
         }
-
-        // 실물 요청 바이트 헬퍼(더미 REQ 상수를 재사용)
-        /*
-        private byte[] GetRealRequestByKind(ProtocolKind kind)
-        {
-            if (_dummyPort == null) _dummyPort = new DummySerialPort();
-            switch (kind)
-            {
-                case ProtocolKind.ErrorDataRequest:
-                    return (byte[])_dummyPort.REQ_ErrorData.Clone();
-                case ProtocolKind.ParameterRequest:
-                    return (byte[])_dummyPort.REQ_ParameterRequest.Clone();
-                case ProtocolKind.ParameterSet:
-                    return (byte[])_dummyPort.REQ_ParameterSet.Clone();
-                case ProtocolKind.StartStopStatus:
-                default:
-                    return (byte[])_dummyPort.REQ_StartStopStatus.Clone();
-            }
-        }
-        */
 
         private void CheckNewDataValid(byte[] array)
         {
@@ -345,7 +324,7 @@ namespace BliMonitorTest
             int etx_cnt = 0;
             List<int> STXIndex = new List<int>();
             List<int> ETXIndex = new List<int>();
-            //array.PrintHex();
+
             if (array.Length < 3)
             {
                 return;
@@ -479,7 +458,6 @@ namespace BliMonitorTest
                 // 포트 선택 확인
                 if (PortList.box.SelectedIndex == -1)
                 {
-                    //MessageBox.Show("포트가 선택 되지 않았습니다.");
                     ToastMessage.ToastService.AppToast.Show("포트가 선택 되지 않았습니다.");
                     return;
                 }
@@ -511,8 +489,6 @@ namespace BliMonitorTest
         private void InvokePortDataReceivedWith(byte[] buf)
         {
             if (buf == null || buf.Length == 0) return;
-            // Port_DataReceived 단일 파이프라인 재사용
-            // 더미에서는 실제 포트에서 읽지 않으므로, 그대로 receiveData 호출
             Dispatcher.Invoke(() =>
             {
                 receiveData(buf, buf.Length);
@@ -522,7 +498,6 @@ namespace BliMonitorTest
 
         // 더미 응답 생성 헬퍼(더미 포트 내부 상수 RSP를 복제해서 반환)
         private byte[] GetSimulatedResponse(DummySerialPort dummy, ProtocolKind kind)
-        //private byte[] GetSimulatedResponse()
         {
             try
             {
@@ -612,20 +587,10 @@ namespace BliMonitorTest
                             seriesList[10] = index;
                             Chart.ViewModel.setSeries(index, 0, colorList[index]);
                             Chart.setLegend(index, "히터 온도");
-                            //Chart.seriesList[index].ItemsSource = channel.list1;
-                            try
-                            {
-                                //Chart.setAxis(Chart.seriesList[index], 0);
-                            }
-                            catch (Exception ex)
-                            {
-                                Console.WriteLine(ex.ToString());
-                            }
                         }
                         else
                         {
                             channel.Item1Check.IsChecked = false;
-                            //MessageBox.Show("최대 8개 선택 가능합니다.");
                             ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
@@ -636,7 +601,6 @@ namespace BliMonitorTest
                         seriesList.Remove(10);
                         Chart.ViewModel.unSetSeries(index);
                         Chart.setLegend(index, "");
-                        //Chart.seriesList[index].ItemsSource = null;
                     }
                     break;
                 case "Item2Check":
@@ -646,15 +610,12 @@ namespace BliMonitorTest
                         {
                             int index = getIndex();
                             seriesList[11] = index;
-                            Chart.setLegend(index, "배기 온도");
+                            Chart.setLegend(index, "냉수 온도");
                             Chart.ViewModel.setSeries(index, 0, colorList[index]);
-                            //Chart.seriesList[index].ItemsSource = channel.list2;
-                            //Chart.setAxis(Chart.seriesList[index], 1);
                         }
                         else
                         {
                             channel.Item2Check.IsChecked = false;
-                            //MessageBox.Show("최대 8개 선택 가능합니다.");
                             ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
@@ -665,7 +626,6 @@ namespace BliMonitorTest
                         seriesList.Remove(11);
                         Chart.ViewModel.unSetSeries(index);
                         Chart.setLegend(index, "");
-                        //Chart.seriesList[index].ItemsSource = null;
                     }
                     break;
                 case "Item3Check":
@@ -675,17 +635,12 @@ namespace BliMonitorTest
                         {
                             int index = getIndex();
                             seriesList[12] = index;
-
                             Chart.ViewModel.setSeries(index, 1, colorList[index]);
-                            Chart.setLegend(index, "평균히터오프타임");
-
-                            //Chart.seriesList[index].ItemsSource = channel.list3;
-                            //Chart.setAxis(Chart.seriesList[index], 0);
+                            Chart.setLegend(index, "수위센서");
                         }
                         else
                         {
                             channel.Item3Check.IsChecked = false;
-                            //MessageBox.Show("최대 8개 선택 가능합니다.");
                             ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
@@ -696,7 +651,6 @@ namespace BliMonitorTest
                         seriesList.Remove(12);
                         Chart.ViewModel.unSetSeries(index);
                         Chart.setLegend(index, "");
-                        //Chart.seriesList[index].ItemsSource = null;
                     }
                     break;
                 case "Item4Check":
@@ -707,14 +661,11 @@ namespace BliMonitorTest
                             int index = getIndex();
                             seriesList[13] = index;
                             Chart.ViewModel.setSeries(index, 1, colorList[index]);
-                            Chart.setLegend(index, "메인모터운전");
-                            //Chart.seriesList[index].ItemsSource = channel.list4;
-                            //Chart.setAxis(Chart.seriesList[index], 1);
+                            Chart.setLegend(index, "플로어센서");
                         }
                         else
                         {
                             channel.Item4Check.IsChecked = false;
-                            //MessageBox.Show("최대 8개 선택 가능합니다.");
                             ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
@@ -725,7 +676,6 @@ namespace BliMonitorTest
                         seriesList.Remove(13);
                         Chart.ViewModel.unSetSeries(index);
                         Chart.setLegend(index, "");
-                        //Chart.seriesList[index].ItemsSource = null;
                     }
                     break;
                 case "Item5Check":
@@ -736,14 +686,11 @@ namespace BliMonitorTest
                             int index = getIndex();
                             seriesList[14] = index;
                             Chart.ViewModel.setSeries(index, 1, colorList[index]);
-                            Chart.setLegend(index, "히터오프타임");
-                            //Chart.seriesList[index].ItemsSource = channel.list5;
-                            //Chart.setAxis(Chart.seriesList[index], 1);
+                            Chart.setLegend(index, "Air Vent Sol");
                         }
                         else
                         {
                             channel.Item5Check.IsChecked = false;
-                            //MessageBox.Show("최대 8개 선택 가능합니다.");
                             ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
@@ -754,7 +701,6 @@ namespace BliMonitorTest
                         seriesList.Remove(14);
                         Chart.ViewModel.unSetSeries(index);
                         Chart.setLegend(index, "");
-                        //Chart.seriesList[index].ItemsSource = null;
                     }
                     break;
                 case "Item6Check":
@@ -765,14 +711,11 @@ namespace BliMonitorTest
                             int index = getIndex();
                             seriesList[15] = index;
                             Chart.ViewModel.setSeries(index, 0, colorList[index]);
-                            Chart.setLegend(index, "배기온도평균");
-                            //Chart.seriesList[index].ItemsSource = channel.list6;
-                            //Chart.setAxis(Chart.seriesList[index], 1);
+                            Chart.setLegend(index, "C/V");
                         }
                         else
                         {
                             channel.Item6Check.IsChecked = false;
-                            //MessageBox.Show("최대 8개 선택 가능합니다.");
                             ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
@@ -783,7 +726,6 @@ namespace BliMonitorTest
                         seriesList.Remove(15);
                         Chart.ViewModel.unSetSeries(index);
                         Chart.setLegend(index, "");
-                        //Chart.seriesList[index].ItemsSource = null;
                     }
                     break;
                 case "Item7Check":
@@ -794,14 +736,11 @@ namespace BliMonitorTest
                             int index = getIndex();
                             seriesList[16] = index;
                             Chart.ViewModel.setSeries(index, 1, colorList[index]);
-                            Chart.setLegend(index, "열풍히터Duty");
-                            //Chart.seriesList[index].ItemsSource = channel.list7;
-                            //Chart.setAxis(Chart.seriesList[index], 1);
+                            Chart.setLegend(index, "PUMP");
                         }
                         else
                         {
                             channel.Item7Check.IsChecked = false;
-                            //MessageBox.Show("최대 8개 선택 가능합니다.");
                             ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
@@ -812,7 +751,6 @@ namespace BliMonitorTest
                         seriesList.Remove(16);
                         Chart.ViewModel.unSetSeries(index);
                         Chart.setLegend(index, "");
-                        //Chart.seriesList[index].ItemsSource = null;
                     }
                     break;
                 case "Item8Check":
@@ -823,14 +761,11 @@ namespace BliMonitorTest
                             int index = getIndex();
                             seriesList[17] = index;
                             Chart.ViewModel.setSeries(index, 2, colorList[index]);
-                            Chart.setLegend(index, "메인모터전류");
-                            //Chart.seriesList[index].ItemsSource = channel.list8;
-                            //Chart.setAxis(Chart.seriesList[index], 2);
+                            Chart.setLegend(index, "Cold Sol");
                         }
                         else
                         {
                             channel.Item8Check.IsChecked = false;
-                            //MessageBox.Show("최대 8개 선택 가능합니다.");
                             ToastMessage.ToastService.AppToast.Show("최대 8개 선택 가능합니다.");
                         }
                     }
@@ -841,7 +776,6 @@ namespace BliMonitorTest
                         seriesList.Remove(17);
                         Chart.ViewModel.unSetSeries(index);
                         Chart.setLegend(index, "");
-                        //Chart.seriesList[index].ItemsSource = null;
                     }
                     break;
             }
