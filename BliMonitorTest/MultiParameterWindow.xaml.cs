@@ -615,7 +615,7 @@ namespace BliMonitorTest
 
                 try
                 {
-                    byte[] command = Protocol.GetError(channelItem.IsNewVersion);
+                    byte[] command = Protocol.GetError();
                     command.PrintHex(1);
                     channelItem.client.GetStream().Write(command, 0, command.Length);
                     Errorset = true;
@@ -1031,136 +1031,54 @@ namespace BliMonitorTest
 
         private void checkParamterData(byte[] arr)
         {
-            if (channelItem.IsNewVersion)
+            //받은것이 없을때
+            if (receivedData.Count == 0)
             {
-                if (receivedData.Count == 0)//받은것이 없을때
-                {
-                    if (arr[0] == 0x12)//head
-                    {                        
-                        if (arr.Length > 4 && arr.Length == arr[3] && arr[arr.Length - 1] == 0x34)
-                        {
-                            setParameter(arr);
-                        }
-                        else
-                        {
-                            receivedData.AddRange(arr);
-                            if (channelItem.client.GetStream().DataAvailable)
-                            {
-                                Console.WriteLine("continue");
-                                byte[] buffer = new byte[70];
-                                int byteRead = channelItem.client.GetStream().Read(buffer, 0, buffer.Length);
-                                byte[] slice = buffer.Slice(byteRead);
-                                checkParamterData(slice);
-                            }
-                            else
-                            {
-                                Console.WriteLine("failed");
-                                receivedData.Clear();
-                                byte[] command = Protocol.GetParameter(channelItem.IsNewVersion);
-                                channelItem.client.GetStream().Write(command, 0, command.Length);
-                                command.PrintHex(1);
-                                byte[] buffer = new byte[70];
-                                int byteRead = channelItem.client.GetStream().Read(buffer, 0, buffer.Length);
-                                byte[] slice = buffer.Slice(byteRead);
-                                checkParamterData(slice);
-
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    receivedData.AddRange(arr);
-                    if (receivedData.Count > 4 && receivedData.Count == receivedData[3])
+                if (arr[0] == 0x12)
+                {                        
+                    if (arr.Length > 4 && arr.Length == arr[3] && arr[arr.Length - 1] == 0x34)
                     {
-                        if (receivedData.Last() == 0x34)
-                        {
-                            setParameter(receivedData.ToArray());
-                        }
-                        else
-                        {
-
-                            if (channelItem.client.GetStream().DataAvailable)
-                            {
-                                byte[] buffer = new byte[70];
-                                int byteRead = channelItem.client.GetStream().Read(buffer, 0, buffer.Length);
-                                byte[] slice = buffer.Slice(byteRead);
-                                checkParamterData(slice);
-                            }
-                        }
+                        setParameter(arr);
                     }
                     else
                     {
+                        receivedData.AddRange(arr);
                         if (channelItem.client.GetStream().DataAvailable)
                         {
+                            Console.WriteLine("continue");
                             byte[] buffer = new byte[70];
                             int byteRead = channelItem.client.GetStream().Read(buffer, 0, buffer.Length);
                             byte[] slice = buffer.Slice(byteRead);
                             checkParamterData(slice);
+                        }
+                        else
+                        {
+                            Console.WriteLine("failed");
+                            receivedData.Clear();
+                            byte[] command = Protocol.GetParameter();
+                            channelItem.client.GetStream().Write(command, 0, command.Length);
+                            command.PrintHex(1);
+                            byte[] buffer = new byte[70];
+                            int byteRead = channelItem.client.GetStream().Read(buffer, 0, buffer.Length);
+                            byte[] slice = buffer.Slice(byteRead);
+                            checkParamterData(slice);
+
                         }
                     }
                 }
             }
             else
             {
-                if (receivedData.Count == 0)//받은것이 없을때
+                receivedData.AddRange(arr);
+                if (receivedData.Count > 4 && receivedData.Count == receivedData[3])
                 {
-                    if (arr[0] == 0xCC)//head
+                    if (receivedData.Last() == 0x34)
                     {
-                        if (arr.Length > 4 && arr.Length == arr[3] && arr[arr.Length - 1] == 0xEF)
-                        {
-                            setParameter(arr);
-                        }
-                        else
-                        {
-                            receivedData.AddRange(arr);
-                            if (channelItem.client.GetStream().DataAvailable)
-                            {
-                                Console.WriteLine("continue");
-                                byte[] buffer = new byte[70];
-                                int byteRead = channelItem.client.GetStream().Read(buffer, 0, buffer.Length);
-                                byte[] slice = buffer.Slice(byteRead);
-                                checkParamterData(slice);
-                            }
-                            else
-                            {
-                                Console.WriteLine("failed");
-                                receivedData.Clear();
-                                byte[] command = Protocol.GetParameter(channelItem.IsNewVersion);
-                                channelItem.client.GetStream().Write(command, 0, command.Length);
-                                command.PrintHex(1);
-                                byte[] buffer = new byte[70];
-                                int byteRead = channelItem.client.GetStream().Read(buffer, 0, buffer.Length);
-                                byte[] slice = buffer.Slice(byteRead);
-                                checkParamterData(slice);
-
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    receivedData.AddRange(arr);
-                    if (receivedData.Count > 4 && receivedData.Count == receivedData[3])
-                    {
-                        if (receivedData.Last() == 0xEF)
-                        {
-                            setParameter(receivedData.ToArray());
-                        }
-                        else
-                        {
-
-                            if (channelItem.client.GetStream().DataAvailable)
-                            {
-                                byte[] buffer = new byte[70];
-                                int byteRead = channelItem.client.GetStream().Read(buffer, 0, buffer.Length);
-                                byte[] slice = buffer.Slice(byteRead);
-                                checkParamterData(slice);
-                            }
-                        }
+                        setParameter(receivedData.ToArray());
                     }
                     else
                     {
+
                         if (channelItem.client.GetStream().DataAvailable)
                         {
                             byte[] buffer = new byte[70];
@@ -1170,142 +1088,70 @@ namespace BliMonitorTest
                         }
                     }
                 }
+                else
+                {
+                    if (channelItem.client.GetStream().DataAvailable)
+                    {
+                        byte[] buffer = new byte[70];
+                        int byteRead = channelItem.client.GetStream().Read(buffer, 0, buffer.Length);
+                        byte[] slice = buffer.Slice(byteRead);
+                        checkParamterData(slice);
+                    }
+                }
             }
-
+            
         }
 
         private void checkErrorData(byte[] arr)
         {
-            if (channelItem.IsNewVersion)
+            if (receivedData.Count == 0)//받은것이 없을때
             {
-                if (receivedData.Count == 0)//받은것이 없을때
+                if (arr[0] == 0x12)//head
                 {
-                    if (arr[0] == 0x12)//head
+                    if (arr.Length > 4 && arr.Length == arr[3] && arr[arr.Length - 1] == 0x34)
                     {
-                        if (arr.Length > 4 && arr.Length == arr[3] && arr[arr.Length - 1] == 0x34)
-                        {
-                            setError(arr);
-                        }
-                        else
-                        {
-                            receivedData.AddRange(arr);
-                            if (channelItem.client.GetStream().DataAvailable)
-                            {
-                                Console.WriteLine("continue");
-                                byte[] buffer = new byte[70];
-                                int byteRead = channelItem.client.GetStream().Read(buffer, 0, buffer.Length);
-                                byte[] slice = buffer.Slice(byteRead);
-                                checkErrorData(slice);
-                            }
-                            else
-                            {
-                                Console.WriteLine("failed");
-                                receivedData.Clear();
-                                byte[] command = Protocol.GetError(channelItem.IsNewVersion);
-                                channelItem.client.GetStream().Write(command, 0, command.Length);
-                                command.PrintHex(1);
-                                byte[] buffer = new byte[70];
-                                int byteRead = channelItem.client.GetStream().Read(buffer, 0, buffer.Length);
-                                byte[] slice = buffer.Slice(byteRead);
-                                checkErrorData(slice);
-
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    receivedData.AddRange(arr);
-                    if (receivedData.Count > 4 && receivedData.Count == receivedData[3])
-                    {
-                        if (receivedData.Last() == 0x34)
-                        {
-                            setError(receivedData.ToArray());
-                        }
-                        else
-                        {
-
-                            if (channelItem.client.GetStream().DataAvailable)
-                            {
-                                byte[] buffer = new byte[70];
-                                int byteRead = channelItem.client.GetStream().Read(buffer, 0, buffer.Length);
-                                byte[] slice = buffer.Slice(byteRead);
-                                checkErrorData(slice);
-                            }
-                        }
+                        setError(arr);
                     }
                     else
                     {
+                        receivedData.AddRange(arr);
+
                         if (channelItem.client.GetStream().DataAvailable)
                         {
+                            Console.WriteLine("continue");
                             byte[] buffer = new byte[70];
                             int byteRead = channelItem.client.GetStream().Read(buffer, 0, buffer.Length);
                             byte[] slice = buffer.Slice(byteRead);
                             checkErrorData(slice);
+                        }
+                        else
+                        {
+                            Console.WriteLine("failed");
+                            receivedData.Clear();
+                            byte[] command = Protocol.GetError();
+                            channelItem.client.GetStream().Write(command, 0, command.Length);
+                            command.PrintHex(1);
+                            byte[] buffer = new byte[70];
+                            int byteRead = channelItem.client.GetStream().Read(buffer, 0, buffer.Length);
+                            byte[] slice = buffer.Slice(byteRead);
+                            checkErrorData(slice);
+
                         }
                     }
                 }
             }
             else
             {
-                if (receivedData.Count == 0)//받은것이 없을때
+                receivedData.AddRange(arr);
+                if (receivedData.Count > 4 && receivedData.Count == receivedData[3])
                 {
-                    if (arr[0] == 0xCC)//head
+                    if (receivedData.Last() == 0x34)
                     {
-                        if (arr.Length > 4 && arr.Length == arr[3] && arr[arr.Length - 1] == 0xEF)
-                        {
-                            setError(arr);
-                        }
-                        else
-                        {
-                            receivedData.AddRange(arr);
-                            if (channelItem.client.GetStream().DataAvailable)
-                            {
-                                Console.WriteLine("continue");
-                                byte[] buffer = new byte[70];
-                                int byteRead = channelItem.client.GetStream().Read(buffer, 0, buffer.Length);
-                                byte[] slice = buffer.Slice(byteRead);
-                                checkErrorData(slice);
-                            }
-                            else
-                            {
-                                Console.WriteLine("failed");
-                                receivedData.Clear();
-                                byte[] command = Protocol.GetError(channelItem.IsNewVersion);
-                                channelItem.client.GetStream().Write(command, 0, command.Length);
-                                command.PrintHex(1);
-                                byte[] buffer = new byte[70];
-                                int byteRead = channelItem.client.GetStream().Read(buffer, 0, buffer.Length);
-                                byte[] slice = buffer.Slice(byteRead);
-                                checkErrorData(slice);
-
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    receivedData.AddRange(arr);
-                    if (receivedData.Count > 4 && receivedData.Count == receivedData[3])
-                    {
-                        if (receivedData.Last() == 0xEF)
-                        {
-                            setError(receivedData.ToArray());
-                        }
-                        else
-                        {
-
-                            if (channelItem.client.GetStream().DataAvailable)
-                            {
-                                byte[] buffer = new byte[70];
-                                int byteRead = channelItem.client.GetStream().Read(buffer, 0, buffer.Length);
-                                byte[] slice = buffer.Slice(byteRead);
-                                checkErrorData(slice);
-                            }
-                        }
+                        setError(receivedData.ToArray());
                     }
                     else
                     {
+
                         if (channelItem.client.GetStream().DataAvailable)
                         {
                             byte[] buffer = new byte[70];
@@ -1315,13 +1161,22 @@ namespace BliMonitorTest
                         }
                     }
                 }
+                else
+                {
+                    if (channelItem.client.GetStream().DataAvailable)
+                    {
+                        byte[] buffer = new byte[70];
+                        int byteRead = channelItem.client.GetStream().Read(buffer, 0, buffer.Length);
+                        byte[] slice = buffer.Slice(byteRead);
+                        checkErrorData(slice);
+                    }
+                }
             }
-
         }
 
         private void ReadParamButton_Click(object sender, RoutedEventArgs e)
         {
-            byte[] command = Protocol.GetParameter(channelItem.IsNewVersion);
+            byte[] command = Protocol.GetParameter();
             command.PrintHex(1);
             channelItem.setParameter(0);
             channelItem.client.GetStream().Write(command, 0, command.Length);
@@ -1331,16 +1186,9 @@ namespace BliMonitorTest
         private byte[] GetParameterSettingData()
         {
             byte[] command = new byte[70];
-            command[0] = 0xCC;
-            if (channelItem.IsNewVersion)
-            {
-                command[0] = 0x12;
-            }
-            command[1] = 0x00;
-            if (channelItem.IsNewVersion)
-            {
-                command[1] = 0x01;
-            }
+            command[0] = 0x12;
+            command[1] = 0x01;
+
             command[2] = 0x96;
             command[3] = 0x46;
             command[4] = (byte)mode11[0].Value;
@@ -1413,10 +1261,8 @@ namespace BliMonitorTest
             //    command[68] = (byte)(command[68] ^ 0xFF);
             //}
             command[69] = 0xEF;
-            if (channelItem.IsNewVersion)
-            {
-                command[69] = 0x34;
-            }
+            command[69] = 0x34;
+
             return command;
         }
 
@@ -1464,21 +1310,14 @@ namespace BliMonitorTest
         private void ParameterWindow_Loaded(object sender, RoutedEventArgs e)
         {
             channelItem.ParameterMode = true;
-            byte[] command = Protocol.GetParameter(channelItem.IsNewVersion);
-            //channelItem.client.GetStream().Write(command, 0, command.Length);
+            byte[] command = Protocol.GetParameter();
         }
 
         private void ResetErrorButton_Click(object sender, RoutedEventArgs e)
         {
             byte[] command = null;
-            if (channelItem.IsNewVersion)
-            {
-                command = Protocol.GetErrorReset(true);
-            }
-            else
-            {
-                command = Protocol.GetErrorReset(false);
-            }
+            command = Protocol.GetErrorReset();
+
             command.PrintHex(1);
 
             channelItem.client.GetStream().Write(command, 0, command.Length);

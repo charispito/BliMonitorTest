@@ -154,14 +154,8 @@ namespace BliMonitorTest
                                 typeof(System.Windows.Controls.Primitives.ButtonBase).GetMethod("OnClick", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(channel.Item3Check, new object[0]);
                                 typeof(System.Windows.Controls.Primitives.ButtonBase).GetMethod("OnClick", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(channel.Item3Check, new object[0]);
                             }
-                            if (channel.IsNewVersion)
-                            {
-                                channel.Item3.label.Content = "평균히터오프타임";
-                            }
-                            else
-                            {
-                                channel.Item3.label.Content = "열풍히터온도";
-                            }
+
+                            channel.Item3.label.Content = "평균히터오프타임";
                         }));
 
                     };

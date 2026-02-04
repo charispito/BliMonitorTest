@@ -300,14 +300,7 @@ namespace BliMonitorTest
             channel.CompileBox.cont.Content = micom;
             channel.Item1.cont.Content = heatertemp + "ºC";
             channel.Item2.cont.Content = airtemp + "ºC";
-            if (channel.IsNewVersion)
-            {
-                channel.Item3.cont.Content = averOffTime + "ms";
-            }
-            else
-            {
-                channel.Item3.cont.Content = airheatertemp + "ºC";
-            }
+            channel.Item3.cont.Content = averOffTime + "ms";
             channel.Item5.cont.Content = fan_duty + "%";
             channel.Item15.cont.Content = hot_air_fan_duty + "%";
             channel.Item11.cont.Content = heateroffTime + "ms";

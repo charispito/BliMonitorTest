@@ -66,7 +66,7 @@ namespace BliMonitorTest.controls
         public event CheckChanged OnCheckChanged;
         public delegate void OnParamerLoad(int type);
         public event OnParamerLoad OnParameterLoadAction;
-        public bool IsNewVersion = false;
+        //public bool IsNewVersion = false;
         private bool _SaveInDesktop = false;
         public bool SaveInDesktop
         {
@@ -125,7 +125,7 @@ namespace BliMonitorTest.controls
         {
             NonResponse = 0;
             run = false;
-            ApplyNewVersion.IsChecked = false;
+            //ApplyNewVersion.IsChecked = false;
             Item1.cont.Content = "";
             Item2.cont.Content = "";
             Item3.cont.Content = "";
@@ -162,16 +162,9 @@ namespace BliMonitorTest.controls
             air_sum = 0;
             off_sum = 0;
             number = 0;
-            if (IsNewVersion)
-            {
-                streamWriter.WriteLine("날짜,모드,남은 시간,히터 온도,히터 오프타임,배기온도,FAN Speed," +
+
+            streamWriter.WriteLine("날짜,모드,남은 시간,히터 온도,히터 오프타임,배기온도,FAN Speed," +
                 "평균히터오프타임,열풍온타임,MOTOR,모터 전류,번호,오프타임합,오프평균,배기 합,배기 평균");
-            }
-            else
-            {
-                streamWriter.WriteLine("날짜,모드,남은 시간,히터 온도,히터 오프타임,배기온도,FAN Speed," +
-                "열풍온도,열풍온타임,MOTOR,모터 전류,번호,오프타임합,오프평균,배기 합,배기 평균");
-            }
         }
 
         public void WriteFile(ReadData data)
@@ -213,7 +206,7 @@ namespace BliMonitorTest.controls
 
                     // 2) SQLite 기록 : Queue 방식으로 비동기 처리
                     MonitoringDbWriteService.Instance.Start(StoragePathUtil.GetDbPath());
-                    MonitoringDbWriteService.Instance.Enqueue(IsNewVersion, data, number, off_sum, air_sum, channelNo: 1, sourceType: MonitoringDb.SOURCE_SINGLE);
+                    MonitoringDbWriteService.Instance.Enqueue(data, number, off_sum, air_sum, channelNo: 1, sourceType: MonitoringDb.SOURCE_SINGLE);
                 }
             }
             else
@@ -288,42 +281,6 @@ namespace BliMonitorTest.controls
             };
 
             ParameterButton.Click += ParameterButton_Click;
-            ApplyNewVersion.Click += ApplyNewVersion_Click;
-        }
-
-        private void ApplyNewVersion_Click(object sender, RoutedEventArgs e)
-        {
-            // ✅ 더미 모드면 연결 체크 없이 그냥 적용 (체크가 풀리지 않게)
-            if (IsDummyEnabled)
-            {
-                IsNewVersion = (sender as CheckBox)?.IsChecked == true;
-
-                // UI 체크 상태도 그대로 유지 (혹시 모를 외부 변경 대비)
-                ApplyNewVersion.IsChecked = IsNewVersion;
-
-                OnCheckChanged?.Invoke();
-                return;
-            }
-
-            // ===== 기존 로직 그대로 =====
-            if (client == null || !client.Connected)
-            {
-                IsNewVersion = false;
-                ApplyNewVersion.IsChecked = false;
-                //MessageBox.Show("연결 되지 않았습니다.");
-                ToastMessage.ToastService.AppToast.Show("연결 되지 않았습니다.");
-                return;
-            }
-
-            IsNewVersion = (sender as CheckBox).IsChecked.Value;
-
-            if (OnCheckChanged != null)
-                OnCheckChanged();
-            else
-            {
-                IsNewVersion = false;
-                ApplyNewVersion.IsChecked = false;
-            }
         }
 
         private void ParameterButton_Click(object sender, RoutedEventArgs e)
@@ -372,15 +329,11 @@ namespace BliMonitorTest.controls
                 return;
             }
             run = false;
+
             byte[] command = null;
-            if (IsNewVersion)
-            {
-                command = Protocol.GetNewCommand(3);
-            }
-            else
-            {
-                command = Protocol.GetCommand(3);
-            }
+
+            command = Protocol.GetNewCommand(3);
+
             try
             {
                 client.GetStream().Write(command, 0, command.Length);
@@ -407,14 +360,9 @@ namespace BliMonitorTest.controls
                 ToastMessage.ToastService.AppToast.Show("이미 시작했습니다.");
                 return;
             }
-            if (IsNewVersion)
-            {
-                command = Protocol.GetNewCommand(2);
-            }
-            else
-            {
-                command = Protocol.GetCommand(2);
-            }
+
+            command = Protocol.GetNewCommand(2);
+
             try
             {
                 client.GetStream().Write(command, 0, command.Length);
@@ -445,20 +393,11 @@ namespace BliMonitorTest.controls
                 return;
             if (data[3] != 57)
                 return;
-            if (IsNewVersion)
-            {
-                if (data[0] != 0x12)
-                    return;
-                if (data.Last() != 0x34)
-                    return;
-            }
-            else
-            {
-                if (data[0] != 0xCC)
-                    return;
-                if (data.Last() != 0xEF)
-                    return;
-            }
+
+            if (data[0] != 0x12)
+                return;
+            if (data.Last() != 0x34)
+                return;
 
             bool isDummy = IsDummyEnabled;
 
@@ -620,15 +559,7 @@ namespace BliMonitorTest.controls
             ModeTimeView.cont.Content = time;
             Item1.cont.Content = heatertemp + "ºC";
             Item2.cont.Content = airtemp + "ºC";
-
-            if (IsNewVersion)
-            {
-                Item3.cont.Content = averOffTime + "ms";
-            }
-            else
-            {
-                Item3.cont.Content = airheatertemp + "ºC";
-            }
+            Item3.cont.Content = averOffTime + "ms";
             Item5.cont.Content = fan_duty + "%";
             Item15.cont.Content = hot_air_fan_duty + "%";
             Item11.cont.Content = heateroffTime + "ms";

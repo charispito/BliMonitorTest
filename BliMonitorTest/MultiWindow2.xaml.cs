@@ -185,20 +185,9 @@ namespace BliMonitorTest
                         {
                             int index = getIndex();
                             seriesList[12] = index;
-                            
-                            if (Item1.IsNewVersion)
-                            {
-                                Chart.ViewModel.setSeries(index, 1, colorList[index]);
-                                Chart.setLegend(index, String.Format("CH{0} 평균히터오프타임", Item1.Channel));
-                            }
-                            else
-                            {
-                                Chart.ViewModel.setSeries(index, 0, colorList[index]);
-                                Chart.setLegend(index, String.Format("CH{0} 열풍히터온도", Item1.Channel));
-                            }
-                            
-                            //Chart.seriesList[index].ItemsSource = Item1.list3;
-                            //Chart.setAxis(Chart.seriesList[index], 0);
+
+                            Chart.ViewModel.setSeries(index, 1, colorList[index]);
+                            Chart.setLegend(index, String.Format("CH{0} 평균히터오프타임", Item1.Channel));
                         }
                         else
                         {
@@ -438,18 +427,8 @@ namespace BliMonitorTest
                         {
                             int index = getIndex();
                             seriesList[22] = index;
-                            if (Item2.IsNewVersion)
-                            {
-                                Chart.ViewModel.setSeries(index, 1, colorList[index]);
-                                Chart.setLegend(index, String.Format("CH{0} 평균히터오프타임", Item2.Channel));
-                            }
-                            else
-                            {
-                                Chart.ViewModel.setSeries(index, 0, colorList[index]);
-                                Chart.setLegend(index, String.Format("CH{0} 열풍히터온도", Item2.Channel));
-                            }
-                            //Chart.seriesList[index].ItemsSource = Item2.list3;
-                            //Chart.setAxis(Chart.seriesList[index], 0);
+                            Chart.ViewModel.setSeries(index, 1, colorList[index]);
+                            Chart.setLegend(index, String.Format("CH{0} 평균히터오프타임", Item2.Channel));
                         }
                         else
                         {
@@ -690,19 +669,9 @@ namespace BliMonitorTest
                         {
                             int index = getIndex();
                             seriesList[32] = index;
-                            
-                            if (Item3.IsNewVersion)
-                            {
-                                Chart.ViewModel.setSeries(index, 1, colorList[index]);
-                                Chart.setLegend(index, String.Format("CH{0} 평균히터오프타임", Item3.Channel));
-                            }
-                            else
-                            {
-                                Chart.ViewModel.setSeries(index, 0, colorList[index]);
-                                Chart.setLegend(index, String.Format("CH{0} 열풍히터온도", Item3.Channel));
-                            }
-                            //Chart.seriesList[index].ItemsSource = Item3.list3;
-                            //Chart.setAxis(Chart.seriesList[index], 0);
+
+                            Chart.ViewModel.setSeries(index, 1, colorList[index]);
+                            Chart.setLegend(index, String.Format("CH{0} 평균히터오프타임", Item3.Channel));
                         }
                         else
                         {
@@ -942,19 +911,9 @@ namespace BliMonitorTest
                         {
                             int index = getIndex();
                             seriesList[42] = index;
-                            
-                            if (Item4.IsNewVersion)
-                            {
-                                Chart.ViewModel.setSeries(index, 1, colorList[index]);
-                                Chart.setLegend(index, String.Format("CH{0} 평균히터오프타임", Item4.Channel));
-                            }
-                            else
-                            {
-                                Chart.ViewModel.setSeries(index, 0, colorList[index]);
-                                Chart.setLegend(index, String.Format("CH{0} 열풍히터온도", Item4.Channel));
-                            }
-                            //Chart.seriesList[index].ItemsSource = Item4.list3;
-                            //Chart.setAxis(Chart.seriesList[index], 0);
+
+                            Chart.ViewModel.setSeries(index, 1, colorList[index]);
+                            Chart.setLegend(index, String.Format("CH{0} 평균히터오프타임", Item4.Channel));
                         }
                         else
                         {

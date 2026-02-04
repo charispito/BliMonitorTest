@@ -20,111 +20,63 @@ namespace BliMonitorTest.data
         public static byte END = 0x04;
         public static byte STATE = 0x00;
 
-        public static byte[] GetParameter(bool renewal)
+        public static byte[] GetParameter()
         {
             byte[] command = new byte[7];
-            if (renewal)
-            {
-                command[0] = 0x12;
-                command[1] = 0x01;
-            }
-            else
-            {
-                command[0] = STX;
-                command[1] = 0x00;
-            }
+
+            command[0] = 0x12;
+            command[1] = 0x01;
+
             
             command[2] = 0x99;
             command[3] = 0x07;
             command[4] = 0x00;
             command[5] = (byte)(command[1] ^ command[2] ^ command[3] ^ command[4]);
             command[6] = ETX;
-            if (renewal)
-            {
-                command[5] = (byte)(command[5] ^ 0xFF);
-                command[6] = 0x34;
-            }
 
-            log.Debug("============        LOG DATA Peotocol.cs [GetParameter] REQUEST START       ==================");
-            log.Debug("GetParameter renewal : " + renewal);
-            log.Debug("command : " + command);
-            ByteLogHelper.LogPacket(command, "TX");
-            ByteLogHelper.ToHexWith0x(command);
-            ByteLogHelper.DumpLinesWith0x(command, 16);
-            log.Debug("============        LOG DATA Peotocol.cs [GetParameter] REQUEST END       ==================");
+            command[5] = (byte)(command[5] ^ 0xFF);
+            command[6] = 0x34;
 
             return command;
         }
 
-        public static byte[] GetError(bool renewal)
+        public static byte[] GetError()
         {
             byte[] command = new byte[7];
-            if (renewal)
-            {
-                command[0] = 0x12;
-                command[1] = 0x01;
-            }
-            else
-            {
-                command[0] = STX;
-                command[1] = 0x00;
-            }
+
+            command[0] = 0x12;
+            command[1] = 0x01;
 
             command[2] = 0xB9;
             command[3] = 0x07;
             command[4] = 0x00;
             command[5] = (byte)(command[1] ^ command[2] ^ command[3] ^ command[4]);
             command[6] = ETX;
-            if (renewal)
-            {
-                command[5] = (byte)(command[5] ^ 0xFF);
-                command[6] = 0x34;
-            }
 
-            log.Debug("============        LOG DATA Peotocol.cs [GetError] REQUEST START       ==================");
-            log.Debug("GetError renewal : " + renewal);
-            log.Debug("command : " + command);
-            ByteLogHelper.LogPacket(command, "TX");
-            ByteLogHelper.ToHexWith0x(command);
-            ByteLogHelper.DumpLinesWith0x(command, 16);
-            log.Debug("============        LOG DATA Peotocol.cs [GetError] REQUEST END       ==================");
+
+            command[5] = (byte)(command[5] ^ 0xFF);
+            command[6] = 0x34;
 
             return command;
         }
 
-        public static byte[] GetErrorReset(bool renewal)
+        public static byte[] GetErrorReset()
         {
             byte[] command = new byte[7];
-            if (renewal)
-            {
-                command[0] = 0x12;
-                command[1] = 0x01;
-                command[6] = 0x34;
-            }
-            else
-            {
-                command[0] = 0xCC;
-                command[1] = 0x00;
-                command[6] = 0xEF;
-            }
+
+            command[0] = 0x12;
+            command[1] = 0x01;
+            command[6] = 0x34;
+
             command[2] = 0xB6;
             command[3] = 0x07;
             command[4] = 0x00;
             command[5] = (byte)(command[1] ^ command[2] ^ command[3] ^ command[4]);
             command[6] = ETX;
-            if (renewal)
-            {
-                command[5] = (byte)(command[5] ^ 0xFF);
-                command[6] = 0x34;
-            }
 
-            log.Debug("============        LOG DATA Peotocol.cs [GetErrorReset] REQUEST START       ==================");
-            log.Debug("GetErrorReset renewal : " + renewal);
-            log.Debug("command : " + command);
-            ByteLogHelper.LogPacket(command, "TX");
-            ByteLogHelper.ToHexWith0x(command);
-            ByteLogHelper.DumpLinesWith0x(command, 16);
-            log.Debug("============        LOG DATA Peotocol.cs [GetErrorReset] REQUEST END       ==================");
+            command[5] = (byte)(command[5] ^ 0xFF);
+            command[6] = 0x34;
+
 
             return command;
         }
@@ -154,14 +106,6 @@ namespace BliMonitorTest.data
             command[5] = (byte)(command[1] ^ command[2] ^ command[3] ^ command[4]);
             command[6] = ETX;
 
-            log.Debug("============        LOG DATA Peotocol.cs [GetCommand] REQUEST START       ==================");
-            log.Debug("GetCommand kind : " + kind);
-            log.Debug("command : " + command);
-            ByteLogHelper.LogPacket(command, "TX");
-            ByteLogHelper.ToHexWith0x(command);
-            ByteLogHelper.DumpLinesWith0x(command, 16);
-            log.Debug("============        LOG DATA Peotocol.cs [GetCommand] REQUEST END       ==================");
-
             return command;
         }
 
@@ -189,24 +133,8 @@ namespace BliMonitorTest.data
             command[5] = (byte)(command[1] ^ command[2] ^ command[3] ^ command[4] ^ 0xFF);
             command[6] = 0x34;
 
-            log.Debug("============        LOG DATA Peotocol.cs [GetNewCommand] REQUEST START       ==================");
-            log.Debug("GetNewCommand kind : " + kind);
-            log.Debug("command : " + command);
-            ByteLogHelper.LogPacket(command, "TX");
-            ByteLogHelper.ToHexWith0x(command);
-            ByteLogHelper.DumpLinesWith0x(command, 16);
-            log.Debug("============        LOG DATA Peotocol.cs [GetNewCommand] REQUEST END       ==================");
-
             return command;
         }
-
-
-        //12 01 AA 39 01 08 14 53 16 16
-        //00 00 00 00 00 07 00 00 00 00
-        //00 00 00 00 00 00 87 00 00 28
-        //00 14 09 05 0B 14 5F 28 00 00
-        //00 00 00 00 00 00 00 00 00 80
-        //04 16 04 14 00 86 34
 
         /*
          * Get CheckSum

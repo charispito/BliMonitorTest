@@ -97,7 +97,6 @@ namespace BliMonitorTest.controls
             }
         }
         public int number = 1;
-        public bool IsNewVersion = false;
         public float off_sum = 0;
         public int air_sum = 0;
         public SerialPort port;
@@ -140,7 +139,6 @@ namespace BliMonitorTest.controls
             //StartButton.Click += StartButton_Click;
             //StopButton.Click += StopButton_Click;
             ParameterButton.Click += ParameterButton_Click;
-            ApplyNewVersion.Click += ApplyNewVersion_Click;
             list1.Add(new KeyValuePair<double, int>(0, 0));
             list2.Add(new KeyValuePair<double, int>(0, 0));
             list3.Add(new KeyValuePair<double, int>(0, 0));
@@ -189,12 +187,6 @@ namespace BliMonitorTest.controls
             typeof(System.Windows.Controls.Primitives.ButtonBase).GetMethod("OnClick", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(Item4Check, new object[0]);
         }
 
-        private void ApplyNewVersion_Click(object sender, RoutedEventArgs e)
-        {
-            IsNewVersion = (sender as CheckBox).IsChecked.Value;
-            OnCheckChanged();
-        }
-
         private void ParameterButton_Click(object sender, RoutedEventArgs e)
         {
             if (port != null && port.IsOpen)
@@ -210,16 +202,9 @@ namespace BliMonitorTest.controls
             air_sum = 0;
             off_sum = 0;
             number = 0;
-            if (IsNewVersion)
-            {
-                streamWriter.WriteLine("날짜,모드,남은 시간,히터 온도,히터 오프타임,배기온도,FAN Speed," +
+
+            streamWriter.WriteLine("날짜,모드,남은 시간,히터 온도,히터 오프타임,배기온도,FAN Speed," +
                 "평균히터오프타임,열풍온타임,MOTOR,모터 전류,번호,오프타임합,오프평균,배기 합,배기 평균");
-            }
-            else
-            {
-                streamWriter.WriteLine("날짜,모드,남은 시간,히터 온도,히터 오프타임,배기온도,FAN Speed," +
-                "열풍온도,열풍온타임,MOTOR,모터 전류,번호,오프타임합,오프평균,배기 합,배기 평균");
-            }
         }
 
         public void WriteFile(ReadData data)
@@ -261,7 +246,7 @@ namespace BliMonitorTest.controls
 
                     // 2) SQLite 기록 : Queue 방식으로 비동기 처리
                     MonitoringDbWriteService.Instance.Start(StoragePathUtil.GetDbPath());
-                    MonitoringDbWriteService.Instance.Enqueue( IsNewVersion, data, number, off_sum, air_sum, channelNo: 1, sourceType: MonitoringDb.SOURCE_SINGLE );
+                    MonitoringDbWriteService.Instance.Enqueue( data, number, off_sum, air_sum, channelNo: 1, sourceType: MonitoringDb.SOURCE_SINGLE );
                 }
             }
             else
@@ -348,16 +333,10 @@ namespace BliMonitorTest.controls
             }
             OnTestStart();
 
-            if (IsNewVersion)
-            {
-                byte[] command = Protocol.GetNewCommand(2);
-                port.Write(command, 0, command.Length);
-            }
-            else
-            {
-                byte[] command = Protocol.GetCommand(2);
-                port.Write(command, 0, command.Length);
-            }
+
+            byte[] command = Protocol.GetNewCommand(2);
+            port.Write(command, 0, command.Length);
+
         }
 
         private void StopButton_Click(object sender, RoutedEventArgs e)
@@ -371,27 +350,8 @@ namespace BliMonitorTest.controls
             if (streamWriter != null)
             streamWriter.Close();
             streamWriter = null;
-            //chartView.ItemRun[0] = false;
-            if (IsNewVersion)
-            {
-                byte[] command = Protocol.GetNewCommand(3);
-                port.Write(command, 0, command.Length);
-                log.Debug("============        LOG DATA START  396 LINE     ==================");
-                ByteLogHelper.LogPacket(command, "TX");
-                ByteLogHelper.ToHexWith0x(command);
-                ByteLogHelper.DumpLinesWith0x(command, 16);
-                log.Debug("============        LOG DATA END       ==================");
-            }
-            else
-            {
-                byte[] command = Protocol.GetCommand(3);
-                port.Write(command, 0, command.Length);
-                log.Debug("============        LOG DATA START  405 LINE       ==================");
-                ByteLogHelper.LogPacket(command, "TX");
-                ByteLogHelper.ToHexWith0x(command);
-                ByteLogHelper.DumpLinesWith0x(command, 16);
-                log.Debug("============        LOG DATA END       ==================");
-            }
+            byte[] command = Protocol.GetNewCommand(3);
+            port.Write(command, 0, command.Length);
         }
     }
 }

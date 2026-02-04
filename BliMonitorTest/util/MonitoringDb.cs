@@ -113,7 +113,7 @@ namespace BliMonitorTest.util.MonitoringDb
         /// - channelNo: 단일은 1 고정, 다채널은 실제 채널
         /// - sourceType: 1=Single, 2=Multi
         /// </summary>
-        public static void InsertDb( ref SqliteConnection db, string dbPath, ref bool dbReady, bool isNewVersion, BliMonitorTest.data.ReadData data, int number, float off_sum, int air_sum, int channelNo, int sourceType )
+        public static void InsertDb( ref SqliteConnection db, string dbPath, ref bool dbReady, BliMonitorTest.data.ReadData data, int number, float off_sum, int air_sum, int channelNo, int sourceType )
         {
             EnsureDb(ref db, dbPath, ref dbReady);
 
@@ -151,10 +151,7 @@ namespace BliMonitorTest.util.MonitoringDb
 
             // 신버전 avg_heater_off_time: 기존 로직 유지(원하시면 나중에 의미 재정리)
             object avgOff;
-            if (isNewVersion)
-                avgOff = (off_sum / (double)Math.Max(1, number));
-            else
-                avgOff = DBNull.Value;
+            avgOff = (off_sum / (double)Math.Max(1, number));
 
             using (var cmd = db.CreateCommand())
             {

@@ -79,16 +79,14 @@ namespace BliMonitorTest.util.MonitoringDb
         public void Dispose() => Stop();
 
         // 상태 데이터(기존 ReadData) 적재
-        public void Enqueue(bool isNewVersion, BliMonitorTest.data.ReadData data,
-                            int number, float off_sum, int air_sum,
-                            int channelNo, int sourceType)
+        public void Enqueue( BliMonitorTest.data.ReadData data, int number, float off_sum, int air_sum, int channelNo, int sourceType)
         {
             if (data == null) return;
 
             if (_worker == null)
                 Start(_dbPath ?? BliMonitorTest.util.StoragePathUtil.StoragePathUtil.GetDbPath());
 
-            _queue.TryAdd(new InsertItem(isNewVersion, data, number, off_sum, air_sum, channelNo, sourceType));
+            _queue.TryAdd(new InsertItem(data, number, off_sum, air_sum, channelNo, sourceType));
         }
 
         // 에러 이벤트 적재(error_events 테이블)
@@ -163,8 +161,7 @@ namespace BliMonitorTest.util.MonitoringDb
                             // 상태 배치
                             foreach (var it in stateBuffer)
                             {
-                                MonitoringDb.InsertDb(ref _db, _dbPath, ref _dbReady,
-                                    it.IsNewVersion, it.Data, it.Number, it.OffSum, it.AirSum, it.ChannelNo, it.SourceType);
+                                MonitoringDb.InsertDb(ref _db, _dbPath, ref _dbReady, it.Data, it.Number, it.OffSum, it.AirSum, it.ChannelNo, it.SourceType);
                             }
 
                             // 에러 배치
@@ -203,8 +200,7 @@ namespace BliMonitorTest.util.MonitoringDb
                     {
                         foreach (var it in stateBuffer)
                         {
-                            MonitoringDb.InsertDb(ref _db, _dbPath, ref _dbReady,
-                                it.IsNewVersion, it.Data, it.Number, it.OffSum, it.AirSum, it.ChannelNo, it.SourceType);
+                            MonitoringDb.InsertDb(ref _db, _dbPath, ref _dbReady, it.Data, it.Number, it.OffSum, it.AirSum, it.ChannelNo, it.SourceType);
                         }
 
                         foreach (var ev in errorBuffer)
@@ -228,7 +224,6 @@ namespace BliMonitorTest.util.MonitoringDb
 
         private readonly struct InsertItem
         {
-            public readonly bool IsNewVersion;
             public readonly BliMonitorTest.data.ReadData Data;
             public readonly int Number;
             public readonly float OffSum;
@@ -236,10 +231,9 @@ namespace BliMonitorTest.util.MonitoringDb
             public readonly int ChannelNo;
             public readonly int SourceType;
 
-            public InsertItem(bool isNewVersion, BliMonitorTest.data.ReadData data, int number,
-                              float offSum, int airSum, int channelNo, int sourceType)
+            public InsertItem(BliMonitorTest.data.ReadData data, int number, float offSum, int airSum, int channelNo, int sourceType)
             {
-                IsNewVersion = isNewVersion;
+                //IsNewVersion = isNewVersion;
                 Data = data;
                 Number = number;
                 OffSum = offSum;

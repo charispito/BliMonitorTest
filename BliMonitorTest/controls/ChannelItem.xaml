@@ -57,7 +57,6 @@
             <local:DoubleLabel Grid.Row="5" Grid.Column="5" Margin="5, 3" x:Name="CompileBox" TitleBackground="#652822E8"/>
             <local:DoubleLabel Grid.Row="6" Grid.Column="5" Margin="5, 3" x:Name="StateBox" TitleBackground="#652822E8"/>
             <local:DoubleLabel TitleBroderBrush="Black" ContentBroderBrush="Black" ContentSize="15" TitleSize="15" Grid.RowSpan="1" x:Name="ChannelView" Grid.Row="1" Grid.Column="5" TitleBackground="#FFF" Margin="5, 3" Title="Channel"/>
-            <CheckBox x:Name="ApplyNewVersion" Grid.Row="1" Grid.Column="6" Margin="5,3,52,3" Content="신버전 프로토콜" FontSize="15" Visibility="Visible" VerticalContentAlignment="Center" IsChecked="True"/>
             <CheckBox x:Name="DummyCheck" Grid.Row="1" Grid.Column="6" Margin="139,3,2,3" Content="더미" FontSize="15" Visibility="Visible" VerticalContentAlignment="Center" IsChecked="true" Grid.ColumnSpan="2"/>
             <local:ModeTimeLabel Grid.Row="2" Grid.RowSpan="2" Grid.Column="6" Margin="5, 3" x:Name="ModeTimeView"/>
             <Button x:Name="ParameterButton" Grid.Row="4" Grid.Column="6" Margin="5, 3" Padding="0" Content="파라미터" FontSize="13" Background="#652822E8"/>

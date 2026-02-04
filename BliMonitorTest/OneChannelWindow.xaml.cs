@@ -113,14 +113,8 @@ namespace BliMonitorTest
                 typeof(System.Windows.Controls.Primitives.ButtonBase).GetMethod("OnClick", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(channel.Item3Check, new object[0]);
                 typeof(System.Windows.Controls.Primitives.ButtonBase).GetMethod("OnClick", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(channel.Item3Check, new object[0]);
             }
-            if (channel.IsNewVersion)
-            {
-                channel.Item3.label.Content = "평균히터오프타임";
-            }
-            else
-            {
-                channel.Item3.label.Content = "열풍히터온도";
-            }
+
+            channel.Item3.label.Content = "평균히터오프타임";
         }
 
         private void Channel_OnParameterLoadAction()
@@ -184,32 +178,24 @@ namespace BliMonitorTest
                         }
                         else
                         {
-                            if (channel.IsNewVersion)
-                            {
-                                //byte[] command = Protocol.GetNewCommand(1);
-                                byte[] command = Protocol.GetNewCommand(1);
-                                port.Write(command, 0, command.Length);
-                                command.PrintHex(1);
-                            }
-                            else
-                            {
-                                byte[] command = Protocol.GetCommand(1);
-                                port.Write(command, 0, command.Length);
-                                command.PrintHex(1);
-                            }
+                            byte[] command = Protocol.GetNewCommand(1);
+                            port.Write(command, 0, command.Length);
+                            command.PrintHex(1);
                         }
                     }
                 }
                 else
                 {
-                    var rsp = GetSimulatedResponse(_dummyPort, DummySerialPortNs.ProtocolKind.StartStopStatus);
+                    var rsp = new byte[57];
+
+                    // 샘플 생성(TO-BE)
+                    var sample = _dummyGen.Next();
 
                     if (rsp != null && rsp.Length > 0)
                         if (rsp != null && rsp.Length >= 57)
                         {
-                            var sample = _dummyGen.Next();
-
-                            DummyFramePatcher.PatchStatusResponse57(rsp, sample);
+                            // 패치 + 체크섬/ETX까지 완료
+                            BliMonitorTest.dummy.DummyFramePatcher.PatchStatusResponse57(rsp, sample);
 
                             _dummyLastBuffer = rsp;
                             ByteLogHelper.LogPacket(rsp, "RX");
@@ -689,16 +675,9 @@ namespace BliMonitorTest
                         {
                             int index = getIndex();
                             seriesList[12] = index;
-                            if (channel.IsNewVersion)
-                            {
-                                Chart.ViewModel.setSeries(index, 1, colorList[index]);
-                                Chart.setLegend(index, "평균히터오프타임");
-                            }
-                            else
-                            {
-                                Chart.ViewModel.setSeries(index, 0, colorList[index]);
-                                Chart.setLegend(index, "열풍히터온도");
-                            }
+
+                            Chart.ViewModel.setSeries(index, 1, colorList[index]);
+                            Chart.setLegend(index, "평균히터오프타임");
 
                             //Chart.seriesList[index].ItemsSource = channel.list3;
                             //Chart.setAxis(Chart.seriesList[index], 0);
@@ -907,13 +886,13 @@ namespace BliMonitorTest
             _useDummyCached = false;
         }
 
-        private List<byte[]> ExtractFramesFromBuffer(List<byte> buf, bool isNewVersion)
+        private List<byte[]> ExtractFramesFromBuffer(List<byte> buf)
         {
             // NewVersion: STX=0x12, VER=0x01, ETX=0x34
             // OldVersion: STX=0xCC, VER=0x00, ETX=0xEF
-            byte stx = isNewVersion ? (byte)0x12 : (byte)0xCC;
-            byte ver = isNewVersion ? (byte)0x01 : (byte)0x00;
-            byte etx = isNewVersion ? (byte)0x34 : (byte)0xEF;
+            byte stx = (byte)0x12;
+            byte ver = (byte)0x01;
+            byte etx = (byte)0x34;
 
             var frames = new List<byte[]>();
 

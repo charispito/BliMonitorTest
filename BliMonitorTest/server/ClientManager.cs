@@ -101,256 +101,129 @@ namespace BliMonitorTest.util
 
                     if (result > 0)
                     {
-                        if (clientdata.channel.IsNewVersion)
+                        if (clientdata.parameterCnt > 0)
                         {
-                            if (clientdata.parameterCnt > 0)
+                            byte[] slice = clientdata.readByteParameterData.Slice(result);
+                            Array.Clear(clientdata.readByteParameterData, 0, result);
+
+                            //slice.PrintHex(1);
+                            clientdata.readParameterData.AddRange(slice);
+
+                            if (clientdata.readParameterData.Count >= 70)
                             {
-                                byte[] slice = clientdata.readByteParameterData.Slice(result);
-                                Array.Clear(clientdata.readByteParameterData, 0, result);
+                                byte[] receive = clientdata.readParameterData.ToArray();
 
-                                //slice.PrintHex(1);
-                                clientdata.readParameterData.AddRange(slice);
+                                log.Debug("clientmanager 108 : " + receive);
 
-                                if (clientdata.readParameterData.Count >= 70)
+                                int s_idx = getNewStxIndex(receive);
+                                //receive.PrintHex(1);
+                                if (s_idx == 0)
                                 {
-                                    byte[] receive = clientdata.readParameterData.ToArray();
-
-                                    log.Debug("clientmanager 108 : " + receive);
-
-                                    int s_idx = getNewStxIndex(receive);
-                                    //receive.PrintHex(1);
-                                    if (s_idx == 0)
+                                    if (receive.Length > 70)
                                     {
-                                        if (receive.Length > 70)
+                                        byte[] cmd = receive.Slice(70);
+                                        byte[] etc = receive.Slice(70, clientdata.readParameterData.Count - 70);
+                                        clientdata.readParameterData.Clear();
+                                        clientdata.readParameterData.AddRange(etc);
+                                        CheckCommand(cmd, clientdata);
+                                    }
+                                    else
+                                    {
+                                        clientdata.readParameterData.Clear();
+                                        CheckCommand(receive, clientdata);
+                                    }
+                                }
+                                else if (s_idx == -1)
+                                {
+                                    clientdata.readParameterData.Clear();
+                                }
+                                else
+                                {
+                                    if (receive[s_idx - 1] == 0x34)
+                                    {
+                                        byte[] command = receive.Slice(s_idx);
+                                        byte[] etc = receive.Slice(s_idx, receive.Length - s_idx);
+
+                                        if (command.Length == 70)
                                         {
-                                            byte[] cmd = receive.Slice(70);
-                                            byte[] etc = receive.Slice(70, clientdata.readParameterData.Count - 70);
                                             clientdata.readParameterData.Clear();
                                             clientdata.readParameterData.AddRange(etc);
-                                            CheckCommand(cmd, clientdata);
                                         }
                                         else
                                         {
                                             clientdata.readParameterData.Clear();
-                                            CheckCommand(receive, clientdata);
+                                            clientdata.readParameterData.AddRange(etc);
                                         }
+                                        CheckCommand(command, clientdata);
                                     }
-                                    else if (s_idx == -1)
+                                    else
                                     {
                                         clientdata.readParameterData.Clear();
                                     }
-                                    else
-                                    {
-                                        if (receive[s_idx - 1] == 0x34)
-                                        {
-                                            byte[] command = receive.Slice(s_idx);
-                                            byte[] etc = receive.Slice(s_idx, receive.Length - s_idx);
-
-                                            if (command.Length == 70)
-                                            {
-                                                clientdata.readParameterData.Clear();
-                                                clientdata.readParameterData.AddRange(etc);
-                                            }
-                                            else
-                                            {
-                                                clientdata.readParameterData.Clear();
-                                                clientdata.readParameterData.AddRange(etc);
-                                            }
-                                            CheckCommand(command, clientdata);
-                                        }
-                                        else
-                                        {
-                                            clientdata.readParameterData.Clear();
-                                        }
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                byte[] slice = clientdata.readByteData.Slice(result);
-                                Array.Clear(clientdata.readByteData, 0, clientdata.readByteData.Length);
-                                clientdata.readCompleteData.AddRange(slice);
-                                //slice.PrintHex(1);
-
-                                if (clientdata.readCompleteData.Count >= 57)
-                                {
-                                    byte[] receive = clientdata.readCompleteData.ToArray();
-                                    int s_idx = getNewStxIndex(receive);
-                                    Console.WriteLine("s_idx={0} length={1}", s_idx, receive.Length);
-                                    //receive.PrintHex(1);
-                                    if (s_idx == 0)
-                                    {
-                                        if (receive.Length > 57)
-                                        {
-                                            byte[] cmd = receive.Slice(57);
-                                            byte[] etc = receive.Slice(57, clientdata.readCompleteData.Count - 57);
-                                            clientdata.readCompleteData.Clear();
-                                            clientdata.readCompleteData.AddRange(etc);
-                                            CheckCommand(cmd, clientdata);
-                                        }
-                                        else
-                                        {
-                                            clientdata.readCompleteData.Clear();
-                                            CheckCommand(receive, clientdata);
-                                        }
-                                    }
-                                    else if (s_idx == -1)
-                                    {
-                                        clientdata.readCompleteData.Clear();
-                                    }
-                                    else
-                                    {
-                                        if (receive[s_idx - 1] == 0x34)
-                                        {
-                                            byte[] command = receive.Slice(s_idx);
-                                            byte[] etc = receive.Slice(s_idx, receive.Length - s_idx);
-
-                                            if (command.Length == 57)
-                                            {
-                                                clientdata.readCompleteData.Clear();
-                                                clientdata.readCompleteData.AddRange(etc);
-                                            }
-                                            else
-                                            {
-                                                clientdata.readCompleteData.Clear();
-                                                clientdata.readCompleteData.AddRange(etc);
-                                            }
-                                            CheckCommand(command, clientdata);
-                                        }
-                                        else
-                                        {
-                                            clientdata.readCompleteData.Clear();
-                                        }
-                                    }
-
                                 }
                             }
                         }
                         else
                         {
-                            if (clientdata.parameterCnt > 0)
+                            byte[] slice = clientdata.readByteData.Slice(result);
+                            Array.Clear(clientdata.readByteData, 0, clientdata.readByteData.Length);
+                            clientdata.readCompleteData.AddRange(slice);
+                            //slice.PrintHex(1);
+
+                            if (clientdata.readCompleteData.Count >= 57)
                             {
-                                byte[] slice = clientdata.readByteParameterData.Slice(result);
-                                Array.Clear(clientdata.readByteParameterData, 0, result);
-                                clientdata.readParameterData.AddRange(slice);
-
-                                if (clientdata.readParameterData.Count >= 70)
+                                byte[] receive = clientdata.readCompleteData.ToArray();
+                                int s_idx = getNewStxIndex(receive);
+                                Console.WriteLine("s_idx={0} length={1}", s_idx, receive.Length);
+                                //receive.PrintHex(1);
+                                if (s_idx == 0)
                                 {
-                                    byte[] receive = clientdata.readParameterData.ToArray();
-                                    int s_idx = getStxIndex(receive);
-
-                                    //log.Debug("ClientManager asyncReadAsync 275 receive : " + receive);
-                                    //log.Debug("ClientManager asyncReadAsync 275 s_idx : " + s_idx);
-                                    ByteLogHelper.LogPacket(receive, "RX");
-
-                                    Console.WriteLine("s_idx={0} length={1}", s_idx, receive.Length);
-                                    //receive.PrintHex(1);
-                                    if (s_idx == 0)
+                                    if (receive.Length > 57)
                                     {
-                                        if (receive.Length > 70)
-                                        {
-                                            byte[] cmd = receive.Slice(70);
-                                            byte[] etc = receive.Slice(70, clientdata.readParameterData.Count - 70);
-                                            clientdata.readParameterData.Clear();
-                                            clientdata.readParameterData.AddRange(etc);
-                                            CheckCommand(cmd, clientdata);
-                                        }
-                                        else
-                                        {
-                                            clientdata.readParameterData.Clear();
-                                            CheckCommand(receive, clientdata);
-                                        }
-                                    }
-                                    else if (s_idx == -1)
-                                    {
-                                        clientdata.readParameterData.Clear();
+                                        byte[] cmd = receive.Slice(57);
+                                        byte[] etc = receive.Slice(57, clientdata.readCompleteData.Count - 57);
+                                        clientdata.readCompleteData.Clear();
+                                        clientdata.readCompleteData.AddRange(etc);
+                                        CheckCommand(cmd, clientdata);
                                     }
                                     else
                                     {
-                                        if (receive[s_idx - 1] == 0xEF)
-                                        {
-                                            byte[] command = receive.Slice(s_idx);
-                                            byte[] etc = receive.Slice(s_idx, receive.Length - s_idx);
-
-                                            if (command.Length == 70)
-                                            {
-                                                clientdata.readParameterData.Clear();
-                                                clientdata.readParameterData.AddRange(etc);
-                                            }
-                                            else
-                                            {
-                                                clientdata.readParameterData.Clear();
-                                                clientdata.readParameterData.AddRange(etc);
-                                            }
-                                            CheckCommand(command, clientdata);
-                                        }
-                                        else
-                                        {
-                                            clientdata.readParameterData.Clear();
-                                        }
+                                        clientdata.readCompleteData.Clear();
+                                        CheckCommand(receive, clientdata);
                                     }
                                 }
-                            }
-                            else
-                            {
-                                byte[] slice = clientdata.readByteData.Slice(result);                                
-                                Array.Clear(clientdata.readByteData, 0, result);
-                                clientdata.readCompleteData.AddRange(slice);
-                                if (clientdata.readCompleteData.Count >= 57)
+                                else if (s_idx == -1)
                                 {
-                                    byte[] receive = clientdata.readCompleteData.ToArray();
-                                    int s_idx = getStxIndex(receive);
-
-                                    //receive.PrintHex(1);
-                                    if (s_idx == 0)
+                                    clientdata.readCompleteData.Clear();
+                                }
+                                else
+                                {
+                                    if (receive[s_idx - 1] == 0x34)
                                     {
-                                        if (receive.Length > 57)
+                                        byte[] command = receive.Slice(s_idx);
+                                        byte[] etc = receive.Slice(s_idx, receive.Length - s_idx);
+
+                                        if (command.Length == 57)
                                         {
-                                            byte[] cmd = receive.Slice(57);
-                                            byte[] etc = receive.Slice(57, clientdata.readCompleteData.Count - 57);
                                             clientdata.readCompleteData.Clear();
                                             clientdata.readCompleteData.AddRange(etc);
-                                            CheckCommand(cmd, clientdata);                                            
                                         }
                                         else
                                         {
                                             clientdata.readCompleteData.Clear();
-                                            CheckCommand(receive, clientdata);                                            
+                                            clientdata.readCompleteData.AddRange(etc);
                                         }
+                                        CheckCommand(command, clientdata);
                                     }
-                                    else if(s_idx == -1)
+                                    else
                                     {
                                         clientdata.readCompleteData.Clear();
                                     }
-                                    else
-                                    {
-                                        if (receive[s_idx - 1] == 0xEF)
-                                        {
-                                            byte[] command = receive.Slice(s_idx);
-                                            byte[] etc = receive.Slice(s_idx, receive.Length - s_idx);                                          
-                                            
-                                            if (command.Length == 57)
-                                            {
-                                                clientdata.readCompleteData.Clear();
-                                                clientdata.readCompleteData.AddRange(etc);
-                                            }
-                                            else
-                                            {
-                                                clientdata.readCompleteData.Clear();
-                                                clientdata.readCompleteData.AddRange(etc);
-                                            }
-                                            CheckCommand(command, clientdata);
-                                        }
-                                        else
-                                        {
-                                            clientdata.readCompleteData.Clear();
-                                        }
-                                    }
-
                                 }
+
                             }
                         }
-                    }                    
+                    }         
                 }
                 catch(Exception ex)
                 {
@@ -371,14 +244,8 @@ namespace BliMonitorTest.util
                 {
                     Console.WriteLine("ParameterLoad");
                     byte[] command = null;
-                    if(data.errorCnt > 0)
-                    {
-                        command = Protocol.GetError(data.channel.IsNewVersion);
-                    }
-                    else
-                    {
-                        command = Protocol.GetParameter(data.channel.IsNewVersion);
-                    }
+                    command = Protocol.GetError();
+
                     if (data.client.Connected)
                     {
                         data.client.GetStream().Write(command, 0, command.Length);
@@ -397,14 +264,8 @@ namespace BliMonitorTest.util
                     try
                     {
                         byte[] command = null;
-                        if (data.channel.IsNewVersion)
-                        {
-                            command = Protocol.GetNewCommand(1);
-                        }
-                        else
-                        {
-                            command = Protocol.GetCommand(1);
-                        }
+
+                        command = Protocol.GetNewCommand(1);
 
                         if (data.client.Connected)
                         {
@@ -559,19 +420,15 @@ namespace BliMonitorTest.util
 
                     while (dummyClient.Run)
                     {
-                        byte[] rsp = DummySerialPortNs.DummySerialPort.RSP_StartStopStatus.ToArray();
-                        if (rsp == null || rsp.Length != 57) throw new InvalidOperationException("RSP_StartStopStatus must be 57 bytes.");
+                        var rsp = new byte[57];
 
-                        NormalizeStatusPacketForSetView(dummyClient.channel, rsp);
-
+                        // 샘플 생성(TO-BE)
                         var sample = _dummyGen.Next();
 
-                        DummyFramePatcher.PatchStatusResponse57(rsp, sample);
+                        BliMonitorTest.dummy.DummyFramePatcher.PatchStatusResponse57(rsp, sample);
 
                         dummyClient.channel?.Dispatcher.BeginInvoke(new Action(() =>
                         {
-                            dummyClient.channel.IsNewVersion = dummyClient.channel.ApplyNewVersion?.IsChecked == true;
-                            dummyClient.channel.IsNewVersion = true;
                             dummyClient.channel.SetView(rsp);
                         }));
 
@@ -608,27 +465,6 @@ namespace BliMonitorTest.util
             {
                 dummyClient.channel.run = false; // UI 상태도 같이 끔(선택)
             }));
-        }
-
-        private static void NormalizeStatusPacketForSetView(ChannelItem channel, byte[] pkt57)
-        {
-            if (pkt57 == null || pkt57.Length != 57) return;
-
-            // SetView가 길이 체크로 보는 값
-            pkt57[3] = 57;
-
-            // 채널 버전에 맞춰 STX/ETX 강제
-            bool isNew = channel?.IsNewVersion == true;
-            if (isNew)
-            {
-                pkt57[0] = 0x12;
-                pkt57[56] = 0x34;
-            }
-            else
-            {
-                pkt57[0] = 0xCC;
-                pkt57[56] = 0xEF;
-            }
         }
 
     }

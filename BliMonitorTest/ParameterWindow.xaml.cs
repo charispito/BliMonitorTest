@@ -180,17 +180,10 @@ namespace BliMonitorTest
 
                     try
                     {
-                        byte[] command = Protocol.GetError(oneChannel.IsNewVersion);
+                        byte[] command = Protocol.GetError();
                         command.PrintHex(1);
                         oneChannel.setParameter();
                         port.Write(command, 0, command.Length);
-
-                        log.Debug("============        LOG DATA ParameterWindow.cs [ReadErrorButton] RESPONSE START       ==================");
-                        log.Debug("ReadErrorButton IsNewVersion : " + oneChannel.IsNewVersion);
-                        ByteLogHelper.LogPacket(command, "RX");
-                        ByteLogHelper.ToHexWith0x(command);
-                        ByteLogHelper.DumpLinesWith0x(command, 16);
-                        log.Debug("============        LOG DATA ParameterWindow.cs [ReadErrorButton] RESPONSE END       ==================");
                     } catch (Exception ex) {
                         log.Error("ReadErrorButton 전송 실패", ex);
                         _isReadingError = false;
@@ -555,7 +548,7 @@ namespace BliMonitorTest
         private void ParameterWindow_Loaded1(object sender, RoutedEventArgs e)
         {
             oneChannel.ParameterMode = true;
-            byte[] command = Protocol.GetParameter(oneChannel.IsNewVersion);
+            byte[] command = Protocol.GetParameter();
             port.Write(command, 0, command.Length);
         }
 
@@ -664,22 +657,8 @@ namespace BliMonitorTest
         {
             byte[] command = null;
 
-            if (oneChannel.IsNewVersion)
-            {
-                command = Protocol.GetErrorReset(true);
-            }
-            else
-            {
-                command = Protocol.GetErrorReset(false);
-            }
+            command = Protocol.GetErrorReset();
             command.PrintHex(1);
-
-            log.Debug("============        LOG DATA ParameterWindow.cs [ResetErrorButton_Click] RESPONSE START       ==================");
-            log.Debug("ResetErrorButton_Click oneChannel.IsNewVersion : " + oneChannel.IsNewVersion);
-            ByteLogHelper.LogPacket(command, "RX");
-            ByteLogHelper.ToHexWith0x(command);
-            ByteLogHelper.DumpLinesWith0x(command, 16);
-            log.Debug("============        LOG DATA ParameterWindow.cs [ResetErrorButton_Click] RESPONSE END       ==================");
 
             if (port != null)
             {
@@ -689,15 +668,8 @@ namespace BliMonitorTest
 
         private void ReadParamButton_Click(object sender, RoutedEventArgs e)
         {
-            byte[] command = Protocol.GetParameter(oneChannel.IsNewVersion);        // 0000  12 01 99 07 00 60 34
+            byte[] command = Protocol.GetParameter();        // 0000  12 01 99 07 00 60 34
             command.PrintHex(1);
-
-            log.Debug("============        LOG DATA ParameterWindow.cs [ReadParamButton_Click] RESPONSE START       ==================");
-            log.Debug("ReadParamButton_Click oneChannel.IsNewVersion : " + oneChannel.IsNewVersion);
-            ByteLogHelper.LogPacket(command, "RX");
-            ByteLogHelper.ToHexWith0x(command);
-            ByteLogHelper.DumpLinesWith0x(command, 16);
-            log.Debug("============        LOG DATA ParameterWindow.cs [ReadParamButton_Click] RESPONSE END       ==================");
 
             if (port != null)
             {
@@ -1202,24 +1174,9 @@ namespace BliMonitorTest
         private byte[] GetParameterSettingData()
         {
             byte[] command = new byte[70];
-            command[0] = 0xCC;
 
-            log.Debug(command);
-            log.Debug(" parameterwindow command 773 :  " + command);
-            log.Debug(" parameterwindow command 773 :  " + command[0]);
-            log.Debug(" parameterwindow command 773 :  " + command[1]);
-            log.Debug(" parameterwindow command 773 :  " + command);
-
-
-            if (oneChannel.IsNewVersion)
-            {
-                command[0] = 0x12;
-            }
-            command[1] = 0x00;
-            if (oneChannel.IsNewVersion)
-            {
-                command[1] = 0x01;
-            }
+            command[0] = 0x12;
+            command[1] = 0x01;
             command[2] = 0x96;
             command[3] = 0x46;
             command[4] = (byte)mode11[0].Value;
@@ -1287,12 +1244,8 @@ namespace BliMonitorTest
             command[66] = (byte)heater11[5].Value;
             command[67] = 0x00;
             command[68] = Protocol.GetCheckSum(command, 1, 67);
+            command[69] = 0x34;
 
-            command[69] = 0xEF;
-            if (oneChannel.IsNewVersion)
-            {
-                command[69] = 0x34;
-            }
             return command;
         }
         public void setError(byte[] data)

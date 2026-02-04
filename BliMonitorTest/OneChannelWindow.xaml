@@ -67,7 +67,6 @@
                                 <ComboBox x:Name="DummyInterfaceCombo" Grid.Row="0" Grid.Column="5" Width="120" Margin="123,0,12,0" Style="{StaticResource PrettyComboBoxStyle}">
                                     <ComboBoxItem Content="상태 요청" Tag="3"/>
                                 </ComboBox>
-
                                 <CheckBox x:Name="UseDummyCheck" Grid.Column="5" Margin="15,0,170,0" VerticalAlignment="Center" Width="70" Content="더미" Checked="UseDummyCheck_Checked" Unchecked="UseDummyCheck_Unchecked"/>
                             </Grid>
                         </Border>
@@ -77,18 +76,12 @@
                             <controls:OneChannelValueDetail x:Name="channel"/>
                         </Border>
 
-                        <Border Grid.Row="3"
-                                Grid.Column="2"
-                                Style="{StaticResource CardBorderStyle}"
-                                Margin="12,0,0,12">
+                        <Border Grid.Row="3" Grid.Column="2" Style="{StaticResource CardBorderStyle}"  Margin="12,0,0,12">
                             <controls:SingleDetail x:Name="DetailView" Margin="0"/>
                         </Border>
 
                         <!-- ✅ 차트 영역: Row=5가 2*라서 더 커짐 -->
-                        <Border Grid.Column="1"
-                                Grid.Row="5"
-                                Grid.ColumnSpan="2"
-                                Style="{StaticResource CardBorderStyle}">
+                        <Border Grid.Column="1" Grid.Row="5" Grid.ColumnSpan="2" Style="{StaticResource CardBorderStyle}">
                             <controls:OxyView x:Name="Chart"/>
                         </Border>
 
