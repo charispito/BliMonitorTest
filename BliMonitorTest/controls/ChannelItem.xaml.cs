@@ -2,6 +2,7 @@
 using BliMonitorTest.util;
 using BliMonitorTest.util.MonitoringDb;
 using BliMonitorTest.util.StoragePathUtil;
+using DocumentFormat.OpenXml.InkML;
 using log4net;
 using Microsoft.Data.Sqlite;
 using OxyPlot;
@@ -141,8 +142,6 @@ namespace BliMonitorTest.controls
             Item17.cont.Content = "";
             Item18.cont.Content = "";
             StateBox.cont.Content = "";
-            ModeTimeView.cont.Content = "";
-            ModeTimeView.label.Content = "";
             TestTime = TimeSpan.Zero;
         }
 
@@ -348,30 +347,6 @@ namespace BliMonitorTest.controls
 
             data.PrintHex(1);
 
-            int motorRun = data[5];
-            int heateroff = data[7];        //히터 오프타임
-            int heatertemp = data[6];       //히터 온도
-            int airtemp = data[8];          //배기 온도
-            int airaverage = data[9];
-            int airheatertemp = data[10];   //열풍 온도
-            int heaterduty = data[11];
-            int mode = data[15];
-            int minute = data[16];
-            int second = data[17];
-            if (mode == 7)
-            {
-                if (run)
-                {
-                    run = false;
-                }
-            }
-            else
-            {
-                if (!run)
-                {
-                    run = true;
-                }
-            }
             long total_second = (long)TestTime.TotalSeconds;
             double total_minute = total_second / 60;
             double remain_second = (double)total_second % 60 / 100.0;
@@ -408,68 +383,7 @@ namespace BliMonitorTest.controls
                 total_minute = TestTime.TotalMinutes;
             }
 
-            //total_minute += remain_second;
-            int t_hour = data[18];
-            int t_min = data[19];
-            int t_sec = data[20];
-            int runTime = data[21];
-            int fan_duty = data[29];
-            string time = string.Format("{0:D2}:{1:D2}", minute, second);
-            string t_time = string.Format("{0:D2}:{1:D2}:{2:D2}", t_hour, t_min, t_sec);
-            byte[] current = { 0, 0, data[13], data[14] };
-            Array.Reverse(current);
-            int currentInt = BitConverter.ToInt16(current, 0) * 10;
-            float currnetDouble = (float)currentInt / 1000.0f;
-            float currentfloat = (data[13] & 0xFF) << 8;
-            currentfloat += (data[14] & 0xFF);
-            currentfloat = currentfloat / 100.0f;
-            if (currentfloat > 1)
-                currentfloat = -1;
-            int year = data[51];
-            int month = data[52];
-            int day = data[53];
-            int version = data[54];
-            int model = data[48];
-            string micom = $"{year}.{month}.{day} ver {version}";
-            byte error0 = data[49];
-            byte error1 = data[50];
-            int hot_air_fan_duty = data[30];
-            int[] binary0 = Enumerable.Range(1, 8).Select(i => error0 / (1 << (8 - i)) % 2).ToArray();
-            int[] binary1 = Enumerable.Range(1, 8).Select(i => error1 / (1 << (8 - i)) % 2).ToArray();
-            float heateroffTime = (float)(heateroff / 10.0f);
-            float averOffTime = (float)(airheatertemp / 10.0f);
-            bool[] errors0 = new bool[8];
-            bool[] errors1 = new bool[8];
-            int motorRunTime = data[12];
-
-            for (int i = 0; i < 8; i++)
-            {
-                if (binary0[i] == 0)
-                {
-                    errors0[i] = true;
-                }
-                else
-                {
-                    errors0[i] = false;
-                }
-                if (binary1[i] == 0)
-                {
-                    errors1[i] = true;
-                }
-                else
-                {
-                    errors1[i] = false;
-                }
-            }
-            if (errors1[6])
-            {
-                Item16.cont.Content = "정상";
-            }
-            else
-            {
-                Item16.cont.Content = "감지";
-            }
-
+            /*
             ReadData read = new ReadData()
             {
                 date = DateTime.Now.ToString("yyyy-MM-dd_HH_mm_ss"),
@@ -487,60 +401,102 @@ namespace BliMonitorTest.controls
 
             // 엑셀파일 생성
             WriteFile(read);
+            */
 
-            string errorStr = GetErrorName(binary0, binary1);
-            StateContent.Content = errorStr;
 
-            Item1.cont.Content = heatertemp + "ºC";
-            Item2.cont.Content = airtemp + "ºC";
-            Item3.cont.Content = averOffTime + "ms";
-            Item4.Title = getMotorState(motorRun);
-            Item4.cont.Content = motorRunTime.ToString() + "s";
-            Item5.cont.Content = fan_duty + "%";
-            Item6.cont.Content = t_time;
-            Item11.cont.Content = heateroffTime + "ms";
-            Item12.cont.Content = airaverage + "ºC";
-            Item13.cont.Content = heaterduty;
-            Item14.cont.Content = string.Format("{0:0.00A}", currentfloat / 2.0);
-            Item15.cont.Content = hot_air_fan_duty + "%";
-            Item17.cont.Content = micom;
-            Item18.cont.Content = getModelName(model);
+            // 데이터 화면 매핑
+            byte modelCode = data[5];
+            byte swVersion = data[6];
 
-            ModeTimeView.cont.Content = time;
-            ModeTimeView.label.Content = string.Format("모드{0}", mode + 1);
-            DateTime now = DateTime.Now;
+            int heaterTemp = data[7];
+            int coldTemp = data[8];
+
+            bool waterLevelLow = data[9] != 0;   // ON/OFF
+            bool floorSensor = data[10] != 0;  // ON/OFF
+
+            bool uvLed = data[11] != 0;
+
+            // 3방 SOL: data[12] 비트필드 (바이트의 0번째 비트부터)
+            byte triSolByte = data[12];
+            bool triSol1 = (triSolByte & (1 << 0)) != 0; // 0번째 비트 → 3방 SOL 1
+            bool triSol2 = (triSolByte & (1 << 1)) != 0; // 1번째 비트 → 3방 SOL 2
+            bool triSol3 = (triSolByte & (1 << 2)) != 0; // 2번째 비트 → 3방 SOL 3
+
+            bool airVentSol = data[13] != 0;
+            bool cvSol = data[14] != 0;
+
+            // 버튼 2바이트 (LSB→MSB, bit0부터)
+            ushort buttons = (ushort)(data[15] | (data[16] << 8));
+            bool btnCont = (buttons & (1 << 0)) != 0;
+            bool btnVolume = (buttons & (1 << 1)) != 0;
+            bool btnFree = (buttons & (1 << 2)) != 0;
+            bool btnHighHot = (buttons & (1 << 3)) != 0;
+            bool btnHot = (buttons & (1 << 4)) != 0;
+            bool btnWarm = (buttons & (1 << 5)) != 0;
+            bool btnChild = (buttons & (1 << 6)) != 0;
+            bool btnRoom = (buttons & (1 << 7)) != 0;
+            bool btnMildCold = (buttons & (1 << 8)) != 0;
+            bool btnCold = (buttons & (1 << 9)) != 0;
+
+            bool pumpOn = data[17] != 0;
+            bool coldSol = data[18] != 0;
+            bool normalSol = data[19] != 0;
+            bool hotSol1 = data[20] != 0;
+
+            byte needleState = data[21];
+            byte compVolt = data[22];
+
+            // 4) 중앙 좌측 UI 바인딩
+            Item1.cont.Content = $"{heaterTemp}ºC";                 // 히터 온도
+            Item2.cont.Content = $"{coldTemp}ºC";                   // 냉수 온도
+            Item3.cont.Content = waterLevelLow ? "ON" : "OFF";      // 수위센서
+            Item4.cont.Content = floorSensor ? "ON" : "OFF";        // 플로어 센서
+            Item5.cont.Content = uvLed ? "ON" : "OFF";              // UV LED
+
+            // 3방 SOL 요약(0번째 비트부터: 1,2,3)
+            Item6.cont.Content = $"{OnOff(triSol1)} / {OnOff(triSol2)} / {OnOff(triSol3)}";
+
+            Item11.cont.Content = airVentSol ? "ON" : "OFF";        // Air Vent Sol
+            Item12.cont.Content = cvSol ? "ON" : "OFF";             // C/V
+            Item13.cont.Content = pumpOn ? "ON" : "OFF";            // PUMP
+            Item14.cont.Content = coldSol ? "ON" : "OFF";           // Cold Sol
+            Item15.cont.Content = normalSol ? "ON" : "OFF";         // Normal Sol
+            Item16.cont.Content = hotSol1 ? "ON" : "OFF";           // Hot Sol
+
+            Item17.cont.Content = $"{NeedleToText(needleState)}";
+            Item18.cont.Content = getModelName(modelCode);
 
             if (Item1Check.IsChecked.Value)
             {
-                chartView.ViewModel.AddData(seriesList[ItemIndex * 10], new DataPoint(total_minute, heatertemp));
+                chartView.ViewModel.AddData(seriesList[ItemIndex * 10], new DataPoint(total_minute, heaterTemp));
             }
             if (Item2Check.IsChecked.Value)
             {
-                chartView.ViewModel.AddData(seriesList[ItemIndex * 10 + 1], new DataPoint(total_minute, airtemp));
+                chartView.ViewModel.AddData(seriesList[ItemIndex * 10 + 1], new DataPoint(total_minute, coldTemp));
             }
             if (Item3Check.IsChecked.Value)
             {
-                chartView.ViewModel.AddData(seriesList[ItemIndex * 10 + 2], new DataPoint(total_minute, airheatertemp));
+                chartView.ViewModel.AddData(seriesList[ItemIndex * 10 + 2], new DataPoint(total_minute, waterLevelLow ? 1 : 0));
             }
             if (Item4Check.IsChecked.Value)
             {
-                chartView.ViewModel.AddData(seriesList[ItemIndex * 10 + 3], new DataPoint(total_minute, getMotorValue(motorRun)));
+                chartView.ViewModel.AddData(seriesList[ItemIndex * 10 + 3], new DataPoint(total_minute, floorSensor ? 1 : 0));
             }
             if (Item5Check.IsChecked.Value)
             {
-                chartView.ViewModel.AddData(seriesList[ItemIndex * 10 + 4], new DataPoint(total_minute, heateroff));
+                chartView.ViewModel.AddData(seriesList[ItemIndex * 10 + 4], new DataPoint(total_minute, airVentSol ? 1 : 0));
             }
             if (Item6Check.IsChecked.Value)
             {
-                chartView.ViewModel.AddData(seriesList[ItemIndex * 10 + 5], new DataPoint(total_minute, airaverage));
+                chartView.ViewModel.AddData(seriesList[ItemIndex * 10 + 5], new DataPoint(total_minute, cvSol ? 1 : 0));
             }
             if (Item7Check.IsChecked.Value)
             {
-                chartView.ViewModel.AddData(seriesList[ItemIndex * 10 + 6], new DataPoint(total_minute, heaterduty));
+                chartView.ViewModel.AddData(seriesList[ItemIndex * 10 + 6], new DataPoint(total_minute, pumpOn ? 1 : 0));
             }
             if (Item8Check.IsChecked.Value)
             {
-                chartView.ViewModel.AddData(seriesList[ItemIndex * 10 + 7], new DataPoint(total_minute, currnetDouble / 2.0));
+                chartView.ViewModel.AddData(seriesList[ItemIndex * 10 + 7], new DataPoint(total_minute, coldSol ? 1 : 0));
             }
 
             lock (chartView.ViewModel)
@@ -550,28 +506,39 @@ namespace BliMonitorTest.controls
             }
         }
 
+        private string OnOff(bool v) => v ? "ON" : "OFF";
+
+        private string NeedleToText(byte st)
+        {
+            switch (st)
+            {
+                case 0: return "상승상태";
+                case 1: return "동작중";
+                case 2: return "하강상태";
+                default: return st.ToString();
+            }
+        }
+
         private string getModelName(int model)
         {
             switch (model)
             {
                 case 0:
-                    return "PCS400";
+                    return "BSH-311";
                 case 1:
-                    return "PCS500";
+                    return "BSS-311";
                 case 2:
-                    return "PCS350";
+                    return "BSS-314";
                 case 3:
-                    return "PCS400_T";
+                    return "BSS-310";
                 case 4:
-                    return "PCS400P";
+                    return "BSS-330";
                 case 5:
-                    return "PCS400P_T";
+                    return "BSS-341";
                 case 6:
-                    return "PCS500N";
+                    return "DUO 8";
                 case 7:
-                    return "PCS400A_T_E";
-                case 8:
-                    return "PCS400P_T_E";
+                    return "Hybrid";
                 default:
                     return "";
             }

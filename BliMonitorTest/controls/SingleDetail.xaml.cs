@@ -13,14 +13,14 @@ namespace BliMonitorTest.controls
 
         public static readonly string[] DefaultNames = new[]
         {
-            "연속출수","정량출수","자유출수","고온수","온수", "약온수","차일드락","상온수","약냉수","냉수"
+            "연속출수","정량출수","자유출수","고온수","온수", "약온수","차일드락","상온수","약냉수","냉수"," "," "
         };
 
         static string OnOff(bool v) => v ? "ON" : "OFF";
 
         public void MapTitles(string[] names)
         {
-            var arr = new[] { DL0, DL1, DL2, DL3, DL4, DL5, DL6, DL7, DL8, DL9 };
+            var arr = new[] { DL0, DL1, DL2, DL3, DL4, DL5, DL6, DL7, DL8, DL9, DL10, DL11 };
             for (int i = 0; i < arr.Length && i < names.Length; i++)
                 if (!string.IsNullOrWhiteSpace(names[i]))
                     arr[i].label.Content = names[i]; // DoubleLabel의 제목 영역

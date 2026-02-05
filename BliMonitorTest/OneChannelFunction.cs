@@ -200,35 +200,35 @@ namespace BliMonitorTest
             // 6) 차트 AddData – 고정 키(10~17) 사용 : 10:히터(ºC), 11:냉수(ºC), 12:수위센서(0/1), 13:플로어(0/1), 14:AirVent(0/1), 15:C/V(0/1), 16:PUMP(0/1), 17:ColdSol(0/1)
             if (channel.Item1Check.IsChecked == true && seriesList.ContainsKey(10))
             {
-                channel.chartView.ViewModel.AddData(seriesList[10], new OxyPlot.DataPoint(total_minute, heaterTemp));
+                channel.chartView.ViewModel.AddData(seriesList[10], new DataPoint(total_minute, heaterTemp));
             }
             if (channel.Item2Check.IsChecked == true && seriesList.ContainsKey(11))
             {
-                channel.chartView.ViewModel.AddData(seriesList[11], new OxyPlot.DataPoint(total_minute, coldTemp));
+                channel.chartView.ViewModel.AddData(seriesList[11], new DataPoint(total_minute, coldTemp));
             }
             if (channel.Item3Check.IsChecked == true && seriesList.ContainsKey(12))
             {
-                channel.chartView.ViewModel.AddData(seriesList[12], new OxyPlot.DataPoint(total_minute, waterLevelLow ? 1 : 0));
+                channel.chartView.ViewModel.AddData(seriesList[12], new DataPoint(total_minute, waterLevelLow ? 1 : 0));
             }
             if (channel.Item4Check.IsChecked == true && seriesList.ContainsKey(13))
             {
-                channel.chartView.ViewModel.AddData(seriesList[13], new OxyPlot.DataPoint(total_minute, floorSensor ? 1 : 0));
+                channel.chartView.ViewModel.AddData(seriesList[13], new DataPoint(total_minute, floorSensor ? 1 : 0));
             }
             if (channel.Item5Check.IsChecked == true && seriesList.ContainsKey(14))
             {
-                channel.chartView.ViewModel.AddData(seriesList[14], new OxyPlot.DataPoint(total_minute, airVentSol ? 1 : 0));
+                channel.chartView.ViewModel.AddData(seriesList[14], new DataPoint(total_minute, airVentSol ? 1 : 0));
             }
             if (channel.Item6Check.IsChecked == true && seriesList.ContainsKey(15))
             {
-                channel.chartView.ViewModel.AddData(seriesList[15], new OxyPlot.DataPoint(total_minute, cvSol ? 1 : 0));
+                channel.chartView.ViewModel.AddData(seriesList[15], new DataPoint(total_minute, cvSol ? 1 : 0));
             }
             if (channel.Item7Check.IsChecked == true && seriesList.ContainsKey(16))
             {
-                channel.chartView.ViewModel.AddData(seriesList[16], new OxyPlot.DataPoint(total_minute, pumpOn ? 1 : 0));
+                channel.chartView.ViewModel.AddData(seriesList[16], new DataPoint(total_minute, pumpOn ? 1 : 0));
             }
             if (channel.Item8Check.IsChecked == true && seriesList.ContainsKey(17))
             {
-                channel.chartView.ViewModel.AddData(seriesList[17], new OxyPlot.DataPoint(total_minute, coldSol ? 1 : 0));
+                channel.chartView.ViewModel.AddData(seriesList[17], new DataPoint(total_minute, coldSol ? 1 : 0));
             }
 
             log.Debug($"isDummy={IsDummyEnabled} total_second={total_second} total_minute={total_minute:F3} start={_dummyStartTime:HH:mm:ss.fff}");

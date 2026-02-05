@@ -4,36 +4,49 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:BliMonitorTest.controls"
-             mc:Ignorable="d" d:DesignWidth="800" Height="300">
-    <Border Margin="6,6,6,10" BorderBrush="#AAA" BorderThickness="1" Background="#FFF" Padding="8">
-        <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="5"/>
-                <ColumnDefinition/>
-                <ColumnDefinition/>
-                <ColumnDefinition Width="5"/>
-            </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" MinHeight="38"/>
-                <RowDefinition Height="Auto" MinHeight="38"/>
-                <RowDefinition Height="Auto" MinHeight="38"/>
-                <RowDefinition Height="Auto" MinHeight="38"/>
-                <RowDefinition Height="Auto" MinHeight="38"/>
-            </Grid.RowDefinitions>
+             mc:Ignorable="d" d:DesignWidth="800" Height="270">
 
-            <!-- 좌열 -->
-            <local:DoubleLabel Grid.Row="0" Grid.Column="1" x:Name="DL0" Margin="5,3"/>
-            <local:DoubleLabel Grid.Row="1" Grid.Column="1" x:Name="DL1" Margin="5,3"/>
-            <local:DoubleLabel Grid.Row="2" Grid.Column="1" x:Name="DL2" Margin="5,3"/>
-            <local:DoubleLabel Grid.Row="3" Grid.Column="1" x:Name="DL3" Margin="5,3"/>
-            <local:DoubleLabel Grid.Row="4" Grid.Column="1" x:Name="DL4" Margin="5,3"/>
+    <!-- 최상위 레이아웃: 제목 + 본문 -->
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
-            <!-- 우열 -->
-            <local:DoubleLabel Grid.Row="0" Grid.Column="2" x:Name="DL5" Margin="5,3"/>
-            <local:DoubleLabel Grid.Row="1" Grid.Column="2" x:Name="DL6" Margin="5,3"/>
-            <local:DoubleLabel Grid.Row="2" Grid.Column="2" x:Name="DL7" Margin="5,3"/>
-            <local:DoubleLabel Grid.Row="3" Grid.Column="2" x:Name="DL8" Margin="5,3"/>
-            <local:DoubleLabel Grid.Row="4" Grid.Column="2" x:Name="DL9" Margin="5,3"/>
-        </Grid>
-    </Border>
+        <!-- 본문 카드 (기존 내용) -->
+        <Border Grid.Row="1" Margin="6,6,6,10" BorderBrush="#AAA" BorderThickness="1" Background="#FFF" Padding="8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="5"/>
+                    <ColumnDefinition/>
+                    <ColumnDefinition/>
+                    <ColumnDefinition Width="5"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" MinHeight="38"/>
+                    <RowDefinition Height="Auto" MinHeight="38"/>
+                    <RowDefinition Height="Auto" MinHeight="38"/>
+                    <RowDefinition Height="Auto" MinHeight="38"/>
+                    <RowDefinition Height="Auto" MinHeight="38"/>
+                    <RowDefinition Height="Auto" MinHeight="38"/>
+                </Grid.RowDefinitions>
+
+                <!-- 좌열 -->
+                <local:DoubleLabel Grid.Row="0" Grid.Column="1" x:Name="DL0"  Margin="5,3"/>
+                <local:DoubleLabel Grid.Row="1" Grid.Column="1" x:Name="DL1"  Margin="5,3"/>
+                <local:DoubleLabel Grid.Row="2" Grid.Column="1" x:Name="DL2"  Margin="5,3"/>
+                <local:DoubleLabel Grid.Row="3" Grid.Column="1" x:Name="DL3"  Margin="5,3"/>
+                <local:DoubleLabel Grid.Row="4" Grid.Column="1" x:Name="DL4"  Margin="5,3"/>
+                <local:DoubleLabel Grid.Row="5" Grid.Column="1" x:Name="DL5"  Margin="5,3"/>
+
+                <!-- 우열 -->
+                <local:DoubleLabel Grid.Row="0" Grid.Column="2" x:Name="DL6"  Margin="5,3"/>
+                <local:DoubleLabel Grid.Row="1" Grid.Column="2" x:Name="DL7"  Margin="5,3"/>
+                <local:DoubleLabel Grid.Row="2" Grid.Column="2" x:Name="DL8"  Margin="5,3"/>
+                <local:DoubleLabel Grid.Row="3" Grid.Column="2" x:Name="DL9"  Margin="5,3"/>
+                <local:DoubleLabel Grid.Row="4" Grid.Column="2" x:Name="DL10" Margin="5,3"/>
+                <local:DoubleLabel Grid.Row="5" Grid.Column="2" x:Name="DL11" Margin="5,3"/>
+            </Grid>
+        </Border>
+    </Grid>
 </UserControl>
