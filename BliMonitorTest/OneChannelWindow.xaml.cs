@@ -28,8 +28,6 @@ using FontWeights = System.Windows.FontWeights;
 using Timer = System.Timers.Timer;
 
 // Dummy Serial Port Namespace  
-using DummySerialPortNs;
-using System.Collections;
 using BliMonitorTest.dummy;
 
 namespace BliMonitorTest
@@ -50,16 +48,10 @@ namespace BliMonitorTest
         private Timer testTimer;
         private List<OxyColor> colorList = new List<OxyColor>();
 
-        // 더미 포트(응답 생성 전용)
-        private DummySerialPortNs.DummySerialPort _dummyPort;    // 더미 포트
-                                                                 // 더미 모드 스위치: 체크박스 상태를 즉시 반영하는 계산 프로퍼티
-
         private volatile bool _useDummyCached;
         // UI 접근 없이 작업 스레드에서 안전하게 읽을 수 있는 프로퍼티
         private bool UseDummy => _useDummyCached;
 
-        // 현재 선택된 시뮬레이션 프로토콜
-        //private ProtocolKind CurrentKind = ProtocolKind.StartStopStatus;
         private byte[] _dummyLastBuffer;
         private readonly DummyValueGenerator _dummyGen = new DummyValueGenerator();
 
@@ -197,7 +189,12 @@ namespace BliMonitorTest
                             BliMonitorTest.dummy.DummyFramePatcher.PatchStatusResponse57(rsp, sample);
 
                             _dummyLastBuffer = rsp;
+
+                            log.Debug("============        LOG DATA OneChannelWindow [DoPeriodicTickCore] MAKE PACKET DATA       ==================");
                             ByteLogHelper.LogPacket(rsp, "RX");
+                            ByteLogHelper.ToHexWith0x(rsp);
+                            ByteLogHelper.DumpLinesWith0x(rsp, 16);
+                            log.Debug("============        LOG DATA OneChannelWindow [DoPeriodicTickCore] MAKE PACKET DATA       ==================");
 
                             InvokePortDataReceivedWith(rsp);
                         }
@@ -392,40 +389,6 @@ namespace BliMonitorTest
             }
         }
 
-        private void PrepareIo()
-        {
-            // 실기 포트 준비
-            if (port == null) port = new SerialPort();
-            if (port.BaudRate <= 0) port.BaudRate = 9600;
-
-            if (PortList.box.SelectedItem == null)
-            {
-                port.PortName = "";
-            }
-            else
-            {
-                port.PortName = PortList.box.SelectedItem.ToString();
-            }
-
-            if (!port.IsOpen)
-            {
-                try
-                {
-                    port.Open();
-                    port.DataReceived -= Port_DataReceived;
-                    port.DataReceived += Port_DataReceived;
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine("Open failed: " + ex);
-                }
-            }
-
-            // 더미 포트 준비
-            if (_dummyPort == null) _dummyPort = new DummySerialPortNs.DummySerialPort();
-            if (!_dummyPort.IsOpen) _dummyPort.Open();
-        }
-
         private void ConnectButton_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -494,33 +457,6 @@ namespace BliMonitorTest
                 receiveData(buf, buf.Length);
             });
 
-        }
-
-        // 더미 응답 생성 헬퍼(더미 포트 내부 상수 RSP를 복제해서 반환)
-        private byte[] GetSimulatedResponse(DummySerialPort dummy, ProtocolKind kind)
-        {
-            try
-            {
-                switch (kind)
-                {
-                    case DummySerialPortNs.ProtocolKind.ErrorDataRequest:
-                        return DummySerialPortNs.DummySerialPort.RSP_ErrorData;
-                    case DummySerialPortNs.ProtocolKind.ErrorReset:
-
-                    case DummySerialPortNs.ProtocolKind.StartStopStatus:
-                        return DummySerialPortNs.DummySerialPort.RSP_StartStopStatus;
-                    case DummySerialPortNs.ProtocolKind.ParameterRequest:
-                        return DummySerialPortNs.DummySerialPort.RSP_ParameterRequest;
-                    case DummySerialPortNs.ProtocolKind.ParameterSet:
-
-                    default:
-                        return DummySerialPortNs.DummySerialPort.RSP_StartStopStatus;
-                }
-            }
-            catch
-            {
-                return Array.Empty<byte>();
-            }
         }
 
         private void OneChannelWindow_Loaded(object sender, RoutedEventArgs e)
@@ -822,8 +758,7 @@ namespace BliMonitorTest
 
         private List<byte[]> ExtractFramesFromBuffer(List<byte> buf)
         {
-            // NewVersion: STX=0x12, VER=0x01, ETX=0x34
-            // OldVersion: STX=0xCC, VER=0x00, ETX=0xEF
+            // STX=0x12, VER=0x01, ETX=0x34
             byte stx = (byte)0x12;
             byte ver = (byte)0x01;
             byte etx = (byte)0x34;

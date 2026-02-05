@@ -60,10 +60,6 @@
             <CheckBox x:Name="DummyCheck" Grid.Row="1" Grid.Column="6" Margin="5,5,5,1" Content="더미" FontSize="15" Visibility="Visible" VerticalContentAlignment="Center" IsChecked="true"/>
             <local:ModeTimeLabel Grid.Row="2" Grid.RowSpan="2" Grid.Column="6" Margin="5, 3" x:Name="ModeTimeView"/>
             <Button x:Name="ParameterButton" Grid.Row="4" Grid.Column="6" Margin="5, 3" Padding="0" Content="파라미터" FontSize="13" Background="#652822E8"/>
-            <!--
-            <Button x:Name="StartButton" Background="Transparent" FontSize="12" Padding="0" BorderBrush="Blue" BorderThickness="1" Grid.Row="5" Grid.Column="6" Grid.RowSpan="1" Content="Start" Foreground="Blue" Margin="5, 5"/>
-            <Button x:Name="StopButton" Background="Transparent" FontSize="12" Padding="0" BorderBrush="Red" BorderThickness="1" Grid.Row="6" Grid.Column="6" Grid.RowSpan="1" Content="Stop" Foreground="Red" Margin="5, 5"/>
-            -->
         </Grid>
     </Border>
 </UserControl>

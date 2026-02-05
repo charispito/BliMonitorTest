@@ -136,8 +136,6 @@ namespace BliMonitorTest.controls
         public OneChannelValueDetail()
         {
             InitializeComponent();
-            //StartButton.Click += StartButton_Click;
-            //StopButton.Click += StopButton_Click;
             ParameterButton.Click += ParameterButton_Click;
             list1.Add(new KeyValuePair<double, int>(0, 0));
             list2.Add(new KeyValuePair<double, int>(0, 0));
@@ -317,38 +315,5 @@ namespace BliMonitorTest.controls
             Item8Check.Click += handler;
         }
 
-        private void StartButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (!port.IsOpen)
-            {
-                ToastMessage.ToastService.AppToast.Show("연결 되지 않았습니다.");
-                return;
-            }
-            if (run)
-            {
-                ToastMessage.ToastService.AppToast.Show("이미 운전중입니다.");
-                return;
-            }
-            OnTestStart();
-
-
-            byte[] command = Protocol.GetNewCommand(2);
-            port.Write(command, 0, command.Length);
-
-        }
-
-        private void StopButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (!port.IsOpen)
-            {
-                ToastMessage.ToastService.AppToast.Show("연결 되지 않았습니다.");
-                return;
-            }
-            if (streamWriter != null)
-            streamWriter.Close();
-            streamWriter = null;
-            byte[] command = Protocol.GetNewCommand(3);
-            port.Write(command, 0, command.Length);
-        }
     }
 }

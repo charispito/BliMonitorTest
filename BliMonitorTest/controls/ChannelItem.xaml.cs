@@ -319,60 +319,6 @@ namespace BliMonitorTest.controls
         {
             OnParameterLoadAction(1);
         }
-        private void StopButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (client == null || !client.Connected)
-            {
-                //MessageBox.Show("연결 되지 않았습니다.");
-                ToastMessage.ToastService.AppToast.Show("연결 되지 않았습니다.");
-                return;
-            }
-            run = false;
-
-            byte[] command = null;
-
-            command = Protocol.GetNewCommand(3);
-
-            try
-            {
-                client.GetStream().Write(command, 0, command.Length);
-            }
-            catch (Exception ex)
-            {
-                client.Close();
-                Console.WriteLine(ex.ToString());
-            }
-        }
-
-        private void StartButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (client == null || !client.Connected)
-            {
-                //MessageBox.Show("연결 되지 않았습니다.");
-                ToastMessage.ToastService.AppToast.Show("연결 되지 않았습니다.");
-                return;
-            }
-            byte[] command = null;
-            if (run)
-            {
-                //MessageBox.Show("이미 시작했습니다.");
-                ToastMessage.ToastService.AppToast.Show("이미 시작했습니다.");
-                return;
-            }
-
-            command = Protocol.GetNewCommand(2);
-
-            try
-            {
-                client.GetStream().Write(command, 0, command.Length);
-            }
-            catch (Exception ex)
-            {
-                client.Close();
-                Console.WriteLine(ex.ToString());
-            }
-            //ClearPoints();
-        }
 
         public void setHandler(RoutedEventHandler handler)
         {
@@ -408,7 +354,6 @@ namespace BliMonitorTest.controls
             int airtemp = data[8];          //배기 온도
             int airaverage = data[9];
             int airheatertemp = data[10];   //열풍 온도
-            Console.WriteLine("10: {0}", airheatertemp);
             int heaterduty = data[11];
             int mode = data[15];
             int minute = data[16];
