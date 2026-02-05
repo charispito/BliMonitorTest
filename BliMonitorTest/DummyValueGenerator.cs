@@ -102,7 +102,7 @@ namespace BliMonitorTest.dummy
             byte compV = (byte)_rng.Next(100, 200);              // 샘플 전압 범위
 
             // 모델/버전 샘플
-            byte modelCode = 0x21;
+            byte modelCode = 0x02;
             byte swVersion = 0x03;
 
             return new DummySample(

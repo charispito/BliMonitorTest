@@ -8,7 +8,7 @@
         mc:Ignorable="d"
         Title="BLI 모니터링 프로그램"
         Height="900"
-        Width="1915"
+        Width="1880"
         SizeToContent="Width"
         Background="Transparent">
 
@@ -72,11 +72,11 @@
                         </Border>
 
                         <!-- 중간 상세 영역 -->
-                        <Border Grid.Row="3" Grid.Column="1" Style="{StaticResource CardBorderStyle}" Margin="0,0,12,12">
+                        <Border Grid.Row="2" Grid.Column="1" Style="{StaticResource CardBorderStyle}" Margin="0,12,473,12" Grid.RowSpan="2">
                             <controls:OneChannelValueDetail x:Name="channel"/>
                         </Border>
 
-                        <Border Grid.Row="3" Grid.Column="2" Style="{StaticResource CardBorderStyle}"  Margin="12,0,0,12">
+                        <Border Grid.Row="2" Grid.Column="1" Style="{StaticResource CardBorderStyle}"  Margin="1304,12,0,12" Grid.RowSpan="2">
                             <controls:SingleDetail x:Name="DetailView" Margin="0"/>
                         </Border>
 

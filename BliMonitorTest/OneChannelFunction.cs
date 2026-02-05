@@ -37,7 +37,7 @@ namespace BliMonitorTest
             DateTime NowDate = DateTime.Now;
             return NowDate.ToString("yyyy-MM-dd HH:mm:ss") + ":" + NowDate.Millisecond.ToString("000");
         }
-       
+
         private string CommandToString(byte[] command)
         {
             string hex = "";
@@ -46,7 +46,7 @@ namespace BliMonitorTest
                 hex += " " + b.ToString("X2");
             }
             return hex;
-        }       
+        }
 
         private void CheckCommand(byte[] array)
         {
@@ -90,12 +90,12 @@ namespace BliMonitorTest
             {
                 Console.WriteLine(e.ToString());
             }
-            
+
         }
 
         private void setView(byte[] data)
         {
-            if(data.Length < 4 || data.Length != data[3])
+            if (data.Length < 4 || data.Length != data[3])
             {
                 return;
             }
@@ -110,7 +110,7 @@ namespace BliMonitorTest
             double remain_second = (double)(total_second % 60) / 100.0;
             double remain_value = 0.40 / 60.0;
 
-            
+
             if (total_second > 0)
             {
                 total_minute += (remain_second + remain_value * (total_second % 60));
@@ -129,196 +129,123 @@ namespace BliMonitorTest
             total_second = (long)elapsed.TotalSeconds;
             total_minute = elapsed.TotalMinutes;   // 분 단위 double (가장 깔끔)
 
-            int motorRun = data[5];
-            int heateroff = data[7]; //히터 오프타임
-            int heatertemp = data[6]; //히터 온도
-            int airtemp = data[8]; //배기 온도
-            int airaverage = data[9];
-            int airheatertemp = data[10]; //열풍 온도
-            int heaterduty = data[11];
-            int mode = data[15];
-            int minute = data[16];
-            int second = data[17];
-            if(mode == 7)
+            // 데이터 화면 매핑
+            byte modelCode = data[5];
+            byte swVersion = data[6];
+
+            int heaterTemp = data[7];
+            int coldTemp = data[8];
+
+            bool waterLevelLow = data[9] != 0;   // ON/OFF
+            bool floorSensor = data[10] != 0;  // ON/OFF
+
+            bool uvLed = data[11] != 0;
+
+            // 3방 SOL: data[12] 비트필드 (바이트의 0번째 비트부터)
+            byte triSolByte = data[12];
+            bool triSol1 = (triSolByte & (1 << 0)) != 0; // 0번째 비트 → 3방 SOL 1
+            bool triSol2 = (triSolByte & (1 << 1)) != 0; // 1번째 비트 → 3방 SOL 2
+            bool triSol3 = (triSolByte & (1 << 2)) != 0; // 2번째 비트 → 3방 SOL 3
+
+            bool airVentSol = data[13] != 0;
+            bool cvSol = data[14] != 0;
+
+            // 버튼 2바이트 (LSB→MSB, bit0부터)
+            ushort buttons = (ushort)(data[15] | (data[16] << 8));
+            bool btnCont = (buttons & (1 << 0)) != 0;
+            bool btnVolume = (buttons & (1 << 1)) != 0;
+            bool btnFree = (buttons & (1 << 2)) != 0;
+            bool btnHighHot = (buttons & (1 << 3)) != 0;
+            bool btnHot = (buttons & (1 << 4)) != 0;
+            bool btnWarm = (buttons & (1 << 5)) != 0;
+            bool btnChild = (buttons & (1 << 6)) != 0;
+            bool btnRoom = (buttons & (1 << 7)) != 0;
+            bool btnMildCold = (buttons & (1 << 8)) != 0;
+            bool btnCold = (buttons & (1 << 9)) != 0;
+
+            bool pumpOn = data[17] != 0;
+            bool coldSol = data[18] != 0;
+            bool normalSol = data[19] != 0;
+            bool hotSol1 = data[20] != 0;
+
+            byte needleState = data[21];
+            byte compVolt = data[22];
+
+            // 4) 중앙 좌측 UI 바인딩
+            channel.Item1.cont.Content = $"{heaterTemp}ºC";                 // 히터 온도
+            channel.Item2.cont.Content = $"{coldTemp}ºC";                   // 냉수 온도
+            channel.Item3.cont.Content = waterLevelLow ? "ON" : "OFF";      // 수위센서
+            channel.Item4.cont.Content = floorSensor ? "ON" : "OFF";        // 플로어 센서
+            channel.Item5.cont.Content = uvLed ? "ON" : "OFF";              // UV LED
+
+            // 3방 SOL 요약(0번째 비트부터: 1,2,3)
+            channel.Item6.cont.Content = $"{OnOff(triSol1)} / {OnOff(triSol2)} / {OnOff(triSol3)}";
+
+            channel.Item11.cont.Content = airVentSol ? "ON" : "OFF";        // Air Vent Sol
+            channel.Item12.cont.Content = cvSol ? "ON" : "OFF";             // C/V
+            channel.Item13.cont.Content = pumpOn ? "ON" : "OFF";            // PUMP
+            channel.Item14.cont.Content = coldSol ? "ON" : "OFF";           // Cold Sol
+            channel.Item15.cont.Content = normalSol ? "ON" : "OFF";         // Normal Sol
+            channel.Item16.cont.Content = hotSol1 ? "ON" : "OFF";           // Hot Sol
+
+            channel.Item17.cont.Content = $"{NeedleToText(needleState)}";
+            channel.Item18.cont.Content = getModelName(modelCode);
+
+            // 운전/대기 표시(좌측 상단 박스와 연동)
+            channel.run = pumpOn;
+
+            // 5) 중앙 우측 버튼 패널 업데이트
+            DetailView.UpdateButtons(btnCont, btnVolume, btnFree, btnHighHot, btnHot, btnWarm, btnChild, btnRoom, btnMildCold, btnCold);
+
+            // 6) 차트 AddData – 고정 키(10~17) 사용 : 10:히터(ºC), 11:냉수(ºC), 12:수위센서(0/1), 13:플로어(0/1), 14:AirVent(0/1), 15:C/V(0/1), 16:PUMP(0/1), 17:ColdSol(0/1)
+            if (channel.Item1Check.IsChecked == true && seriesList.ContainsKey(10))
             {
-                channel.run = false;
+                channel.chartView.ViewModel.AddData(seriesList[10], new OxyPlot.DataPoint(total_minute, heaterTemp));
             }
-            else
+            if (channel.Item2Check.IsChecked == true && seriesList.ContainsKey(11))
             {
-                if (!channel.run)
-                {
-                    channel.run = true;
-                }
+                channel.chartView.ViewModel.AddData(seriesList[11], new OxyPlot.DataPoint(total_minute, coldTemp));
             }
-
-            int t_hour = data[18];
-            int t_min = data[19];
-            int t_sec = data[20];
-            int runTime = data[21];
-            string time = string.Format("{0:D2}:{1:D2}", minute, second);
-            string t_time = string.Format("{0:D2}:{1:D2}:{2:D2}", t_hour, t_min, t_sec);
-            byte[] current = { data[13], data[14] };
-            Array.Reverse(current);
-            int currentInt = BitConverter.ToInt16(current, 0) * 10;
-            float currnetDouble = (float)currentInt / 1000.0f;
-            float currentfloat = (data[13] & 0xFF) << 8;
-            currentfloat += (data[14] & 0xFF);
-            currentfloat = currentfloat / 100.0f;
-            if (currentfloat > 1)
-                currentfloat = -1;
-            int year = data[51];
-            int month = data[52];
-            int day = data[53];
-            int version = data[54];
-            string micom = $"{year}.{month}.{day} ver {version}";
-            byte error0 = data[49];
-            byte error1 = data[50];
-            int[] binary0 = Enumerable.Range(1, 8).Select(i => error0 / (1 << (8 - i)) % 2).ToArray();
-            int[] binary1 = Enumerable.Range(1, 8).Select(i => error1 / (1 << (8 - i)) % 2).ToArray();
-
-            string errorStr = GetErrorName(binary0, binary1);
-            channel.StateContent.Content = errorStr;
-
-            bool[] errors0 = new bool[8];
-            bool[] errors1 = new bool[8];
-
-            for (int i = 0; i < 8; i++)
+            if (channel.Item3Check.IsChecked == true && seriesList.ContainsKey(12))
             {
-                if (binary0[i] == 0)
-                {
-                    errors0[i] = true;
-                }
-                else
-                {
-                    errors0[i] = false;
-                }
-                if (binary1[i] == 0)
-                {
-                    errors1[i] = true;
-                }
-                else
-                {
-                    errors1[i] = false;
-                }
+                channel.chartView.ViewModel.AddData(seriesList[12], new OxyPlot.DataPoint(total_minute, waterLevelLow ? 1 : 0));
             }
-            if (errors1[6])
+            if (channel.Item4Check.IsChecked == true && seriesList.ContainsKey(13))
             {
-                channel.Item16.cont.Content = "정상";
+                channel.chartView.ViewModel.AddData(seriesList[13], new OxyPlot.DataPoint(total_minute, floorSensor ? 1 : 0));
             }
-            else
+            if (channel.Item5Check.IsChecked == true && seriesList.ContainsKey(14))
             {
-                channel.Item16.cont.Content = "감지";
+                channel.chartView.ViewModel.AddData(seriesList[14], new OxyPlot.DataPoint(total_minute, airVentSol ? 1 : 0));
             }
-            int motorRunTime = data[12];
-            int cw_on = data[22];
-            int cw_off = data[23];
-            int ccw_on = data[24];
-            int ccw_off = data[25];
-            int foreign_time = data[31];
-            int foreign_current = data[32];
-            int foreign_count = data[33];
-            int motor_over_current = data[34];
-            int motor_over_count = data[35];
-            int ventile_temp = data[36];
-            int heater_setting_temp = data[26];
-            int heater_setting_offtime = data[27];
-            int fan_duty = data[29];
-            int hot_air_fan_duty = data[30];
-            float heateroffTime = (float)(heateroff / 10.0f);
-            float averOffTime = (float)(airheatertemp / 10.0f);
-            DateTime now = DateTime.Now;
-
-            ReadData read = new ReadData()
+            if (channel.Item6Check.IsChecked == true && seriesList.ContainsKey(15))
             {
-                date = DateTime.Now.ToString("yyyy-MM-dd_HH_mm_ss"),
-                mode = mode + 1,
-                remain_time = time,
-                heater_temp = heatertemp,
-                heater_off_time = heateroff,
-                air_temp = airtemp,
-                fan_speed = fan_duty,
-                hot_air_temp = airheatertemp,
-                hot_air_ontime = heaterduty,
-                motor = getMotorState(motorRun),
-                motor_current = currentfloat / 2.0
-            };
-
-            channel.WriteFile(read);
-
-            DetailView.operation.Value.Content = runTime;
-
-            DetailView.motor.Value11.Content = cw_on; //motor cw on
-            DetailView.motor.Value12.Content = ccw_on; //motor cw off
-            DetailView.motor.Value21.Content = cw_off; //motor ccw on
-            DetailView.motor.Value22.Content = ccw_off; //motor ccw off
-
-            DetailView.material.Value.Content = foreign_time; //foreign time
-            DetailView.overflow.Value11.Content = string.Format("{0: 0.0#A}", (float)(foreign_current / 10.0f)); //overflow current1
-            DetailView.overflow.Value12.Content = foreign_count; //overflow count1
-            DetailView.overflow.Value21.Content = string.Format("{0: 0.0#A}", (float)(motor_over_current / 10.0f)); //overflow current2
-            DetailView.overflow.Value22.Content = motor_over_count; //overflow count2
-
-            DetailView.temper.Value1.Content = heater_setting_temp;
-            DetailView.temper.Value2.Content = string.Format("{0: 0.0#}", (float)(heater_setting_offtime / 10.0f));
-            DetailView.temper.Value3.Content = ventile_temp;
-            DetailView.temper.Value4.Content = fan_duty;
-
-            DetailView.heater.Value1.Content = airheatertemp;
-            DetailView.heater.Value2.Content = heaterduty;
-
-            channel.Item1.cont.Content = heatertemp + "ºC";
-            channel.Item2.cont.Content = airtemp + "ºC";
-            channel.Item3.cont.Content = averOffTime + "ms";
-            channel.Item4.Title = getMotorState(motorRun);
-            channel.Item4.cont.Content = motorRunTime.ToString() + "s";
-            channel.Item5.cont.Content = fan_duty + "%";
-            channel.Item6.cont.Content = t_time;
-            channel.Item11.cont.Content = heateroffTime + "ms";
-            channel.Item12.cont.Content = airaverage + "ºC";
-            channel.Item13.cont.Content = heaterduty;
-            channel.Item14.cont.Content = string.Format("{0:0.00A}", currentfloat / 2.0);
-            channel.Item15.cont.Content = hot_air_fan_duty + "%";
-            channel.Item17.cont.Content = micom;
-            channel.Item18.cont.Content = getModelName(data[48]);
-
-            channel.ModeTimeView.label.Content = string.Format("모드{0}", mode + 1);
-            channel.ModeTimeView.cont.Content = time;
-            
-            if (channel.Item1Check.IsChecked.Value)
-            {
-                channel.chartView.ViewModel.AddData(seriesList[10], new DataPoint(total_minute, heatertemp));
+                channel.chartView.ViewModel.AddData(seriesList[15], new OxyPlot.DataPoint(total_minute, cvSol ? 1 : 0));
             }
-            if (channel.Item2Check.IsChecked.Value)
+            if (channel.Item7Check.IsChecked == true && seriesList.ContainsKey(16))
             {
-                channel.chartView.ViewModel.AddData(seriesList[11], new DataPoint(total_minute, airtemp));
+                channel.chartView.ViewModel.AddData(seriesList[16], new OxyPlot.DataPoint(total_minute, pumpOn ? 1 : 0));
             }
-            if (channel.Item3Check.IsChecked.Value)
+            if (channel.Item8Check.IsChecked == true && seriesList.ContainsKey(17))
             {
-                channel.chartView.ViewModel.AddData(seriesList[12], new DataPoint(total_minute, airheatertemp));
-            }
-            if (channel.Item4Check.IsChecked.Value)
-            {
-                channel.chartView.ViewModel.AddData(seriesList[13], new DataPoint(total_minute, getMotorValue(motorRun)));
-            }
-            if (channel.Item5Check.IsChecked.Value)
-            {
-                channel.chartView.ViewModel.AddData(seriesList[14], new DataPoint(total_minute, heateroff));
-            }
-            if (channel.Item6Check.IsChecked.Value)
-            {
-                channel.chartView.ViewModel.AddData(seriesList[15], new DataPoint(total_minute, airaverage));
-            }
-            if (channel.Item7Check.IsChecked.Value)
-            {
-                channel.chartView.ViewModel.AddData(seriesList[16], new DataPoint(total_minute, heaterduty));
-            }
-            if (channel.Item8Check.IsChecked.Value)
-            {
-                channel.chartView.ViewModel.AddData(seriesList[17], new DataPoint(total_minute, currnetDouble / 2.0));
+                channel.chartView.ViewModel.AddData(seriesList[17], new OxyPlot.DataPoint(total_minute, coldSol ? 1 : 0));
             }
 
             log.Debug($"isDummy={IsDummyEnabled} total_second={total_second} total_minute={total_minute:F3} start={_dummyStartTime:HH:mm:ss.fff}");
             channel.chartView.ViewModel.panXAxis(total_minute);
+        }
+
+        private string OnOff(bool v) => v ? "ON" : "OFF";
+
+        private string NeedleToText(byte st)
+        {
+            switch (st)
+            {
+                case 0: return "상승상태";
+                case 1: return "동작중";
+                case 2: return "하강상태";
+                default: return st.ToString();
+            }
         }
 
         public void OnStart()
@@ -486,7 +413,7 @@ namespace BliMonitorTest
         {
             // 단일채널에서 Chart(또는 chartView)에 접근하는 실제 객체명을 여기에 맞춰주세요.
             // 예: Chart가 PlotView면 Chart.Model
-            return channel.chartView.ViewModel.PlotModel; 
+            return channel.chartView.ViewModel.PlotModel;
             //return Chart?.Model;
         }
 
