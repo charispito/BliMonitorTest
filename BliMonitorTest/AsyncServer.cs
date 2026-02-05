@@ -54,51 +54,7 @@ namespace BliMonitorTest
 
                 AsycnServerStart();
             });
-            //CheckThread = new Thread(StateCheckLoop);
-            //CheckThread.Start();
         }        
-
-        private void StateCheckLoop()
-        {
-            while (run)
-            {
-                foreach (var item in ClientManager.clientDic)
-                {
-                    if (item.Value.channel.ParameterMode)
-                    {
-                        continue;
-                    }
-                    try
-                    {
-                        byte[] sendByteData = Protocol.GetCommand(1);
-                        item.Value.client.GetStream().Write(sendByteData, 0, sendByteData.Length);
-                        if (!item.Value.channel.Response)
-                        {
-                            item.Value.channel.NonResponse++;
-                            if (item.Value.channel.NonResponse > 20)
-                            {
-                                window.Dispatcher.BeginInvoke(new Action(() =>
-                                {
-                                    item.Value.channel.StateBox.cont.Content = "응답없음";
-                                }));
-                                //item.Value.channel
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex.ToString());
-                        ClientData client = null;
-                        bool remove = ClientManager.clientDic.TryRemove(item.Value.TimeMills, out client);
-                        if (remove)
-                        {
-                            OnDisconnected(item.Value);
-                        }
-                    }
-                }
-                Thread.Sleep(1000);
-            }
-        }
 
         private void AsycnServerStart()
         {
