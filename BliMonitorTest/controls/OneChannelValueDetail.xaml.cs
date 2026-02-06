@@ -197,19 +197,16 @@ namespace BliMonitorTest.controls
 
         private void initFile()
         {
-            air_sum = 0;
-            off_sum = 0;
-            number = 0;
-
-            streamWriter.WriteLine("날짜,모드,남은 시간,히터 온도,히터 오프타임,배기온도,FAN Speed," +
-                "평균히터오프타임,열풍온타임,MOTOR,모터 전류,번호,오프타임합,오프평균,배기 합,배기 평균");
+            streamWriter.WriteLine(
+                "날짜, 채널, 소스, ModelNo, SW, HeaterB, ColdB, LowWater, Floor, UVByte," +
+                "Sol3_1, Sol3_2, Sol3_3, AirVent, CV, Buttons, Pump, ColdSol, NormalSol, HotSol1," +
+                "Needle, PEL_B, Cmd, Payload, Checksum, End"
+            );
         }
 
-        public void WriteFile(ReadData data)
+        public void WriteFile(BliResponse57Packet resp, int channelNo, int sourceType)
         {
-            number++;
-            air_sum += data.air_temp;
-            off_sum += data.heater_off_time;
+            if (resp == null) return;
 
             if (streamWriter != null)
             {
@@ -223,29 +220,26 @@ namespace BliMonitorTest.controls
                 {
                     initPath();
                 }
-                else
-                {
-                    // ✅ 데이터 검증
-                    if (!ValidateData(data, out var reason))
-                    {
-                        log.Warn("Skip write: " + reason);
-                        return;
-                    }
 
-                    // 1) CSV 기록 (기존 라인 그대로)
-                    streamWriter.WriteLine(
-                        "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15}",
-                        data.date, data.mode, data.remain_time, data.heater_temp, data.heater_off_time,
-                        data.air_temp, data.fan_speed, data.hot_air_temp, data.hot_air_ontime,
-                        data.motor, data.motor_current, number, off_sum, (double)(off_sum / (double)number),
-                        air_sum, (double)(air_sum / (double)number)
-                    );
-                    streamWriter.Flush();
+                string dateStr = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+                string rawHex = BitConverter.ToString(resp.Raw ?? Array.Empty<byte>()).Replace("-", "");
 
-                    // 2) SQLite 기록 : Queue 방식으로 비동기 처리
-                    MonitoringDbWriteService.Instance.Start(StoragePathUtil.GetDbPath());
-                    MonitoringDbWriteService.Instance.Enqueue( data, number, off_sum, air_sum, channelNo: 1, sourceType: MonitoringDb.SOURCE_SINGLE );
-                }
+                // CSV 기록(TO-BE)
+                streamWriter.WriteLine(string.Join(",",
+                    dateStr, channelNo, sourceType,
+                    resp.ModelNo, resp.SwVer, resp.HeaterTempB, resp.ColdTempB,
+                    resp.LowWater, resp.FloorSensor, resp.UvLedByte,
+                    resp.Sol3Way1, resp.Sol3Way2, resp.Sol3Way3,
+                    resp.AirVentSol, resp.CvSol, resp.ButtonFlags,
+                    resp.Pump, resp.ColdSol, resp.NormalSol, resp.HotSol1,
+                    resp.NeedlePos, resp.PelVoltageB,
+                    resp.CmdByte, resp.PayloadSize, resp.Checksum, resp.EndPacket
+                ));
+                streamWriter.Flush();
+
+                // 2) SQLite 기록 : Queue 방식으로 비동기 처리
+                BliMonitorTest.util.MonitoringDb.MonitoringDbWriteService.Instance.Start(BliMonitorTest.util.StoragePathUtil.StoragePathUtil.GetDbPath());
+                BliMonitorTest.util.MonitoringDb.MonitoringDbWriteService.Instance.Enqueue(resp, channelNo, sourceType);
             }
             else
             {

@@ -2,15 +2,13 @@
 using BliMonitorTest.util.MonitoringDb;
 using BliMonitorTest.util.StoragePathUtil;
 using DocumentFormat.OpenXml;
-using DocumentFormat.OpenXml.Bibliography;
-using DocumentFormat.OpenXml.InkML;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
+// using DocumentFormat.OpenXml.Wordprocessing; // 사용하지 않음: Text 충돌 방지
 using log4net;
 using Microsoft.Data.Sqlite;
 using System;
 using System.Data;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Threading;
@@ -34,8 +32,7 @@ namespace BliMonitorTest
         private bool _isBusy = false;
 
         // Excel 관련
-        //private const long ExcelLargeThreshold = 100000; // ✅ 대용량 기준 (추천)
-        private const long ExcelLargeThreshold = 10000; // ✅ 대용량 기준 (추천)
+        private const long ExcelLargeThreshold = 10000;
         private volatile bool _excelBuilding = false;
         private string _excelTempPath = null;
         private Task _excelBuildTask = null;
@@ -56,7 +53,7 @@ namespace BliMonitorTest
             FillHourCombo(cbToHour);
             FillMinuteCombo5(cbToMinute);
 
-            // 기본: 00:00 ~ 23:55 (5분 단위의 마지막 구간)
+            // 기본: 00:00 ~ 23:55
             cbFromHour.SelectedItem = "00";
             cbFromMinute.SelectedItem = "00";
             cbToHour.SelectedItem = "23";
@@ -76,24 +73,16 @@ namespace BliMonitorTest
         private void SetBusy(bool busy)
         {
             _isBusy = busy;
-
             if (BusyOverlay != null)
                 BusyOverlay.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        private void SetBusyMessage(bool busy, string title, string message)
-        {
-            // 현재 BusyOverlay는 텍스트 컨트롤 이름이 없어서 title/message는 일단 무시하고
-            // Busy 상태만 적용합니다. (나중에 BusyOverlay 텍스트에 x:Name 붙이면 반영 가능)
-            SetBusy(busy);
-        }
+        private void SetBusyMessage(bool busy, string title, string message) => SetBusy(busy);
 
         private async void Search_Click(object sender, RoutedEventArgs e)
         {
-            if (!IsLoaded) return;
-            if (_isBusy) return;
+            if (!IsLoaded || _isBusy) return;
 
-            // ✅ 새 조회를 시작하면, 이전 대용량 엑셀 준비 상태는 폐기(단발성 정책)
             if (!_excelBuilding && !string.IsNullOrEmpty(_excelTempPath))
                 ResetExcelState(deleteTempFile: true);
 
@@ -105,19 +94,14 @@ namespace BliMonitorTest
         {
             if (e.Key != Key.Enter) return;
             e.Handled = true;
-
-            if (!IsLoaded) return;
-            if (_isBusy) return;
-
+            if (!IsLoaded || _isBusy) return;
             _page = 1;
             await RefreshGridAsync();
         }
 
         private async void PageSize_Changed(object sender, SelectionChangedEventArgs e)
         {
-            if (_isInitializing) return;
-            if (!IsLoaded) return;
-            if (_isBusy) return;
+            if (_isInitializing || !IsLoaded || _isBusy) return;
 
             if (cbPageSize.SelectedItem is ComboBoxItem item &&
                 int.TryParse(item.Content?.ToString(), out int size))
@@ -129,17 +113,8 @@ namespace BliMonitorTest
         }
 
         private async void First_Click(object sender, RoutedEventArgs e) { if (_isBusy) return; _page = 1; await RefreshGridAsync(); }
-
         private async void Prev_Click(object sender, RoutedEventArgs e) { if (_isBusy) return; if (_page > 1) _page--; await RefreshGridAsync(); }
-
-        private async void Next_Click(object sender, RoutedEventArgs e)
-        {
-            if (_isBusy) return;
-            int last = GetLastPage();
-            if (_page < last) _page++;
-            await RefreshGridAsync();
-        }
-
+        private async void Next_Click(object sender, RoutedEventArgs e) { if (_isBusy) return; int last = GetLastPage(); if (_page < last) _page++; await RefreshGridAsync(); }
         private async void Last_Click(object sender, RoutedEventArgs e) { if (_isBusy) return; _page = GetLastPage(); await RefreshGridAsync(); }
 
         private int GetLastPage()
@@ -148,11 +123,162 @@ namespace BliMonitorTest
             return Math.Max(1, (int)Math.Ceiling(_totalCount / (double)_pageSize));
         }
 
+        // ========= 헬퍼들(누락된 함수 보강) =========
+
+        private int? GetComboInt(ComboBox cb)
+        {
+            if (cb?.SelectedItem is ComboBoxItem item)
+            {
+                var tag = item.Tag?.ToString();
+                if (!string.IsNullOrEmpty(tag) && int.TryParse(tag, out int v))
+                    return v;
+            }
+            return null; // 전체
+        }
+
+        private int? TryParseNullableInt(string s)
+        {
+            if (string.IsNullOrWhiteSpace(s)) return null;
+            return int.TryParse(s.Trim(), out int v) ? v : (int?)null;
+        }
+
+        private double? TryParseNullableDouble(string s)
+        {
+            if (string.IsNullOrWhiteSpace(s)) return null;
+            return double.TryParse(s.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out double v) ? v : (double?)null;
+        }
+
+        private static void FillHourCombo(ComboBox cb)
+        {
+            cb.Items.Clear();
+            for (int h = 0; h <= 23; h++)
+                cb.Items.Add(h.ToString("00"));
+            cb.SelectedIndex = 0;
+        }
+
+        private static void FillMinuteCombo5(ComboBox cb)
+        {
+            cb.Items.Clear();
+            for (int m = 0; m < 60; m += 5)
+                cb.Items.Add(m.ToString("00"));
+            cb.SelectedIndex = 0;
+        }
+
+        private static bool TryGetTimeFromCombos(ComboBox cbHour, ComboBox cbMinute, out TimeSpan ts)
+        {
+            ts = TimeSpan.Zero;
+            if (cbHour?.SelectedItem == null || cbMinute?.SelectedItem == null) return false;
+            if (!int.TryParse(cbHour.SelectedItem.ToString(), out int h)) return false;
+            if (!int.TryParse(cbMinute.SelectedItem.ToString(), out int m)) return false;
+            ts = new TimeSpan(h, m, 0);
+            return true;
+        }
+
+        // ========= 쿼리 생성 =========
+
+        private static string BuildWhere(
+            long fromMs, long toMs,
+            int? modelCode, int? swVer,
+            int sourceType, int? channelNo,
+            int? heaterMin, int? heaterMax,
+            int? coldMin, int? coldMax,
+            int? compVoltMin, int? compVoltMax,
+            int? waterLevelLow, int? floorSensor, int? uvLed,
+            int? triSol1, int? triSol2, int? triSol3,
+            int? airVentSol, int? cvSol,
+            int? pumpOn, int? coldSol, int? normalSol, int? hotSol1,
+            int? needleState)
+        {
+            var where = "WHERE created_at_ms >= @fromMs AND created_at_ms < @toMs";
+            where += " AND (@sourceType = 0 OR source_type = @sourceType)";
+            where += " AND (@channelNo = 0 OR channel_no = @channelNo)";
+
+            if (modelCode.HasValue) where += " AND model_code = @modelCode";
+            if (swVer.HasValue) where += " AND sw_ver = @swVer";
+
+            if (heaterMin.HasValue) where += " AND heater_temp >= @heaterMin";
+            if (heaterMax.HasValue) where += " AND heater_temp <= @heaterMax";
+
+            if (coldMin.HasValue) where += " AND cold_temp >= @coldMin";
+            if (coldMax.HasValue) where += " AND cold_temp <= @coldMax";
+
+            if (compVoltMin.HasValue) where += " AND comp_volt >= @compVoltMin";
+            if (compVoltMax.HasValue) where += " AND comp_volt <= @compVoltMax";
+
+            if (waterLevelLow.HasValue) where += " AND water_level_low = @waterLevelLow";
+            if (floorSensor.HasValue) where += " AND floor_sensor = @floorSensor";
+            if (uvLed.HasValue) where += " AND uv_led = @uvLed";
+
+            if (triSol1.HasValue) where += " AND tri_sol1 = @triSol1";
+            if (triSol2.HasValue) where += " AND tri_sol2 = @triSol2";
+            if (triSol3.HasValue) where += " AND tri_sol3 = @triSol3";
+
+            if (airVentSol.HasValue) where += " AND air_vent_sol = @airVentSol";
+            if (cvSol.HasValue) where += " AND cv_sol = @cvSol";
+
+            if (pumpOn.HasValue) where += " AND pump_on = @pumpOn";
+            if (coldSol.HasValue) where += " AND cold_sol = @coldSol";
+            if (normalSol.HasValue) where += " AND normal_sol = @normalSol";
+            if (hotSol1.HasValue) where += " AND hot_sol1 = @hotSol1";
+
+            if (needleState.HasValue) where += " AND needle_state = @needleState";
+
+            return where;
+        }
+
+        private static void BindParams(SqliteCommand cmd,
+            long fromMs, long toMs,
+            int? modelCode, int? swVer,
+            int sourceType, int? channelNo,
+            int? heaterMin, int? heaterMax,
+            int? coldMin, int? coldMax,
+            int? compVoltMin, int? compVoltMax,
+            int? waterLevelLow, int? floorSensor, int? uvLed,
+            int? triSol1, int? triSol2, int? triSol3,
+            int? airVentSol, int? cvSol,
+            int? pumpOn, int? coldSol, int? normalSol, int? hotSol1,
+            int? needleState)
+        {
+            cmd.Parameters.AddWithValue("@fromMs", fromMs);
+            cmd.Parameters.AddWithValue("@toMs", toMs);
+            cmd.Parameters.AddWithValue("@sourceType", sourceType);
+            cmd.Parameters.AddWithValue("@channelNo", channelNo ?? 0);
+
+            if (modelCode.HasValue) cmd.Parameters.AddWithValue("@modelCode", modelCode.Value);
+            if (swVer.HasValue) cmd.Parameters.AddWithValue("@swVer", swVer.Value);
+
+            if (heaterMin.HasValue) cmd.Parameters.AddWithValue("@heaterMin", heaterMin.Value);
+            if (heaterMax.HasValue) cmd.Parameters.AddWithValue("@heaterMax", heaterMax.Value);
+
+            if (coldMin.HasValue) cmd.Parameters.AddWithValue("@coldMin", coldMin.Value);
+            if (coldMax.HasValue) cmd.Parameters.AddWithValue("@coldMax", coldMax.Value);
+
+            if (compVoltMin.HasValue) cmd.Parameters.AddWithValue("@compVoltMin", compVoltMin.Value);
+            if (compVoltMax.HasValue) cmd.Parameters.AddWithValue("@compVoltMax", compVoltMax.Value);
+
+            if (waterLevelLow.HasValue) cmd.Parameters.AddWithValue("@waterLevelLow", waterLevelLow.Value);
+            if (floorSensor.HasValue) cmd.Parameters.AddWithValue("@floorSensor", floorSensor.Value);
+            if (uvLed.HasValue) cmd.Parameters.AddWithValue("@uvLed", uvLed.Value);
+
+            if (triSol1.HasValue) cmd.Parameters.AddWithValue("@triSol1", triSol1.Value);
+            if (triSol2.HasValue) cmd.Parameters.AddWithValue("@triSol2", triSol2.Value);
+            if (triSol3.HasValue) cmd.Parameters.AddWithValue("@triSol3", triSol3.Value);
+
+            if (airVentSol.HasValue) cmd.Parameters.AddWithValue("@airVentSol", airVentSol.Value);
+            if (cvSol.HasValue) cmd.Parameters.AddWithValue("@cvSol", cvSol.Value);
+
+            if (pumpOn.HasValue) cmd.Parameters.AddWithValue("@pumpOn", pumpOn.Value);
+            if (coldSol.HasValue) cmd.Parameters.AddWithValue("@coldSol", coldSol.Value);
+            if (normalSol.HasValue) cmd.Parameters.AddWithValue("@normalSol", normalSol.Value);
+            if (hotSol1.HasValue) cmd.Parameters.AddWithValue("@hotSol1", hotSol1.Value);
+
+            if (needleState.HasValue) cmd.Parameters.AddWithValue("@needleState", needleState.Value);
+        }
+
+        // ========= 조회 =========
         private async Task RefreshGridAsync()
         {
-            if (!IsLoaded) return;
-            if (_isBusy) return;
-            if (grid == null || txtPageInfo == null) return;
+            if (!IsLoaded || _isBusy || grid == null || txtPageInfo == null) return;
 
             DateTime baseFrom = (dpFrom.SelectedDate ?? DateTime.Today).Date;
             DateTime baseTo = (dpTo.SelectedDate ?? DateTime.Today).Date;
@@ -169,10 +295,7 @@ namespace BliMonitorTest
             }
 
             DateTime fromDateTime = baseFrom.Add(fromTs);
-            DateTime toDateTime = baseTo.Add(toTs);
-
-            // 종료 시각 포함 해석 → [from, toExclusive)
-            DateTime toExclusive = toDateTime.AddMinutes(5); // 5분 단위 경계 확장
+            DateTime toExclusive = baseTo.Add(toTs).AddMinutes(5);
 
             if (toExclusive <= fromDateTime)
             {
@@ -188,26 +311,38 @@ namespace BliMonitorTest
             long fromMs = new DateTimeOffset(fromDateTime).ToUnixTimeMilliseconds();
             long toMs = new DateTimeOffset(toExclusive).ToUnixTimeMilliseconds();
 
-            int? mode = TryParseNullableInt(tbMode.Text);
-            double? heaterMin = TryParseNullableDouble(tbHeaterMin.Text);
-            double? heaterMax = TryParseNullableDouble(tbHeaterMax.Text);
-            double? airMin = TryParseNullableDouble(tbAirMin.Text);
-            double? airMax = TryParseNullableDouble(tbAirMax.Text);
-            int? motor = TryParseNullableInt(tbMotor.Text);
-            int? fanSpeed = TryParseNullableInt(tbFanSpeed.Text);
-            double? motorCurrentMin = TryParseNullableDouble(tbMotorCurrentMin.Text);
-            
-            int sourceType = 0; // 0=전체, 1=단일, 2=다채널
+            // 입력값 수집
+            int? modelCode = GetComboInt(cbModelCode);
+            int? swVer = GetComboInt(cbSwVer);
+            int sourceType = 0;
             if (cbSourceType?.SelectedItem is ComboBoxItem srcItem && srcItem.Tag != null)
                 int.TryParse(srcItem.Tag.ToString(), out sourceType);
-
             int? channelNo = TryParseNullableInt(tbChannelNo.Text);
 
-            string dbPath = StoragePathUtil.GetDbPath();
+            int? heaterMin = TryParseNullableInt(tbHeaterMin.Text);
+            int? heaterMax = TryParseNullableInt(tbHeaterMax.Text);
+            int? coldMin = TryParseNullableInt(tbColdMin.Text);
+            int? coldMax = TryParseNullableInt(tbColdMax.Text);
+            int? compVoltMin = TryParseNullableInt(tbCompVoltMin.Text);
+            int? compVoltMax = TryParseNullableInt(tbCompVoltMax.Text);
 
+            int? waterLevelLow = GetComboInt(cbWaterLevelLow);
+            int? floorSensor = GetComboInt(cbFloorSensor);
+            int? uvLed = GetComboInt(cbUvLed);
+            int? triSol1 = GetComboInt(cbTriSol1);
+            int? triSol2 = GetComboInt(cbTriSol2);
+            int? triSol3 = GetComboInt(cbTriSol3);
+            int? airVentSol = GetComboInt(cbAirVentSol);
+            int? cvSol = GetComboInt(cbCvSol);
+            int? pumpOn = GetComboInt(cbPumpOn);
+            int? coldSol = GetComboInt(cbColdSol);
+            int? normalSol = GetComboInt(cbNormalSol);
+            int? hotSol1 = GetComboInt(cbHotSol1);
+            int? needleState = GetComboInt(cbNeedleState);
+
+            string dbPath = StoragePathUtil.GetDbPath();
             if (!File.Exists(dbPath))
             {
-                //MessageBox.Show($"DB 파일을 찾을 수 없습니다.\n{dbPath}");
                 ToastMessage.ToastService.AppToast.Show($"DB 파일을 찾을 수 없습니다.\n{dbPath}");
                 return;
             }
@@ -219,23 +354,43 @@ namespace BliMonitorTest
 
             try
             {
-                // ✅ DB 조회는 백그라운드에서 수행
-                QueryResult result = await Task.Run(() =>
+                var result = await Task.Run(() =>
                 {
                     string cs = $"Data Source={dbPath};";
-
                     using (var con = new SqliteConnection(cs))
                     {
                         con.Open();
 
-                        string where = BuildWhere( mode, heaterMin, heaterMax, airMin, airMax, motor, fanSpeed, motorCurrentMin, sourceType, channelNo );
+                        string where = BuildWhere(
+                            fromMs, toMs,
+                            modelCode, swVer, sourceType, channelNo,
+                            heaterMin, heaterMax,
+                            coldMin, coldMax,
+                            compVoltMin, compVoltMax,
+                            waterLevelLow, floorSensor, uvLed,
+                            triSol1, triSol2, triSol3,
+                            airVentSol, cvSol,
+                            pumpOn, coldSol, normalSol, hotSol1,
+                            needleState
+                        );
 
-                        // 1) COUNT
+                        // COUNT
                         int totalCount;
                         using (var cmdCount = con.CreateCommand())
                         {
                             cmdCount.CommandText = "SELECT COUNT(1) FROM receive_data " + where + ";";
-                            BindParams(cmdCount, fromMs, toMs, mode, heaterMin, heaterMax, airMin, airMax, motor, fanSpeed, motorCurrentMin, sourceType, channelNo);
+                            BindParams(cmdCount,
+                                fromMs, toMs,
+                                modelCode, swVer, sourceType, channelNo,
+                                heaterMin, heaterMax,
+                                coldMin, coldMax,
+                                compVoltMin, compVoltMax,
+                                waterLevelLow, floorSensor, uvLed,
+                                triSol1, triSol2, triSol3,
+                                airVentSol, cvSol,
+                                pumpOn, coldSol, normalSol, hotSol1,
+                                needleState
+                            );
                             totalCount = Convert.ToInt32(cmdCount.ExecuteScalar());
                         }
 
@@ -243,22 +398,44 @@ namespace BliMonitorTest
                         int appliedPage = Math.Min(Math.Max(1, requestedPage), lastPage);
                         int offset = (appliedPage - 1) * pageSize;
 
-                        // 2) SELECT page
                         var dt = new DataTable();
                         using (var cmd = con.CreateCommand())
                         {
                             cmd.CommandText =
-                                "SELECT * FROM receive_data " +
+                                "SELECT " +
+                                "  id, source_type, channel_no, created_at, created_at_ms, " +
+                                "  model_no AS model_code, sw_ver, " +
+                                "  heater_temp_b AS heater_temp, " +         
+                                "  cold_temp_b   AS cold_temp, " +
+                                "  pel_voltage_b AS comp_volt, " +
+                                "  low_water_sensor AS water_level_low, " +
+                                "  floor_sensor, " +
+                                "  uv_led_byte AS uv_led, " +
+                                "  sol_3way1 AS tri_sol1, sol_3way2 AS tri_sol2, sol_3way3 AS tri_sol3, " +
+                                "  air_vent_sol, cv_sol, " +
+                                "  pump AS pump_on, cold_sol, normal_sol, hot_sol1, " +
+                                "  needle_pos AS needle_state, " +
+                                "  cmd_byte, payload_size, button_flags, checksum_byte, end_packet " +
+                                "FROM receive_data " +
                                 where +
                                 " ORDER BY created_at_ms DESC " +
                                 " LIMIT @limit OFFSET @offset;";
-
-                            BindParams(cmd, fromMs, toMs, mode, heaterMin, heaterMax, airMin, airMax, motor, fanSpeed, motorCurrentMin, sourceType, channelNo);
+                            BindParams(cmd,
+                                fromMs, toMs,
+                                modelCode, swVer, sourceType, channelNo,
+                                heaterMin, heaterMax,
+                                coldMin, coldMax,
+                                compVoltMin, compVoltMax,
+                                waterLevelLow, floorSensor, uvLed,
+                                triSol1, triSol2, triSol3,
+                                airVentSol, cvSol,
+                                pumpOn, coldSol, normalSol, hotSol1,
+                                needleState
+                            );
                             cmd.Parameters.AddWithValue("@limit", pageSize);
                             cmd.Parameters.AddWithValue("@offset", offset);
 
                             log.Debug(MonitoringDb.FormatSqlLog(cmd, "SELECT >> "));
-
                             using (var r = cmd.ExecuteReader())
                             {
                                 dt.Load(r);
@@ -275,7 +452,6 @@ namespace BliMonitorTest
                     }
                 });
 
-                // ✅ 여기부터는 다시 UI 스레드
                 _totalCount = result.TotalCount;
                 _page = result.AppliedPage;
 
@@ -291,207 +467,20 @@ namespace BliMonitorTest
                 SetBusy(false);
             }
         }
-        private static void BindParams( SqliteCommand cmd, long fromMs, long toMs, int? mode, double? heaterMin, double? heaterMax, double? airMin, double? airMax, int? motorCode, int? fanSpeed, double? motorCurrentMin, int sourceType, int? channelNo )
-        {
-            cmd.Parameters.AddWithValue("@fromMs", fromMs);
-            cmd.Parameters.AddWithValue("@toMs", toMs);
 
-            // 0=전체
-            cmd.Parameters.AddWithValue("@sourceType", sourceType);
-
-            // channelNo: null 또는 0이면 전체
-            int ch = (channelNo.HasValue ? channelNo.Value : 0);
-            cmd.Parameters.AddWithValue("@channelNo", ch);
-
-            if (mode.HasValue) cmd.Parameters.AddWithValue("@mode", mode.Value);
-            if (heaterMin.HasValue) cmd.Parameters.AddWithValue("@heaterMin", heaterMin.Value);
-            if (heaterMax.HasValue) cmd.Parameters.AddWithValue("@heaterMax", heaterMax.Value);
-            if (airMin.HasValue) cmd.Parameters.AddWithValue("@airMin", airMin.Value);
-            if (airMax.HasValue) cmd.Parameters.AddWithValue("@airMax", airMax.Value);
-
-            if (motorCode.HasValue) cmd.Parameters.AddWithValue("@motorCode", motorCode.Value);
-
-            if (fanSpeed.HasValue) cmd.Parameters.AddWithValue("@fanSpeed", fanSpeed.Value);
-            if (motorCurrentMin.HasValue) cmd.Parameters.AddWithValue("@motorCurrentMin", motorCurrentMin.Value);
-        }
-
-
-        private int? TryParseNullableInt(string s)
-        {
-            if (string.IsNullOrWhiteSpace(s)) return null;
-
-            int v;
-            if (int.TryParse(s.Trim(), out v))
-                return v;
-
-            return null;
-        }
-
-        private double? TryParseNullableDouble(string s)
-        {
-            if (string.IsNullOrWhiteSpace(s)) return null;
-
-            double v;
-            return double.TryParse(s.Trim(), out v) ? (double?)v : null;
-        }
-
-        private async void ExcelDownload_Click(object sender, RoutedEventArgs e)
-        {
-            if (_isBusy) return;           // 조회 Busy와 충돌 방지(원하면 분리 가능)
-            if (_excelBuilding) return;    // 생성 중 중복 클릭 방지
-
-            // ✅ 이미 temp가 완성돼 있다면: 저장/열기 단계로
-            if (!string.IsNullOrEmpty(_excelTempPath) && File.Exists(_excelTempPath))
-            {
-                var sfd2 = new Microsoft.Win32.SaveFileDialog
-                {
-                    Filter = "Excel 파일 (*.xlsx)|*.xlsx",
-                    FileName = $"receive_data_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx"
-                };
-
-                if (sfd2.ShowDialog() != true)
-                    return; // 사용자가 취소하면 "엑셀 저장" 상태 유지(원하면 여기서 Reset도 가능)
-
-                try
-                {
-                    File.Copy(_excelTempPath, sfd2.FileName, overwrite: true);
-
-                    // ✅ 1회 저장 성공 → 초기 상태로 복귀(단발성)
-                    ResetExcelState(deleteTempFile: true);
-
-                    //MessageBox.Show("엑셀 파일 저장이 완료되었습니다.");
-                    ToastMessage.ToastService.AppToast.Show("엑셀 파일 저장이 완료되었습니다.");
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.ToString(), "엑셀 저장 오류", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-
-                return;
-            }
-
-            DateTime baseFrom = (dpFrom.SelectedDate ?? DateTime.Today).Date;
-            DateTime baseTo = (dpTo.SelectedDate ?? DateTime.Today).Date;
-
-            if (!TryGetTimeFromCombos(cbFromHour, cbFromMinute, out var fromTs))
-            {
-                ToastMessage.ToastService.AppToast.Show("시작 시간을 선택하세요.");
-                return;
-            }
-            if (!TryGetTimeFromCombos(cbToHour, cbToMinute, out var toTs))
-            {
-                ToastMessage.ToastService.AppToast.Show("종료 시간을 선택하세요.");
-                return;
-            }
-
-            DateTime fromDateTime = baseFrom.Add(fromTs);
-            DateTime toDateTime = baseTo.Add(toTs);
-            DateTime toExclusive = toDateTime.AddMinutes(5);
-
-            if (toExclusive <= fromDateTime)
-            {
-                ToastMessage.ToastService.AppToast.Show("기간이 올바르지 않습니다.");
-                return;
-            }
-            if ((toExclusive - fromDateTime).TotalDays > 31)
-            {
-                ToastMessage.ToastService.AppToast.Show("기간 조회는 최대 1달(31일)까지만 가능합니다.");
-                return;
-            }
-
-            long fromMs = new DateTimeOffset(fromDateTime).ToUnixTimeMilliseconds();
-            long toMs = new DateTimeOffset(toExclusive).ToUnixTimeMilliseconds();
-
-            int? mode = TryParseNullableInt(tbMode.Text);
-            double? heaterMin = TryParseNullableDouble(tbHeaterMin.Text);
-            double? heaterMax = TryParseNullableDouble(tbHeaterMax.Text);
-            double? airMin = TryParseNullableDouble(tbAirMin.Text);
-            double? airMax = TryParseNullableDouble(tbAirMax.Text);
-            int? motor = TryParseNullableInt(tbMotor.Text);
-            int? fanSpeed = TryParseNullableInt(tbFanSpeed.Text);
-            double? motorCurrentMin = TryParseNullableDouble(tbMotorCurrentMin.Text);
-
-            int sourceType = 0;
-            if (cbSourceType?.SelectedItem is ComboBoxItem srcItem && srcItem.Tag != null)
-                int.TryParse(srcItem.Tag.ToString(), out sourceType);
-
-            int? channelNo = TryParseNullableInt(tbChannelNo.Text);
-
-            string dbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Monitoring.db");
-            if (!File.Exists(dbPath))
-            {
-                //MessageBox.Show($"DB 파일을 찾을 수 없습니다.\n{dbPath}");
-                ToastMessage.ToastService.AppToast.Show($"DB 파일을 찾을 수 없습니다.\n{dbPath}");
-                return;
-            }
-
-            // 1) COUNT로 건수 측정
-            long totalCount = await Task.Run(() =>
-            {
-                string cs = $"Data Source={dbPath};";
-                using (var con = new SqliteConnection(cs))
-                {
-                    con.Open();
-                    string where = BuildWhere(mode, heaterMin, heaterMax, airMin, airMax, motor, fanSpeed, motorCurrentMin, sourceType, channelNo);
-
-                    using (var cmd = con.CreateCommand())
-                    {
-                        cmd.CommandText = "SELECT COUNT(1) FROM receive_data " + where + ";";
-                        BindParams(cmd, fromMs, toMs, mode, heaterMin, heaterMax, airMin, airMax, motor, fanSpeed, motorCurrentMin, sourceType, channelNo);
-                        return Convert.ToInt64(cmd.ExecuteScalar());
-                    }
-                }
-            });
-
-            if (totalCount <= 0)
-            {
-                //MessageBox.Show("조건에 맞는 데이터가 없습니다.");
-                ToastMessage.ToastService.AppToast.Show("조건에 맞는 데이터가 없습니다.\"");
-                return;
-            }
-
-            // 2) 대용량 판단
-            if (totalCount >= ExcelLargeThreshold)
-            {
-                var res = MessageBox.Show( $"조건에 맞는 데이터가 {totalCount:N0}건입니다.\n" + $"대용량은 엑셀 생성에 시간이 걸릴 수 있어 백그라운드에서 생성합니다.\n\n" + $"지금 생성할까요?", "대용량 엑셀 생성", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-
-                if (res != MessageBoxResult.Yes) return;
-
-                // 3) TEMP에 백그라운드 생성 시작
-                StartLargeExcelBuildInBackground( dbPath, fromMs, toMs, mode, heaterMin, heaterMax, airMin, airMax, motor, fanSpeed, motorCurrentMin, sourceType, channelNo, totalCount );
-
-                return;
-            }
-
-            // 4) 저용량: 바로 저장(여기서는 스트리밍/ClosedXML 중 택1 가능)
-            var sfd = new Microsoft.Win32.SaveFileDialog
-            {
-                Filter = "Excel 파일 (*.xlsx)|*.xlsx",
-                FileName = $"receive_data_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx"
-            };
-            if (sfd.ShowDialog() != true) return;
-
-            SetBusyMessage(true, "엑셀 생성 중...", "저용량 엑셀 파일을 생성 중입니다.");
-
-            try
-            {
-                await Task.Run(() =>
-                {
-                    // ✅ 저용량이면 ClosedXML로 예쁘게 / 또는 OpenXML로 통일도 가능
-                    // (여기서는 “대용량용 OpenXML 스트리밍 함수”를 재사용하는 게 단순)
-                    ExportAllToExcelOpenXml( dbPath, sfd.FileName, fromMs, toMs, mode, heaterMin, heaterMax, airMin, airMax, motor, fanSpeed, motorCurrentMin, sourceType, channelNo, progress: null, token: CancellationToken.None );
-                });
-
-                MessageBox.Show("엑셀 다운로드가 완료되었습니다.");
-                ToastMessage.ToastService.AppToast.Show("엑셀 다운로드가 완료되었습니다.");
-            }
-            finally
-            {
-                SetBusy(false);
-            }
-        }
-
-        private void StartLargeExcelBuildInBackground( string dbPath, long fromMs, long toMs, int? mode, double? heaterMin, double? heaterMax, double? airMin, double? airMax, int? motor, int? fanSpeed, double? motorCurrentMin, int sourceType, int? channelNo, long totalCount )
+        // ========= 엑셀(대용량 백그라운드) =========
+        private void StartLargeExcelBuildInBackground(
+            string dbPath, long fromMs, long toMs,
+            int? modelCode, int? swVer, int sourceType, int? channelNo,
+            int? heaterMin, int? heaterMax,
+            int? coldMin, int? coldMax,
+            int? compVoltMin, int? compVoltMax,
+            int? waterLevelLow, int? floorSensor, int? uvLed,
+            int? triSol1, int? triSol2, int? triSol3,
+            int? airVentSol, int? cvSol,
+            int? pumpOn, int? coldSol, int? normalSol, int? hotSol1,
+            int? needleState,
+            long totalCount)
         {
             _excelBuilding = true;
             _excelCts = new CancellationTokenSource();
@@ -502,7 +491,6 @@ namespace BliMonitorTest
                 btnExcel.Content = "생성 중...";
                 btnExcel.ToolTip = null;
             }
-
             if (btnCancelBusy != null)
                 btnCancelBusy.Visibility = Visibility.Visible;
 
@@ -526,7 +514,20 @@ namespace BliMonitorTest
             {
                 try
                 {
-                    ExportAllToExcelOpenXml( dbPath, tmpPath, fromMs, toMs, mode, heaterMin, heaterMax, airMin, airMax, motor, fanSpeed, motorCurrentMin, sourceType, channelNo, progress, token );
+                    ExportAllToExcelOpenXml(
+                        dbPath, tmpPath,
+                        fromMs, toMs,
+                        modelCode, swVer, sourceType, channelNo,
+                        heaterMin, heaterMax,
+                        coldMin, coldMax,
+                        compVoltMin, compVoltMax,
+                        waterLevelLow, floorSensor, uvLed,
+                        triSol1, triSol2, triSol3,
+                        airVentSol, cvSol,
+                        pumpOn, coldSol, normalSol, hotSol1,
+                        needleState,
+                        progress, token
+                    );
 
                     token.ThrowIfCancellationRequested();
 
@@ -561,8 +562,6 @@ namespace BliMonitorTest
                             btnExcel.Content = "엑셀";
                             btnExcel.ToolTip = null;
                         }
-
-                        //MessageBox.Show("엑셀 생성이 취소되었습니다.");
                         ToastMessage.ToastService.AppToast.Show("엑셀 생성이 취소되었습니다.");
                         return;
                     }
@@ -575,8 +574,7 @@ namespace BliMonitorTest
                             btnExcel.Content = "엑셀";
                             btnExcel.ToolTip = null;
                         }
-
-                        MessageBox.Show(t.Exception?.GetBaseException().ToString() ?? "엑셀 생성 오류", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show(t.Exception?.GetBaseException()?.ToString() ?? "엑셀 생성 오류", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
                         return;
                     }
 
@@ -589,38 +587,28 @@ namespace BliMonitorTest
                         btnExcel.ToolTip = "엑셀 생성 완료";
                     }
 
-                    MessageBox.Show( $"대용량 엑셀 생성이 완료되었습니다.\n\n'엑셀 저장'을 누르면 원하는 위치에 저장할 수 있습니다.\n(건수: {totalCount:N0})", "완료", MessageBoxButton.OK, MessageBoxImage.Information );
+                    MessageBox.Show(
+                        $"대용량 엑셀 생성이 완료되었습니다.\n\n'엑셀 저장'을 누르면 원하는 위치에 저장할 수 있습니다.\n(건수: {totalCount:N0})",
+                        "완료", MessageBoxButton.OK, MessageBoxImage.Information);
                 });
             });
         }
 
-        private static string BuildWhere( int? mode, double? heaterMin, double? heaterMax, double? airMin, double? airMax, int? motorCode, int? fanSpeed, double? motorCurrentMin, int sourceType, int? channelNo )
-        {
-            // ✅ 핵심: created_at_ms 범위 검색
-            string where = "WHERE created_at_ms >= @fromMs AND created_at_ms < @toMs";
-
-            // ✅ 단/다채널 구분: 0이면 전체
-            where += " AND (@sourceType = 0 OR source_type = @sourceType)";
-
-            // ✅ 채널: 0이면 전체
-            where += " AND (@channelNo = 0 OR channel_no = @channelNo)";
-
-            if (mode.HasValue) where += " AND mode = @mode";
-            if (heaterMin.HasValue) where += " AND heater_temp >= @heaterMin";
-            if (heaterMax.HasValue) where += " AND heater_temp <= @heaterMax";
-            if (airMin.HasValue) where += " AND air_temp >= @airMin";
-            if (airMax.HasValue) where += " AND air_temp <= @airMax";
-
-            if (motorCode.HasValue) where += " AND motor_code = @motorCode";
-
-            if (fanSpeed.HasValue) where += " AND fan_speed = @fanSpeed";
-            if (motorCurrentMin.HasValue) where += " AND motor_current >= @motorCurrentMin";
-
-            return where;
-        }
-
-        private static void ExportAllToExcelOpenXml( string dbPath, string xlsxPath, long fromMs, long toMs, int? mode, double? heaterMin, double? heaterMax, double? airMin, double? airMax, int? motorCode, int? fanSpeed, 
-            double? motorCurrentMin, int sourceType, int? channelNo, IProgress<(int percent, long done, long total)> progress, CancellationToken token )
+        // ========= 엑셀(스트리밍) =========
+        private static void ExportAllToExcelOpenXml(
+            string dbPath, string xlsxPath,
+            long fromMs, long toMs,
+            int? modelCode, int? swVer, int sourceType, int? channelNo,
+            int? heaterMin, int? heaterMax,
+            int? coldMin, int? coldMax,
+            int? compVoltMin, int? compVoltMax,
+            int? waterLevelLow, int? floorSensor, int? uvLed,
+            int? triSol1, int? triSol2, int? triSol3,
+            int? airVentSol, int? cvSol,
+            int? pumpOn, int? coldSol, int? normalSol, int? hotSol1,
+            int? needleState,
+            IProgress<(int percent, long done, long total)> progress,
+            CancellationToken token)
         {
             string cs = $"Data Source={dbPath};";
 
@@ -628,14 +616,36 @@ namespace BliMonitorTest
             {
                 con.Open();
 
-                string where = BuildWhere( mode, heaterMin, heaterMax, airMin, airMax, motorCode, fanSpeed, motorCurrentMin, sourceType, channelNo );
+                string where = BuildWhere(
+                    fromMs, toMs,
+                    modelCode, swVer, sourceType, channelNo,
+                    heaterMin, heaterMax,
+                    coldMin, coldMax,
+                    compVoltMin, compVoltMax,
+                    waterLevelLow, floorSensor, uvLed,
+                    triSol1, triSol2, triSol3,
+                    airVentSol, cvSol,
+                    pumpOn, coldSol, normalSol, hotSol1,
+                    needleState
+                );
 
-                // total count(진행률 계산)
+                // total count
                 long total;
                 using (var cmdCount = con.CreateCommand())
                 {
                     cmdCount.CommandText = "SELECT COUNT(1) FROM receive_data " + where + ";";
-                    BindParams(cmdCount, fromMs, toMs, mode, heaterMin, heaterMax, airMin, airMax, motorCode, fanSpeed, motorCurrentMin, sourceType, channelNo);
+                    BindParams(cmdCount,
+                        fromMs, toMs,
+                        modelCode, swVer, sourceType, channelNo,
+                        heaterMin, heaterMax,
+                        coldMin, coldMax,
+                        compVoltMin, compVoltMax,
+                        waterLevelLow, floorSensor, uvLed,
+                        triSol1, triSol2, triSol3,
+                        airVentSol, cvSol,
+                        pumpOn, coldSol, normalSol, hotSol1,
+                        needleState
+                    );
                     total = Convert.ToInt64(cmdCount.ExecuteScalar());
                 }
 
@@ -644,11 +654,35 @@ namespace BliMonitorTest
                 using (var cmd = con.CreateCommand())
                 {
                     cmd.CommandText =
-                        "SELECT * FROM receive_data " +
+                        "SELECT " +
+                        "  id, source_type, channel_no, created_at, created_at_ms, " +
+                        "  model_no AS model_code, sw_ver, " +
+                        "  heater_temp_b AS heater_temp, " +
+                        "  cold_temp_b   AS cold_temp, " +
+                        "  pel_voltage_b AS comp_volt, " +
+                        "  low_water_sensor AS water_level_low, " +
+                        "  floor_sensor, " +
+                        "  uv_led_byte AS uv_led, " +
+                        "  sol_3way1 AS tri_sol1, sol_3way2 AS tri_sol2, sol_3way3 AS tri_sol3, " +
+                        "  air_vent_sol, cv_sol, " +
+                        "  pump AS pump_on, cold_sol, normal_sol, hot_sol1, " +
+                        "  needle_pos AS needle_state, " +
+                        "  cmd_byte, payload_size, button_flags, checksum_byte, end_packet " +
+                        "FROM receive_data " +
                         where +
                         " ORDER BY created_at_ms DESC;";
-
-                    BindParams(cmd, fromMs, toMs, mode, heaterMin, heaterMax, airMin, airMax, motorCode, fanSpeed, motorCurrentMin, sourceType, channelNo);
+                    BindParams(cmd,
+                        fromMs, toMs,
+                        modelCode, swVer, sourceType, channelNo,
+                        heaterMin, heaterMax,
+                        coldMin, coldMax,
+                        compVoltMin, compVoltMax,
+                        waterLevelLow, floorSensor, uvLed,
+                        triSol1, triSol2, triSol3,
+                        airVentSol, cvSol,
+                        pumpOn, coldSol, normalSol, hotSol1,
+                        needleState
+                    );
 
                     using (var reader = cmd.ExecuteReader(CommandBehavior.SequentialAccess))
                     using (var doc = SpreadsheetDocument.Create(xlsxPath, SpreadsheetDocumentType.Workbook))
@@ -669,7 +703,6 @@ namespace BliMonitorTest
 
                         Action startNewSheet = () =>
                         {
-                            // close previous sheet writer
                             if (writer != null)
                             {
                                 writer.WriteEndElement(); // SheetData
@@ -694,7 +727,7 @@ namespace BliMonitorTest
 
                             currentRowInSheet = 0;
 
-                            // header row
+                            // 헤더
                             WriteHeaderRow(writer, reader);
                             currentRowInSheet++;
                         };
@@ -753,36 +786,26 @@ namespace BliMonitorTest
 
         private static void WriteTextCell(OpenXmlWriter writer, string text)
         {
+            // Spreadsheet.Text을 명시적으로 사용해 모호성 제거
             writer.WriteElement(new Cell
             {
                 DataType = CellValues.InlineString,
-                InlineString = new InlineString(new Text(text ?? ""))
+                InlineString = new InlineString(new DocumentFormat.OpenXml.Spreadsheet.Text(text ?? ""))
             });
         }
 
         private void CancelBusy_Click(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                _excelCts?.Cancel();
-            }
-            catch {  }
+            try { _excelCts?.Cancel(); } catch { }
         }
 
         private void ResetExcelState(bool deleteTempFile)
         {
-            // 생성 중이면 취소 시도 (안전장치)
             try { _excelCts?.Cancel(); } catch { }
 
-            // temp 파일 정리
             if (deleteTempFile && !string.IsNullOrEmpty(_excelTempPath))
             {
-                try
-                {
-                    if (File.Exists(_excelTempPath))
-                        File.Delete(_excelTempPath);
-                }
-                catch { /* 파일 잠김/권한 이슈는 무시 */ }
+                try { if (File.Exists(_excelTempPath)) File.Delete(_excelTempPath); } catch { }
             }
 
             _excelTempPath = null;
@@ -795,30 +818,222 @@ namespace BliMonitorTest
             }
         }
 
-        private static void FillHourCombo(ComboBox cb)
+        private async void ExcelDownload_Click(object sender, RoutedEventArgs e)
         {
-            cb.Items.Clear();
-            for (int h = 0; h <= 23; h++)
-                cb.Items.Add(h.ToString("00"));
-            cb.SelectedIndex = 0;
-        }
+            if (_isBusy) return;           // 조회 Busy와 충돌 방지
+            if (_excelBuilding) return;    // 생성 중 중복 클릭 방지
 
-        private static void FillMinuteCombo5(ComboBox cb)
-        {
-            cb.Items.Clear();
-            for (int m = 0; m < 60; m += 5)
-                cb.Items.Add(m.ToString("00"));
-            cb.SelectedIndex = 0;
-        }
+            // 이미 temp가 완성돼 있다면: 저장 단계
+            if (!string.IsNullOrEmpty(_excelTempPath) && File.Exists(_excelTempPath))
+            {
+                var sfd2 = new Microsoft.Win32.SaveFileDialog
+                {
+                    Filter = "Excel 파일 (*.xlsx)|*.xlsx",
+                    FileName = $"receive_data_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx"
+                };
 
-        private static bool TryGetTimeFromCombos(ComboBox cbHour, ComboBox cbMinute, out TimeSpan ts)
-        {
-            ts = TimeSpan.Zero;
-            if (cbHour?.SelectedItem == null || cbMinute?.SelectedItem == null) return false;
-            if (!int.TryParse(cbHour.SelectedItem.ToString(), out int h)) return false;
-            if (!int.TryParse(cbMinute.SelectedItem.ToString(), out int m)) return false;
-            ts = new TimeSpan(h, m, 0);
-            return true;
+                if (sfd2.ShowDialog() != true)
+                    return;
+
+                try
+                {
+                    File.Copy(_excelTempPath, sfd2.FileName, overwrite: true);
+                    ResetExcelState(deleteTempFile: true);
+                    ToastMessage.ToastService.AppToast.Show("엑셀 파일 저장이 완료되었습니다.");
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.ToString(), "엑셀 저장 오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+
+                return;
+            }
+
+            // 기간 파싱(5분 확장)
+            DateTime baseFrom = (dpFrom.SelectedDate ?? DateTime.Today).Date;
+            DateTime baseTo = (dpTo.SelectedDate ?? DateTime.Today).Date;
+
+            if (!TryGetTimeFromCombos(cbFromHour, cbFromMinute, out var fromTs))
+            {
+                ToastMessage.ToastService.AppToast.Show("시작 시간을 선택하세요.");
+                return;
+            }
+            if (!TryGetTimeFromCombos(cbToHour, cbToMinute, out var toTs))
+            {
+                ToastMessage.ToastService.AppToast.Show("종료 시간을 선택하세요.");
+                return;
+            }
+
+            DateTime fromDateTime = baseFrom.Add(fromTs);
+            DateTime toExclusive = baseTo.Add(toTs).AddMinutes(5);
+
+            if (toExclusive <= fromDateTime)
+            {
+                ToastMessage.ToastService.AppToast.Show("기간이 올바르지 않습니다.");
+                return;
+            }
+            if ((toExclusive - fromDateTime).TotalDays > 31)
+            {
+                ToastMessage.ToastService.AppToast.Show("기간 조회는 최대 1달(31일)까지만 가능합니다.");
+                return;
+            }
+
+            long fromMs = new DateTimeOffset(fromDateTime).ToUnixTimeMilliseconds();
+            long toMs = new DateTimeOffset(toExclusive).ToUnixTimeMilliseconds();
+
+            // TO-BE 값 수집 (RefreshGridAsync와 동일)
+            int? modelCode = GetComboInt(cbModelCode);
+            int? swVer = GetComboInt(cbSwVer);
+            int sourceType = 0;
+            if (cbSourceType?.SelectedItem is ComboBoxItem srcItem && srcItem.Tag != null)
+                int.TryParse(srcItem.Tag.ToString(), out sourceType);
+            int? channelNo = TryParseNullableInt(tbChannelNo.Text);
+
+            int? heaterMin = TryParseNullableInt(tbHeaterMin.Text);
+            int? heaterMax = TryParseNullableInt(tbHeaterMax.Text);
+            int? coldMin = TryParseNullableInt(tbColdMin.Text);
+            int? coldMax = TryParseNullableInt(tbColdMax.Text);
+            int? compVoltMin = TryParseNullableInt(tbCompVoltMin.Text);
+            int? compVoltMax = TryParseNullableInt(tbCompVoltMax.Text);
+
+            int? waterLevelLow = GetComboInt(cbWaterLevelLow);
+            int? floorSensor = GetComboInt(cbFloorSensor);
+            int? uvLed = GetComboInt(cbUvLed);
+            int? triSol1 = GetComboInt(cbTriSol1);
+            int? triSol2 = GetComboInt(cbTriSol2);
+            int? triSol3 = GetComboInt(cbTriSol3);
+            int? airVentSol = GetComboInt(cbAirVentSol);
+            int? cvSol = GetComboInt(cbCvSol);
+            int? pumpOn = GetComboInt(cbPumpOn);
+            int? coldSol = GetComboInt(cbColdSol);
+            int? normalSol = GetComboInt(cbNormalSol);
+            int? hotSol1 = GetComboInt(cbHotSol1);
+            int? needleState = GetComboInt(cbNeedleState);
+
+            string dbPath = StoragePathUtil.GetDbPath();
+            if (!File.Exists(dbPath))
+            {
+                ToastMessage.ToastService.AppToast.Show($"DB 파일을 찾을 수 없습니다.\n{dbPath}");
+                return;
+            }
+
+            // 건수 측정
+            long totalCount = await Task.Run(() =>
+            {
+                string cs = $"Data Source={dbPath};";
+                using (var con = new SqliteConnection(cs))
+                {
+                    con.Open();
+                    string where = BuildWhere(
+                        fromMs, toMs,
+                        modelCode, swVer, sourceType, channelNo,
+                        heaterMin, heaterMax,
+                        coldMin, coldMax,
+                        compVoltMin, compVoltMax,
+                        waterLevelLow, floorSensor, uvLed,
+                        triSol1, triSol2, triSol3,
+                        airVentSol, cvSol,
+                        pumpOn, coldSol, normalSol, hotSol1,
+                        needleState
+                    );
+
+                    using (var cmdCount = con.CreateCommand())
+                    {
+                        cmdCount.CommandText = "SELECT COUNT(1) FROM receive_data " + where + ";";
+                        BindParams(cmdCount,
+                            fromMs, toMs,
+                            modelCode, swVer, sourceType, channelNo,
+                            heaterMin, heaterMax,
+                            coldMin, coldMax,
+                            compVoltMin, compVoltMax,
+                            waterLevelLow, floorSensor, uvLed,
+                            triSol1, triSol2, triSol3,
+                            airVentSol, cvSol,
+                            pumpOn, coldSol, normalSol, hotSol1,
+                            needleState
+                        );
+                        return Convert.ToInt64(cmdCount.ExecuteScalar());
+                    }
+                }
+            });
+
+            if (totalCount <= 0)
+            {
+                ToastMessage.ToastService.AppToast.Show("조건에 맞는 데이터가 없습니다.");
+                return;
+            }
+
+            // 대용량 판단
+            if (totalCount >= ExcelLargeThreshold)
+            {
+                var res = MessageBox.Show(
+                    $"조건에 맞는 데이터가 {totalCount:N0}건입니다.\n" +
+                    $"대용량은 엑셀 생성에 시간이 걸릴 수 있어 백그라운드에서 생성합니다.\n\n" +
+                    $"지금 생성할까요?",
+                    "대용량 엑셀 생성",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+
+                if (res != MessageBoxResult.Yes) return;
+
+                // 백그라운드 생성 시작
+                StartLargeExcelBuildInBackground(
+                    dbPath, fromMs, toMs,
+                    modelCode, swVer, sourceType, channelNo,
+                    heaterMin, heaterMax,
+                    coldMin, coldMax,
+                    compVoltMin, compVoltMax,
+                    waterLevelLow, floorSensor, uvLed,
+                    triSol1, triSol2, triSol3,
+                    airVentSol, cvSol,
+                    pumpOn, coldSol, normalSol, hotSol1,
+                    needleState,
+                    totalCount
+                );
+
+                return;
+            }
+
+            // 저용량: 바로 저장
+            var sfd = new Microsoft.Win32.SaveFileDialog
+            {
+                Filter = "Excel 파일 (*.xlsx)|*.xlsx",
+                FileName = $"receive_data_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx"
+            };
+            if (sfd.ShowDialog() != true) return;
+
+            SetBusyMessage(true, "엑셀 생성 중...", "저용량 엑셀 파일을 생성 중입니다.");
+
+            try
+            {
+                await Task.Run(() =>
+                {
+                    ExportAllToExcelOpenXml(
+                        dbPath, sfd.FileName,
+                        fromMs, toMs,
+                        modelCode, swVer, sourceType, channelNo,
+                        heaterMin, heaterMax,
+                        coldMin, coldMax,
+                        compVoltMin, compVoltMax,
+                        waterLevelLow, floorSensor, uvLed,
+                        triSol1, triSol2, triSol3,
+                        airVentSol, cvSol,
+                        pumpOn, coldSol, normalSol, hotSol1,
+                        needleState,
+                        progress: null, token: CancellationToken.None
+                    );
+                });
+
+                ToastMessage.ToastService.AppToast.Show("엑셀 다운로드가 완료되었습니다.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.ToString(), "엑셀 생성 오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                SetBusy(false);
+            }
         }
 
     }

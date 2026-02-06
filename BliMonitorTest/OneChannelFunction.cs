@@ -1,16 +1,17 @@
-﻿using OxyPlot;
+﻿using BliMonitorTest.controls;
 using BliMonitorTest.data;
 using BliMonitorTest.util;
+using OxyPlot;
+using OxyPlot.Annotations;
+using OxyPlot.Axes;
+using OxyPlot.Series;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
-using OxyPlot.Axes;
-using OxyPlot.Series;
-using OxyPlot.Annotations;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TaskbarClock;
 
 namespace BliMonitorTest
 {
@@ -18,13 +19,13 @@ namespace BliMonitorTest
     {
         private DateTime? _dummyStartTime;
 
-        // ===== 차트 UI 튜닝용(기준선 + 이상치 표시) =====
+              // ===== 차트 UI 튜닝용(기준선 + 이상치 표시) =====
         private ScatterSeries _anomalySeries;
         private LineAnnotation _warnHighLine;
         private LineAnnotation _warnLowLine;
         private double? _prevY = null;
 
-        // 기본 옵션(원하면 UI에서 제어)
+              // 기본 옵션(원하면 UI에서 제어)
         private bool _enableWarnLine = true;
         private bool _enableAnomaly = true;
         private double _warnLow = double.NaN;
@@ -102,11 +103,9 @@ namespace BliMonitorTest
 
             bool IsDummyEnabled = (UseDummyCheck?.IsChecked == true);
 
-            // 기본은 기존 로직대로 TestTime 기반
             long total_second = (long)TestTime.TotalSeconds;
             double total_minute = total_second / 60.0;
 
-            // (기존에 있던 보정 로직 유지: 필요 없으면 제거 가능)
             double remain_second = (double)(total_second % 60) / 100.0;
             double remain_value = 0.40 / 60.0;
 
@@ -120,7 +119,7 @@ namespace BliMonitorTest
                 total_minute += remain_second;
             }
 
-            // null일 때만 1회 설정 (핵심)
+                     // null일 때만 1회 설정 (핵심)
             if (_dummyStartTime == null)
                 _dummyStartTime = DateTime.Now;
 
@@ -129,7 +128,7 @@ namespace BliMonitorTest
             total_second = (long)elapsed.TotalSeconds;
             total_minute = elapsed.TotalMinutes;   // 분 단위 double (가장 깔끔)
 
-            // 데이터 화면 매핑
+                     // 데이터 화면 매핑
             byte modelCode = data[5];
             byte swVersion = data[6];
 
@@ -141,7 +140,7 @@ namespace BliMonitorTest
 
             bool uvLed = data[11] != 0;
 
-            // 3방 SOL: data[12] 비트필드 (바이트의 0번째 비트부터)
+                     // 3방 SOL: data[12] 비트필드 (바이트의 0번째 비트부터)
             byte triSolByte = data[12];
             bool triSol1 = (triSolByte & (1 << 0)) != 0; // 0번째 비트 → 3방 SOL 1
             bool triSol2 = (triSolByte & (1 << 1)) != 0; // 1번째 비트 → 3방 SOL 2
@@ -150,7 +149,7 @@ namespace BliMonitorTest
             bool airVentSol = data[13] != 0;
             bool cvSol = data[14] != 0;
 
-            // 버튼 2바이트 (LSB→MSB, bit0부터)
+                     // 버튼 2바이트 (LSB→MSB, bit0부터)
             ushort buttons = (ushort)(data[15] | (data[16] << 8));
             bool btnCont = (buttons & (1 << 0)) != 0;
             bool btnVolume = (buttons & (1 << 1)) != 0;
@@ -171,14 +170,14 @@ namespace BliMonitorTest
             byte needleState = data[21];
             byte compVolt = data[22];
 
-            // 4) 중앙 좌측 UI 바인딩
+                     // 4) 중앙 좌측 UI 바인딩
             channel.Item1.cont.Content = $"{heaterTemp}ºC";                 // 히터 온도
             channel.Item2.cont.Content = $"{coldTemp}ºC";                   // 냉수 온도
             channel.Item3.cont.Content = waterLevelLow ? "ON" : "OFF";      // 수위센서
             channel.Item4.cont.Content = floorSensor ? "ON" : "OFF";        // 플로어 센서
             channel.Item5.cont.Content = uvLed ? "ON" : "OFF";              // UV LED
 
-            // 3방 SOL 요약(0번째 비트부터: 1,2,3)
+                     // 3방 SOL 요약(0번째 비트부터: 1,2,3)
             channel.Item6.cont.Content = $"{OnOff(triSol1)} / {OnOff(triSol2)} / {OnOff(triSol3)}";
 
             channel.Item11.cont.Content = airVentSol ? "ON" : "OFF";        // Air Vent Sol
@@ -191,11 +190,18 @@ namespace BliMonitorTest
             channel.Item17.cont.Content = $"{NeedleToText(needleState)}";
             channel.Item18.cont.Content = getModelName(modelCode);
 
-            // 운전/대기 표시(좌측 상단 박스와 연동)
+                     // 운전/대기 표시(좌측 상단 박스와 연동)
             channel.run = pumpOn;
 
-            // 5) 중앙 우측 버튼 패널 업데이트
+                     // 5) 중앙 우측 버튼 패널 업데이트
             DetailView.UpdateButtons(btnCont, btnVolume, btnFree, btnHighHot, btnHot, btnWarm, btnChild, btnRoom, btnMildCold, btnCold);
+
+                     // 5-1) 수신 데이터 파일 기록
+            var resp = ResponsePacket57.Parse(data);
+            if (resp != null)
+            {
+                channel.WriteFile(resp, channelNo: 1, sourceType: BliMonitorTest.util.MonitoringDb.MonitoringDb.SOURCE_SINGLE);
+            }
 
             // 6) 차트 AddData – 고정 키(10~17) 사용 : 10:히터(ºC), 11:냉수(ºC), 12:수위센서(0/1), 13:플로어(0/1), 14:AirVent(0/1), 15:C/V(0/1), 16:PUMP(0/1), 17:ColdSol(0/1)
             if (channel.Item1Check.IsChecked == true && seriesList.ContainsKey(10))

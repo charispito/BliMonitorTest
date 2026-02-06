@@ -1,4 +1,5 @@
-﻿using Microsoft.Data.Sqlite;
+﻿using BliMonitorTest.data;
+using Microsoft.Data.Sqlite;
 using System;
 using System.Collections.Concurrent;
 using System.Threading;
@@ -79,43 +80,36 @@ namespace BliMonitorTest.util.MonitoringDb
         public void Dispose() => Stop();
 
         // 상태 데이터(기존 ReadData) 적재
-        public void Enqueue( BliMonitorTest.data.ReadData data, int number, float off_sum, int air_sum, int channelNo, int sourceType)
+        public void Enqueue(BliResponse57Packet resp, int channelNo, int sourceType)
         {
-            if (data == null) return;
-
+            if (resp == null) return;
             if (_worker == null)
                 Start(_dbPath ?? BliMonitorTest.util.StoragePathUtil.StoragePathUtil.GetDbPath());
 
-            _queue.TryAdd(new InsertItem(data, number, off_sum, air_sum, channelNo, sourceType));
+            _queue.TryAdd(new InsertItem(resp, channelNo, sourceType));
         }
 
         // 에러 이벤트 적재(error_events 테이블)
-        public void EnqueueErrorEvent(
-            int sourceType, int channelNo,
-            DateTime createdAt, string snapshotId, string fileName,
-            int errorSlot, string errorText,
-            int? runMode, double? heaterTemp, double? heaterOffTime,
-            double? hotAirTemp, double? hotAirOnTime,
-            int? runCount, double? exhaustTemp)
+        public void EnqueueErrorEvent( int sourceType, int channelNo, DateTime createdAt, string snapshotId, string fileName, int errorSlot, string errorText, int? runMode, double? heaterTemp, double? heaterOffTime,
+            double? hotAirTemp, double? hotAirOnTime, int? runCount, double? exhaustTemp)
         {
             if (_worker == null)
                 Start(_dbPath ?? BliMonitorTest.util.StoragePathUtil.StoragePathUtil.GetDbPath());
 
             _errorQueue.TryAdd(new ErrorEventItem(
                 sourceType, channelNo, createdAt, snapshotId, fileName,
-                errorSlot, errorText,
-                runMode, heaterTemp, heaterOffTime,
-                hotAirTemp, hotAirOnTime,
-                runCount, exhaustTemp));
+                errorSlot, errorText, runMode, heaterTemp, heaterOffTime,
+                hotAirTemp, hotAirOnTime, runCount, exhaustTemp));
         }
+
 
         // ---------------------------
         // 내부 워커/플러시
         // ---------------------------
-
         private void EnsureOpen()
         {
-            if (_db != null) return;
+            if (_db != null && _db.State == System.Data.ConnectionState.Open)
+                return;
 
             _db = new SqliteConnection($"Data Source={_dbPath};");
             _db.Open();
@@ -130,6 +124,7 @@ namespace BliMonitorTest.util.MonitoringDb
                 cmd.ExecuteNonQuery();
             }
 
+            // 현재 커넥션으로만 보장
             MonitoringDb.EnsureDb(ref _db, _dbPath, ref _dbReady);
         }
 
@@ -161,16 +156,14 @@ namespace BliMonitorTest.util.MonitoringDb
                             // 상태 배치
                             foreach (var it in stateBuffer)
                             {
-                                MonitoringDb.InsertDb(ref _db, _dbPath, ref _dbReady, it.Data, it.Number, it.OffSum, it.AirSum, it.ChannelNo, it.SourceType);
+                                MonitoringDb.InsertDb(ref _db, _dbPath, ref _dbReady, it.Resp, it.ChannelNo, it.SourceType);
                             }
 
                             // 에러 배치
                             foreach (var ev in errorBuffer)
                             {
-                                MonitoringDb.InsertErrorEvent(ref _db, _dbPath, ref _dbReady,
-                                    ev.SourceType, ev.ChannelNo, ev.CreatedAt, ev.SnapshotId, ev.FileName,
-                                    ev.ErrorSlot, ev.ErrorText, ev.RunMode, ev.HeaterTemp, ev.HeaterOffTime,
-                                    ev.HotAirTemp, ev.HotAirOnTime, ev.RunCount, ev.ExhaustTemp);
+                                MonitoringDb.InsertErrorEvent(ref _db, _dbPath, ref _dbReady, ev.SourceType, ev.ChannelNo, ev.CreatedAt, ev.SnapshotId, ev.FileName, ev.ErrorSlot, 
+                                    ev.ErrorText, ev.RunMode, ev.HeaterTemp, ev.HeaterOffTime, ev.HotAirTemp, ev.HotAirOnTime, ev.RunCount, ev.ExhaustTemp);
                             }
 
                             tx.Commit();
@@ -200,15 +193,13 @@ namespace BliMonitorTest.util.MonitoringDb
                     {
                         foreach (var it in stateBuffer)
                         {
-                            MonitoringDb.InsertDb(ref _db, _dbPath, ref _dbReady, it.Data, it.Number, it.OffSum, it.AirSum, it.ChannelNo, it.SourceType);
+                            MonitoringDb.InsertDb(ref _db, _dbPath, ref _dbReady, it.Resp, it.ChannelNo, it.SourceType);
                         }
 
                         foreach (var ev in errorBuffer)
                         {
-                            MonitoringDb.InsertErrorEvent(ref _db, _dbPath, ref _dbReady,
-                                ev.SourceType, ev.ChannelNo, ev.CreatedAt, ev.SnapshotId, ev.FileName,
-                                ev.ErrorSlot, ev.ErrorText, ev.RunMode, ev.HeaterTemp, ev.HeaterOffTime,
-                                ev.HotAirTemp, ev.HotAirOnTime, ev.RunCount, ev.ExhaustTemp);
+                            MonitoringDb.InsertErrorEvent(ref _db, _dbPath, ref _dbReady, ev.SourceType, ev.ChannelNo, ev.CreatedAt, ev.SnapshotId, ev.FileName,
+                                ev.ErrorSlot, ev.ErrorText, ev.RunMode, ev.HeaterTemp, ev.HeaterOffTime, ev.HotAirTemp, ev.HotAirOnTime, ev.RunCount, ev.ExhaustTemp);
                         }
 
                         tx.Commit();
@@ -221,23 +212,15 @@ namespace BliMonitorTest.util.MonitoringDb
         // ---------------------------
         // 내부 버퍼 타입(외부 비공개)
         // ---------------------------
-
         private readonly struct InsertItem
         {
-            public readonly BliMonitorTest.data.ReadData Data;
-            public readonly int Number;
-            public readonly float OffSum;
-            public readonly int AirSum;
+            public readonly BliResponse57Packet Resp;
             public readonly int ChannelNo;
             public readonly int SourceType;
 
-            public InsertItem(BliMonitorTest.data.ReadData data, int number, float offSum, int airSum, int channelNo, int sourceType)
+            public InsertItem(BliResponse57Packet resp, int channelNo, int sourceType)
             {
-                //IsNewVersion = isNewVersion;
-                Data = data;
-                Number = number;
-                OffSum = offSum;
-                AirSum = airSum;
+                Resp = resp;
                 ChannelNo = channelNo;
                 SourceType = sourceType;
             }

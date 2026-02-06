@@ -1,4 +1,5 @@
-﻿using log4net;
+﻿using BliMonitorTest.data;
+using log4net;
 using Microsoft.Data.Sqlite;
 using System;
 using System.Globalization;
@@ -11,7 +12,6 @@ namespace BliMonitorTest.util.MonitoringDb
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MonitoringDb));
 
-        // 단/다채널 구분값(조회조건에도 그대로 사용)
         public const int SOURCE_SINGLE = 1;
         public const int SOURCE_MULTI = 2;
 
@@ -23,56 +23,60 @@ namespace BliMonitorTest.util.MonitoringDb
         /// </summary>
         public static void EnsureDb(ref SqliteConnection db, string dbPath, ref bool dbReady)
         {
-            if (dbReady && db != null)
-                return;
+            if (dbReady && db != null && db.State == System.Data.ConnectionState.Open) return;
 
-            db = new SqliteConnection(string.Format("Data Source={0}", dbPath));
-            db.Open();
+            if (db == null)
+                db = new SqliteConnection($"Data Source={dbPath};");
+
+            if (db.State != System.Data.ConnectionState.Open)
+                db.Open();
 
             using (var cmd = db.CreateCommand())
             {
                 cmd.CommandText = @"
+                    PRAGMA journal_mode=WAL;
+                    PRAGMA synchronous=NORMAL;
+                    PRAGMA busy_timeout=5000;
+
                     CREATE TABLE IF NOT EXISTS receive_data (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        id               INTEGER PRIMARY KEY AUTOINCREMENT,
+                        source_type      INTEGER NOT NULL,
+                        channel_no       INTEGER NOT NULL,
+                        created_at       TEXT    NOT NULL,
+                        created_at_ms    INTEGER NOT NULL,
 
-                        -- 단/다채널 구분 + 채널
-                        source_type    INTEGER NOT NULL,
-                        channel_no     INTEGER NOT NULL,
-
-                        -- 시간(문자열 + epoch)
-                        created_at     TEXT    NOT NULL,
-                        created_at_ms  INTEGER NOT NULL,
-
-                        -- 원본/표시용 + 검색용
-                        mode               INTEGER,
-                        remain_time_text   TEXT,
-                        remain_seconds     INTEGER,
-
-                        heater_temp        REAL,
-                        heater_off_time    REAL,
-                        air_temp           REAL,
-                        fan_speed          INTEGER,
-
-                        avg_heater_off_time REAL,   -- 신버전 의미 유지(기존 로직)
-                        hot_air_temp       REAL,
-                        hot_air_ontime     REAL,
-
-                        motor_state        TEXT,
-                        motor_code         INTEGER,
-                        motor_current      REAL,
-
-                        number             INTEGER,
-                        off_sum            REAL,
-                        off_avg            REAL,
-                        air_sum            REAL,
-                        air_avg            REAL
+                        start_packet     INTEGER,
+                        cmd_byte         INTEGER,
+                        payload_size     INTEGER,
+                        model_no         INTEGER,
+                        sw_ver           INTEGER,
+                        heater_temp_b    INTEGER,
+                        cold_temp_b      INTEGER,
+                        low_water_sensor INTEGER,
+                        floor_sensor     INTEGER,
+                        uv_led_byte      INTEGER,
+                        sol_3way1        INTEGER,
+                        sol_3way2        INTEGER,
+                        sol_3way3        INTEGER,
+                        air_vent_sol     INTEGER,
+                        cv_sol           INTEGER,
+                        button_flags     INTEGER,
+                        pump             INTEGER,
+                        cold_sol         INTEGER,
+                        normal_sol       INTEGER,
+                        hot_sol1         INTEGER,
+                        needle_pos       INTEGER,
+                        pel_voltage_b    INTEGER,
+                        checksum_byte    INTEGER,
+                        end_packet       INTEGER
                     );
 
-                    CREATE INDEX IF NOT EXISTS idx_receive_data_created_at_ms
-                    ON receive_data(created_at_ms);
-
-                    CREATE INDEX IF NOT EXISTS idx_receive_data_source_channel_time
-                    ON receive_data(source_type, channel_no, created_at_ms);
+                    CREATE INDEX IF NOT EXISTS idx_receive_data_time
+                      ON receive_data(created_at_ms);
+                    CREATE INDEX IF NOT EXISTS idx_receive_data_src_ch_time
+                      ON receive_data(source_type, channel_no, created_at_ms);
+                    CREATE INDEX IF NOT EXISTS idx_receive_data_model
+                      ON receive_data(model_no);
 
                     CREATE TABLE IF NOT EXISTS error_events (
                         id               INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -80,9 +84,9 @@ namespace BliMonitorTest.util.MonitoringDb
                         channel_no       INTEGER NOT NULL,
                         created_at       TEXT    NOT NULL,
                         created_at_ms    INTEGER NOT NULL,
-                        snapshot_id      TEXT    NOT NULL,
+                        snapshot_id      TEXT,
                         file_name        TEXT,
-                        error_slot       INTEGER NOT NULL,
+                        error_slot       INTEGER,
                         error_text       TEXT,
                         run_mode         INTEGER,
                         heater_temp      REAL,
@@ -95,11 +99,7 @@ namespace BliMonitorTest.util.MonitoringDb
 
                     CREATE INDEX IF NOT EXISTS idx_error_events_time
                       ON error_events(created_at_ms);
-
-                    CREATE INDEX IF NOT EXISTS idx_error_events_group
-                      ON error_events(snapshot_id);
-
-                    CREATE INDEX IF NOT EXISTS idx_error_events_source_channel_time
+                    CREATE INDEX IF NOT EXISTS idx_error_events_src_ch_time
                       ON error_events(source_type, channel_no, created_at_ms);
                 ";
                 cmd.ExecuteNonQuery();
@@ -113,114 +113,79 @@ namespace BliMonitorTest.util.MonitoringDb
         /// - channelNo: 단일은 1 고정, 다채널은 실제 채널
         /// - sourceType: 1=Single, 2=Multi
         /// </summary>
-        public static void InsertDb( ref SqliteConnection db, string dbPath, ref bool dbReady, BliMonitorTest.data.ReadData data, int number, float off_sum, int air_sum, int channelNo, int sourceType )
+        public static void InsertDb(ref SqliteConnection db, string dbPath, ref bool dbReady, BliResponse57Packet resp, int channelNo, int sourceType)
         {
             EnsureDb(ref db, dbPath, ref dbReady);
+            if (resp == null) return;
 
-            if (data == null) return;
-
-            // created_at 표준화(문자열이 이상해도 최대한 맞춰줌)
             DateTime now = DateTime.Now;
-            DateTime createdAt = TryParseCreatedAt(data.date, out var parsed) ? parsed : now;
-            long createdAtMs = ToUnixMs(createdAt);
-            string createdAtIso = createdAt.ToString("yyyy -MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
-
-            // remain_time 처리: "MM:SS" -> seconds
-            string remainText = data.remain_time; // 원본 보관
-            int? remainSeconds = TryParseRemainSeconds(remainText, out var sec) ? sec : (int?)null;
-
-            // motor 처리: data.motor가 숫자/문자열 혼재 가능
-            string motorState = null;
-            int? motorCode = null;
-
-            if (data.motor != null)
-            {
-                // 1) 숫자 문자열이면 motor_code로 저장
-                if (int.TryParse(Convert.ToString(data.motor, CultureInfo.InvariantCulture), out int mcode))
-                {
-                    motorCode = mcode;
-                    motorState = null;
-                }
-                else
-                {
-                    // 2) 아니면 motor_state로 저장
-                    motorState = Convert.ToString(data.motor, CultureInfo.InvariantCulture);
-                    motorCode = null;
-                }
-            }
-
-            // 신버전 avg_heater_off_time: 기존 로직 유지(원하시면 나중에 의미 재정리)
-            object avgOff;
-            avgOff = (off_sum / (double)Math.Max(1, number));
+            long createdAtMs = new DateTimeOffset(now).ToUnixTimeMilliseconds();
+            string createdAtIso = now.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
 
             using (var cmd = db.CreateCommand())
             {
                 cmd.CommandText = @"
                     INSERT INTO receive_data (
-                        source_type, channel_no,
-                        created_at, created_at_ms,
-                        mode, remain_time_text, remain_seconds,
-                        heater_temp, heater_off_time,
-                        air_temp, fan_speed,
-                        avg_heater_off_time, hot_air_temp, hot_air_ontime,
-                        motor_state, motor_code, motor_current,
-                        number, off_sum, off_avg, air_sum, air_avg
+                        source_type, channel_no, created_at, created_at_ms,
+                        start_packet, cmd_byte, payload_size,
+                        model_no, sw_ver, heater_temp_b, cold_temp_b,
+                        low_water_sensor, floor_sensor, uv_led_byte,
+                        sol_3way1, sol_3way2, sol_3way3,
+                        air_vent_sol, cv_sol, button_flags,
+                        pump, cold_sol, normal_sol, hot_sol1,
+                        needle_pos, pel_voltage_b,
+                        checksum_byte, end_packet
                     ) VALUES (
-                        $source_type, $channel_no,
-                        $created_at, $created_at_ms,
-                        $mode, $remain_time_text, $remain_seconds,
-                        $heater_temp, $heater_off_time,
-                        $air_temp, $fan_speed,
-                        $avg_heater_off_time, $hot_air_temp, $hot_air_ontime,
-                        $motor_state, $motor_code, $motor_current,
-                        $number, $off_sum, $off_avg, $air_sum, $air_avg
+                        $source_type, $channel_no, $created_at, $created_at_ms,
+                        $start_packet, $cmd_byte, $payload_size,
+                        $model_no, $sw_ver, $heater_temp_b, $cold_temp_b,
+                        $low_water_sensor, $floor_sensor, $uv_led_byte,
+                        $sol_3way1, $sol_3way2, $sol_3way3,
+                        $air_vent_sol, $cv_sol, $button_flags,
+                        $pump, $cold_sol, $normal_sol, $hot_sol1,
+                        $needle_pos, $pel_voltage_b,
+                        $checksum_byte, $end_packet
                     );
-                    ";
+                ";
 
                 cmd.Parameters.AddWithValue("$source_type", sourceType);
                 cmd.Parameters.AddWithValue("$channel_no", channelNo);
-
                 cmd.Parameters.AddWithValue("$created_at", createdAtIso);
                 cmd.Parameters.AddWithValue("$created_at_ms", createdAtMs);
 
-                cmd.Parameters.AddWithValue("$mode", data.mode);
+                cmd.Parameters.AddWithValue("$start_packet", resp.StartPacket);
+                cmd.Parameters.AddWithValue("$cmd_byte", resp.CmdByte);
+                cmd.Parameters.AddWithValue("$payload_size", resp.PayloadSize);
+                cmd.Parameters.AddWithValue("$model_no", resp.ModelNo);
+                cmd.Parameters.AddWithValue("$sw_ver", resp.SwVer);
+                cmd.Parameters.AddWithValue("$heater_temp_b", resp.HeaterTempB);
+                cmd.Parameters.AddWithValue("$cold_temp_b", resp.ColdTempB);
+                cmd.Parameters.AddWithValue("$low_water_sensor", resp.LowWater);
+                cmd.Parameters.AddWithValue("$floor_sensor", resp.FloorSensor);
+                cmd.Parameters.AddWithValue("$uv_led_byte", resp.UvLedByte);
+                cmd.Parameters.AddWithValue("$sol_3way1", resp.Sol3Way1);
+                cmd.Parameters.AddWithValue("$sol_3way2", resp.Sol3Way2);
+                cmd.Parameters.AddWithValue("$sol_3way3", resp.Sol3Way3);
+                cmd.Parameters.AddWithValue("$air_vent_sol", resp.AirVentSol);
+                cmd.Parameters.AddWithValue("$cv_sol", resp.CvSol);
+                cmd.Parameters.AddWithValue("$button_flags", resp.ButtonFlags);
+                cmd.Parameters.AddWithValue("$pump", resp.Pump);
+                cmd.Parameters.AddWithValue("$cold_sol", resp.ColdSol);
+                cmd.Parameters.AddWithValue("$normal_sol", resp.NormalSol);
+                cmd.Parameters.AddWithValue("$hot_sol1", resp.HotSol1);
+                cmd.Parameters.AddWithValue("$needle_pos", resp.NeedlePos);
+                cmd.Parameters.AddWithValue("$pel_voltage_b", resp.PelVoltageB);
+                cmd.Parameters.AddWithValue("$checksum_byte", resp.Checksum);
+                cmd.Parameters.AddWithValue("$end_packet", resp.EndPacket);
 
-                cmd.Parameters.AddWithValue("$remain_time_text", (object)remainText ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("$remain_seconds", (object)remainSeconds ?? DBNull.Value);
-
-                cmd.Parameters.AddWithValue("$heater_temp", data.heater_temp);
-                cmd.Parameters.AddWithValue("$heater_off_time", data.heater_off_time);
-                cmd.Parameters.AddWithValue("$air_temp", data.air_temp);
-                cmd.Parameters.AddWithValue("$fan_speed", data.fan_speed);
-
-                cmd.Parameters.AddWithValue("$avg_heater_off_time", avgOff);
-                cmd.Parameters.AddWithValue("$hot_air_temp", data.hot_air_temp);
-                cmd.Parameters.AddWithValue("$hot_air_ontime", data.hot_air_ontime);
-
-                cmd.Parameters.AddWithValue("$motor_state", (object)motorState ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("$motor_code", (object)motorCode ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("$motor_current", data.motor_current);
-
-                cmd.Parameters.AddWithValue("$number", number);
-                cmd.Parameters.AddWithValue("$off_sum", off_sum);
-                cmd.Parameters.AddWithValue("$off_avg", (double)(off_sum / (double)Math.Max(1, number)));
-                cmd.Parameters.AddWithValue("$air_sum", air_sum);
-                cmd.Parameters.AddWithValue("$air_avg", (double)(air_sum / (double)Math.Max(1, number)));
-
-                try {
-                    cmd.ExecuteNonQuery();
-                } catch(Exception ex)
-                {
-                    log.Error("InsertDb 예외 : " + ex.ToString());
-                }
-                
+                try { cmd.ExecuteNonQuery(); }
+                catch (Exception ex) { log.Error("InsertDb 예외 : " + ex); }
             }
         }
 
         // ---------------------------
         // 조회(Query) 유틸 (조회화면에서 사용)
         // ---------------------------
-
         public sealed class ReceiveDataRow
         {
             public long Id { get; set; }
@@ -393,64 +358,12 @@ namespace BliMonitorTest.util.MonitoringDb
         }
 
         /// 하부는 내부 헬퍼 및 로그 유틸
-        // ---------------------------
-        // 내부 헬퍼
-        // ---------------------------
         private static long ToUnixMs(DateTime dt)
         {
-            // 로컬 시간을 기준으로 epoch 변환(조회도 같은 기준을 쓸 것)
             var dto = new DateTimeOffset(dt);
             return dto.ToUnixTimeMilliseconds();
         }
 
-        private static bool TryParseCreatedAt(string s, out DateTime dt)
-        {
-            dt = default;
-            if (string.IsNullOrWhiteSpace(s)) return false;
-
-            // 기존 코드들에서 섞여 들어올 수 있는 포맷들:
-            // 1) "yyyy-MM-dd_HH_mm_ss"
-            // 2) "yyyy-MM-dd HH:mm:ss"
-            // 3) "yyyy-MM-dd HH:mm:ss.fff"
-            // 4) 기타
-            string[] formats = new[]
-            {
-                "yyyy-MM-dd_HH_mm_ss",
-                "yyyy-MM-dd HH:mm:ss",
-                "yyyy-MM-dd HH:mm:ss.fff",
-                "yyyy-MM-dd_HH_mm_ss_fff"
-            };
-
-            return DateTime.TryParseExact( s, formats, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out dt );
-        }
-
-        private static bool TryParseRemainSeconds(string remainText, out int seconds)
-        {
-            seconds = 0;
-            if (string.IsNullOrWhiteSpace(remainText)) return false;
-
-            // "MM:SS" 또는 "HH:MM:SS" 대응
-            var parts = remainText.Trim().Split(':');
-            if (parts.Length == 2)
-            {
-                if (!int.TryParse(parts[0], out int mm)) return false;
-                if (!int.TryParse(parts[1], out int ss)) return false;
-                seconds = mm * 60 + ss;
-                return true;
-            }
-            if (parts.Length == 3)
-            {
-                if (!int.TryParse(parts[0], out int hh)) return false;
-                if (!int.TryParse(parts[1], out int mm)) return false;
-                if (!int.TryParse(parts[2], out int ss)) return false;
-                seconds = hh * 3600 + mm * 60 + ss;
-                return true;
-            }
-
-            return false;
-        }
-
-        // 아래 로그 유틸들은 기존 그대로 유지(복붙)
         public static string ToSqlLiteral(object value)
         {
             if (value == null || value == DBNull.Value) return "NULL";
