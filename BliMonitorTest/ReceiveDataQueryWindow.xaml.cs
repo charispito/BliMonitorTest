@@ -4,34 +4,34 @@ using BliMonitorTest.util.StoragePathUtil;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
-// using DocumentFormat.OpenXml.Wordprocessing; // 사용하지 않음: Text 충돌 방지
 using log4net;
 using Microsoft.Data.Sqlite;
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Forms.DataVisualization.Charting;
 using System.Windows.Input;
+using System.Linq; // 꼭 추가
 
 namespace BliMonitorTest
 {
     public partial class ReceiveDataQueryWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ReceiveDataQueryWindow));
-
         private int _page = 1;
         private int _pageSize = 50;
         private int _totalCount = 0;
-
-        // 초기화 및 상태
         private bool _isInitializing = true;
         private bool _isBusy = false;
 
-        // Excel 관련
         private const long ExcelLargeThreshold = 10000;
         private volatile bool _excelBuilding = false;
         private string _excelTempPath = null;
@@ -47,13 +47,11 @@ namespace BliMonitorTest
             dpFrom.SelectedDate = DateTime.Today.AddDays(-1);
             dpTo.SelectedDate = DateTime.Today;
 
-            // 시간 콤보 채우기
             FillHourCombo(cbFromHour);
             FillMinuteCombo5(cbFromMinute);
             FillHourCombo(cbToHour);
             FillMinuteCombo5(cbToMinute);
 
-            // 기본: 00:00 ~ 23:55
             cbFromHour.SelectedItem = "00";
             cbFromMinute.SelectedItem = "00";
             cbToHour.SelectedItem = "23";
@@ -82,10 +80,8 @@ namespace BliMonitorTest
         private async void Search_Click(object sender, RoutedEventArgs e)
         {
             if (!IsLoaded || _isBusy) return;
-
             if (!_excelBuilding && !string.IsNullOrEmpty(_excelTempPath))
                 ResetExcelState(deleteTempFile: true);
-
             _page = 1;
             await RefreshGridAsync();
         }
@@ -102,7 +98,6 @@ namespace BliMonitorTest
         private async void PageSize_Changed(object sender, SelectionChangedEventArgs e)
         {
             if (_isInitializing || !IsLoaded || _isBusy) return;
-
             if (cbPageSize.SelectedItem is ComboBoxItem item &&
                 int.TryParse(item.Content?.ToString(), out int size))
             {
@@ -123,7 +118,7 @@ namespace BliMonitorTest
             return Math.Max(1, (int)Math.Ceiling(_totalCount / (double)_pageSize));
         }
 
-        // ========= 헬퍼들(누락된 함수 보강) =========
+        // ===== 공통 헬퍼 =====
 
         private int? GetComboInt(ComboBox cb)
         {
@@ -133,19 +128,13 @@ namespace BliMonitorTest
                 if (!string.IsNullOrEmpty(tag) && int.TryParse(tag, out int v))
                     return v;
             }
-            return null; // 전체
+            return null;
         }
 
         private int? TryParseNullableInt(string s)
         {
             if (string.IsNullOrWhiteSpace(s)) return null;
             return int.TryParse(s.Trim(), out int v) ? v : (int?)null;
-        }
-
-        private double? TryParseNullableDouble(string s)
-        {
-            if (string.IsNullOrWhiteSpace(s)) return null;
-            return double.TryParse(s.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out double v) ? v : (double?)null;
         }
 
         private static void FillHourCombo(ComboBox cb)
@@ -174,7 +163,7 @@ namespace BliMonitorTest
             return true;
         }
 
-        // ========= 쿼리 생성 =========
+        // ===== WHERE 생성 =====
 
         private static string BuildWhere(
             long fromMs, long toMs,
@@ -182,7 +171,7 @@ namespace BliMonitorTest
             int sourceType, int? channelNo,
             int? heaterMin, int? heaterMax,
             int? coldMin, int? coldMax,
-            int? compVoltMin, int? compVoltMax,
+            int? compOn,
             int? waterLevelLow, int? floorSensor, int? uvLed,
             int? triSol1, int? triSol2, int? triSol3,
             int? airVentSol, int? cvSol,
@@ -193,7 +182,7 @@ namespace BliMonitorTest
             where += " AND (@sourceType = 0 OR source_type = @sourceType)";
             where += " AND (@channelNo = 0 OR channel_no = @channelNo)";
 
-            if (modelCode.HasValue) where += " AND model_code = @modelCode";
+            if (modelCode.HasValue) where += " AND model_no = @modelCode";
             if (swVer.HasValue) where += " AND sw_ver = @swVer";
 
             if (heaterMin.HasValue) where += " AND heater_temp >= @heaterMin";
@@ -202,26 +191,25 @@ namespace BliMonitorTest
             if (coldMin.HasValue) where += " AND cold_temp >= @coldMin";
             if (coldMax.HasValue) where += " AND cold_temp <= @coldMax";
 
-            if (compVoltMin.HasValue) where += " AND comp_volt >= @compVoltMin";
-            if (compVoltMax.HasValue) where += " AND comp_volt <= @compVoltMax";
+            if (compOn.HasValue) where += " AND Compressor = @compOn";
 
-            if (waterLevelLow.HasValue) where += " AND water_level_low = @waterLevelLow";
+            if (waterLevelLow.HasValue) where += " AND low_water_sensor = @waterLevelLow";
             if (floorSensor.HasValue) where += " AND floor_sensor = @floorSensor";
             if (uvLed.HasValue) where += " AND uv_led = @uvLed";
 
-            if (triSol1.HasValue) where += " AND tri_sol1 = @triSol1";
-            if (triSol2.HasValue) where += " AND tri_sol2 = @triSol2";
-            if (triSol3.HasValue) where += " AND tri_sol3 = @triSol3";
+            if (triSol1.HasValue) where += " AND sol_3way1 = @triSol1";
+            if (triSol2.HasValue) where += " AND sol_3way2 = @triSol2";
+            if (triSol3.HasValue) where += " AND sol_3way3 = @triSol3";
 
             if (airVentSol.HasValue) where += " AND air_vent_sol = @airVentSol";
             if (cvSol.HasValue) where += " AND cv_sol = @cvSol";
 
-            if (pumpOn.HasValue) where += " AND pump_on = @pumpOn";
+            if (pumpOn.HasValue) where += " AND pump = @pumpOn";
             if (coldSol.HasValue) where += " AND cold_sol = @coldSol";
             if (normalSol.HasValue) where += " AND normal_sol = @normalSol";
             if (hotSol1.HasValue) where += " AND hot_sol1 = @hotSol1";
 
-            if (needleState.HasValue) where += " AND needle_state = @needleState";
+            if (needleState.HasValue) where += " AND needle_pos = @needleState";
 
             return where;
         }
@@ -232,7 +220,7 @@ namespace BliMonitorTest
             int sourceType, int? channelNo,
             int? heaterMin, int? heaterMax,
             int? coldMin, int? coldMax,
-            int? compVoltMin, int? compVoltMax,
+            int? compOn,
             int? waterLevelLow, int? floorSensor, int? uvLed,
             int? triSol1, int? triSol2, int? triSol3,
             int? airVentSol, int? cvSol,
@@ -253,8 +241,7 @@ namespace BliMonitorTest
             if (coldMin.HasValue) cmd.Parameters.AddWithValue("@coldMin", coldMin.Value);
             if (coldMax.HasValue) cmd.Parameters.AddWithValue("@coldMax", coldMax.Value);
 
-            if (compVoltMin.HasValue) cmd.Parameters.AddWithValue("@compVoltMin", compVoltMin.Value);
-            if (compVoltMax.HasValue) cmd.Parameters.AddWithValue("@compVoltMax", compVoltMax.Value);
+            if (compOn.HasValue) cmd.Parameters.AddWithValue("@compOn", compOn.Value);
 
             if (waterLevelLow.HasValue) cmd.Parameters.AddWithValue("@waterLevelLow", waterLevelLow.Value);
             if (floorSensor.HasValue) cmd.Parameters.AddWithValue("@floorSensor", floorSensor.Value);
@@ -275,7 +262,7 @@ namespace BliMonitorTest
             if (needleState.HasValue) cmd.Parameters.AddWithValue("@needleState", needleState.Value);
         }
 
-        // ========= 조회 =========
+        // ===== 결과 조회 =====
         private async Task RefreshGridAsync()
         {
             if (!IsLoaded || _isBusy || grid == null || txtPageInfo == null) return;
@@ -311,7 +298,6 @@ namespace BliMonitorTest
             long fromMs = new DateTimeOffset(fromDateTime).ToUnixTimeMilliseconds();
             long toMs = new DateTimeOffset(toExclusive).ToUnixTimeMilliseconds();
 
-            // 입력값 수집
             int? modelCode = GetComboInt(cbModelCode);
             int? swVer = GetComboInt(cbSwVer);
             int sourceType = 0;
@@ -323,10 +309,9 @@ namespace BliMonitorTest
             int? heaterMax = TryParseNullableInt(tbHeaterMax.Text);
             int? coldMin = TryParseNullableInt(tbColdMin.Text);
             int? coldMax = TryParseNullableInt(tbColdMax.Text);
-            int? compVoltMin = TryParseNullableInt(tbCompVoltMin.Text);
-            int? compVoltMax = TryParseNullableInt(tbCompVoltMax.Text);
+            int? compOn = GetComboInt(cbCompOn);
 
-            int? waterLevelLow = GetComboInt(cbWaterLevelLow);
+            int? lowWaterSensor = GetComboInt(cbLowWaterSensor);
             int? floorSensor = GetComboInt(cbFloorSensor);
             int? uvLed = GetComboInt(cbUvLed);
             int? triSol1 = GetComboInt(cbTriSol1);
@@ -366,15 +351,14 @@ namespace BliMonitorTest
                             modelCode, swVer, sourceType, channelNo,
                             heaterMin, heaterMax,
                             coldMin, coldMax,
-                            compVoltMin, compVoltMax,
-                            waterLevelLow, floorSensor, uvLed,
+                            compOn,
+                            lowWaterSensor, floorSensor, uvLed,
                             triSol1, triSol2, triSol3,
                             airVentSol, cvSol,
                             pumpOn, coldSol, normalSol, hotSol1,
                             needleState
                         );
 
-                        // COUNT
                         int totalCount;
                         using (var cmdCount = con.CreateCommand())
                         {
@@ -384,8 +368,8 @@ namespace BliMonitorTest
                                 modelCode, swVer, sourceType, channelNo,
                                 heaterMin, heaterMax,
                                 coldMin, coldMax,
-                                compVoltMin, compVoltMax,
-                                waterLevelLow, floorSensor, uvLed,
+                                compOn,
+                                lowWaterSensor, floorSensor, uvLed,
                                 triSol1, triSol2, triSol3,
                                 airVentSol, cvSol,
                                 pumpOn, coldSol, normalSol, hotSol1,
@@ -404,18 +388,18 @@ namespace BliMonitorTest
                             cmd.CommandText =
                                 "SELECT " +
                                 "  id, source_type, channel_no, created_at, created_at_ms, " +
-                                "  model_no AS model_code, sw_ver, " +
-                                "  heater_temp_b AS heater_temp, " +         
-                                "  cold_temp_b   AS cold_temp, " +
-                                "  pel_voltage_b AS comp_volt, " +
-                                "  low_water_sensor AS water_level_low, " +
+                                "  model_no, sw_ver, " +
+                                "  heater_temp, " +
+                                "  cold_temp, " +
+                                "  Compressor, " +
+                                "  low_water_sensor, " +
                                 "  floor_sensor, " +
-                                "  uv_led_byte AS uv_led, " +
-                                "  sol_3way1 AS tri_sol1, sol_3way2 AS tri_sol2, sol_3way3 AS tri_sol3, " +
+                                "  uv_led, " +
+                                "  sol_3way1, sol_3way2, sol_3way3, " +
                                 "  air_vent_sol, cv_sol, " +
-                                "  pump AS pump_on, cold_sol, normal_sol, hot_sol1, " +
-                                "  needle_pos AS needle_state, " +
-                                "  cmd_byte, payload_size, button_flags, checksum_byte, end_packet " +
+                                "  pump, cold_sol, normal_sol, hot_sol1, " +
+                                "  needle_pos, " +
+                                "  command, payload_size, button_flags, checksum, end_packet " +
                                 "FROM receive_data " +
                                 where +
                                 " ORDER BY created_at_ms DESC " +
@@ -425,8 +409,8 @@ namespace BliMonitorTest
                                 modelCode, swVer, sourceType, channelNo,
                                 heaterMin, heaterMax,
                                 coldMin, coldMax,
-                                compVoltMin, compVoltMax,
-                                waterLevelLow, floorSensor, uvLed,
+                                compOn,
+                                lowWaterSensor, floorSensor, uvLed,
                                 triSol1, triSol2, triSol3,
                                 airVentSol, cvSol,
                                 pumpOn, coldSol, normalSol, hotSol1,
@@ -468,13 +452,13 @@ namespace BliMonitorTest
             }
         }
 
-        // ========= 엑셀(대용량 백그라운드) =========
+        // ===== 엑셀(대용량) =====
         private void StartLargeExcelBuildInBackground(
             string dbPath, long fromMs, long toMs,
             int? modelCode, int? swVer, int sourceType, int? channelNo,
             int? heaterMin, int? heaterMax,
             int? coldMin, int? coldMax,
-            int? compVoltMin, int? compVoltMax,
+            int? compOn,
             int? waterLevelLow, int? floorSensor, int? uvLed,
             int? triSol1, int? triSol2, int? triSol3,
             int? airVentSol, int? cvSol,
@@ -520,7 +504,7 @@ namespace BliMonitorTest
                         modelCode, swVer, sourceType, channelNo,
                         heaterMin, heaterMax,
                         coldMin, coldMax,
-                        compVoltMin, compVoltMax,
+                        compOn,
                         waterLevelLow, floorSensor, uvLed,
                         triSol1, triSol2, triSol3,
                         airVentSol, cvSol,
@@ -594,14 +578,14 @@ namespace BliMonitorTest
             });
         }
 
-        // ========= 엑셀(스트리밍) =========
+        // ===== 엑셀(스트리밍) =====
         private static void ExportAllToExcelOpenXml(
             string dbPath, string xlsxPath,
             long fromMs, long toMs,
             int? modelCode, int? swVer, int sourceType, int? channelNo,
             int? heaterMin, int? heaterMax,
             int? coldMin, int? coldMax,
-            int? compVoltMin, int? compVoltMax,
+            int? compOn,
             int? waterLevelLow, int? floorSensor, int? uvLed,
             int? triSol1, int? triSol2, int? triSol3,
             int? airVentSol, int? cvSol,
@@ -610,9 +594,7 @@ namespace BliMonitorTest
             IProgress<(int percent, long done, long total)> progress,
             CancellationToken token)
         {
-            string cs = $"Data Source={dbPath};";
-
-            using (var con = new SqliteConnection(cs))
+            using (var con = new SqliteConnection($"Data Source={dbPath};"))
             {
                 con.Open();
 
@@ -621,7 +603,7 @@ namespace BliMonitorTest
                     modelCode, swVer, sourceType, channelNo,
                     heaterMin, heaterMax,
                     coldMin, coldMax,
-                    compVoltMin, compVoltMax,
+                    compOn,
                     waterLevelLow, floorSensor, uvLed,
                     triSol1, triSol2, triSol3,
                     airVentSol, cvSol,
@@ -629,7 +611,6 @@ namespace BliMonitorTest
                     needleState
                 );
 
-                // total count
                 long total;
                 using (var cmdCount = con.CreateCommand())
                 {
@@ -639,7 +620,7 @@ namespace BliMonitorTest
                         modelCode, swVer, sourceType, channelNo,
                         heaterMin, heaterMax,
                         coldMin, coldMax,
-                        compVoltMin, compVoltMax,
+                        compOn,
                         waterLevelLow, floorSensor, uvLed,
                         triSol1, triSol2, triSol3,
                         airVentSol, cvSol,
@@ -656,18 +637,18 @@ namespace BliMonitorTest
                     cmd.CommandText =
                         "SELECT " +
                         "  id, source_type, channel_no, created_at, created_at_ms, " +
-                        "  model_no AS model_code, sw_ver, " +
-                        "  heater_temp_b AS heater_temp, " +
-                        "  cold_temp_b   AS cold_temp, " +
-                        "  pel_voltage_b AS comp_volt, " +
-                        "  low_water_sensor AS water_level_low, " +
+                        "  model_no, sw_ver, " +
+                        "  heater_temp, " +
+                        "  cold_temp, " +
+                        "  Compressor, " +
+                        "  low_water_sensor, " +
                         "  floor_sensor, " +
-                        "  uv_led_byte AS uv_led, " +
-                        "  sol_3way1 AS tri_sol1, sol_3way2 AS tri_sol2, sol_3way3 AS tri_sol3, " +
+                        "  uv_led, " +
+                        "  sol_3way1, sol_3way2, sol_3way3, " +
                         "  air_vent_sol, cv_sol, " +
-                        "  pump AS pump_on, cold_sol, normal_sol, hot_sol1, " +
-                        "  needle_pos AS needle_state, " +
-                        "  cmd_byte, payload_size, button_flags, checksum_byte, end_packet " +
+                        "  pump, cold_sol, normal_sol, hot_sol1, " +
+                        "  needle_pos, " +
+                        "  command, payload_size, button_flags, checksum, end_packet " +
                         "FROM receive_data " +
                         where +
                         " ORDER BY created_at_ms DESC;";
@@ -676,7 +657,7 @@ namespace BliMonitorTest
                         modelCode, swVer, sourceType, channelNo,
                         heaterMin, heaterMax,
                         coldMin, coldMax,
-                        compVoltMin, compVoltMax,
+                        compOn,
                         waterLevelLow, floorSensor, uvLed,
                         triSol1, triSol2, triSol3,
                         airVentSol, cvSol,
@@ -727,7 +708,6 @@ namespace BliMonitorTest
 
                             currentRowInSheet = 0;
 
-                            // 헤더
                             WriteHeaderRow(writer, reader);
                             currentRowInSheet++;
                         };
@@ -786,7 +766,6 @@ namespace BliMonitorTest
 
         private static void WriteTextCell(OpenXmlWriter writer, string text)
         {
-            // Spreadsheet.Text을 명시적으로 사용해 모호성 제거
             writer.WriteElement(new Cell
             {
                 DataType = CellValues.InlineString,
@@ -820,10 +799,9 @@ namespace BliMonitorTest
 
         private async void ExcelDownload_Click(object sender, RoutedEventArgs e)
         {
-            if (_isBusy) return;           // 조회 Busy와 충돌 방지
-            if (_excelBuilding) return;    // 생성 중 중복 클릭 방지
+            if (_isBusy) return;
+            if (_excelBuilding) return;
 
-            // 이미 temp가 완성돼 있다면: 저장 단계
             if (!string.IsNullOrEmpty(_excelTempPath) && File.Exists(_excelTempPath))
             {
                 var sfd2 = new Microsoft.Win32.SaveFileDialog
@@ -849,7 +827,6 @@ namespace BliMonitorTest
                 return;
             }
 
-            // 기간 파싱(5분 확장)
             DateTime baseFrom = (dpFrom.SelectedDate ?? DateTime.Today).Date;
             DateTime baseTo = (dpTo.SelectedDate ?? DateTime.Today).Date;
 
@@ -881,7 +858,6 @@ namespace BliMonitorTest
             long fromMs = new DateTimeOffset(fromDateTime).ToUnixTimeMilliseconds();
             long toMs = new DateTimeOffset(toExclusive).ToUnixTimeMilliseconds();
 
-            // TO-BE 값 수집 (RefreshGridAsync와 동일)
             int? modelCode = GetComboInt(cbModelCode);
             int? swVer = GetComboInt(cbSwVer);
             int sourceType = 0;
@@ -893,10 +869,9 @@ namespace BliMonitorTest
             int? heaterMax = TryParseNullableInt(tbHeaterMax.Text);
             int? coldMin = TryParseNullableInt(tbColdMin.Text);
             int? coldMax = TryParseNullableInt(tbColdMax.Text);
-            int? compVoltMin = TryParseNullableInt(tbCompVoltMin.Text);
-            int? compVoltMax = TryParseNullableInt(tbCompVoltMax.Text);
+            int? compOn = GetComboInt(cbCompOn);
 
-            int? waterLevelLow = GetComboInt(cbWaterLevelLow);
+            int? lowWaterSensor = GetComboInt(cbLowWaterSensor);
             int? floorSensor = GetComboInt(cbFloorSensor);
             int? uvLed = GetComboInt(cbUvLed);
             int? triSol1 = GetComboInt(cbTriSol1);
@@ -917,11 +892,9 @@ namespace BliMonitorTest
                 return;
             }
 
-            // 건수 측정
             long totalCount = await Task.Run(() =>
             {
-                string cs = $"Data Source={dbPath};";
-                using (var con = new SqliteConnection(cs))
+                using (var con = new SqliteConnection($"Data Source={dbPath};"))
                 {
                     con.Open();
                     string where = BuildWhere(
@@ -929,8 +902,8 @@ namespace BliMonitorTest
                         modelCode, swVer, sourceType, channelNo,
                         heaterMin, heaterMax,
                         coldMin, coldMax,
-                        compVoltMin, compVoltMax,
-                        waterLevelLow, floorSensor, uvLed,
+                        compOn,
+                        lowWaterSensor, floorSensor, uvLed,
                         triSol1, triSol2, triSol3,
                         airVentSol, cvSol,
                         pumpOn, coldSol, normalSol, hotSol1,
@@ -945,8 +918,8 @@ namespace BliMonitorTest
                             modelCode, swVer, sourceType, channelNo,
                             heaterMin, heaterMax,
                             coldMin, coldMax,
-                            compVoltMin, compVoltMax,
-                            waterLevelLow, floorSensor, uvLed,
+                            compOn,
+                            lowWaterSensor, floorSensor, uvLed,
                             triSol1, triSol2, triSol3,
                             airVentSol, cvSol,
                             pumpOn, coldSol, normalSol, hotSol1,
@@ -963,7 +936,6 @@ namespace BliMonitorTest
                 return;
             }
 
-            // 대용량 판단
             if (totalCount >= ExcelLargeThreshold)
             {
                 var res = MessageBox.Show(
@@ -976,14 +948,13 @@ namespace BliMonitorTest
 
                 if (res != MessageBoxResult.Yes) return;
 
-                // 백그라운드 생성 시작
                 StartLargeExcelBuildInBackground(
                     dbPath, fromMs, toMs,
                     modelCode, swVer, sourceType, channelNo,
                     heaterMin, heaterMax,
                     coldMin, coldMax,
-                    compVoltMin, compVoltMax,
-                    waterLevelLow, floorSensor, uvLed,
+                    compOn,
+                    lowWaterSensor, floorSensor, uvLed,
                     triSol1, triSol2, triSol3,
                     airVentSol, cvSol,
                     pumpOn, coldSol, normalSol, hotSol1,
@@ -994,7 +965,6 @@ namespace BliMonitorTest
                 return;
             }
 
-            // 저용량: 바로 저장
             var sfd = new Microsoft.Win32.SaveFileDialog
             {
                 Filter = "Excel 파일 (*.xlsx)|*.xlsx",
@@ -1014,8 +984,8 @@ namespace BliMonitorTest
                         modelCode, swVer, sourceType, channelNo,
                         heaterMin, heaterMax,
                         coldMin, coldMax,
-                        compVoltMin, compVoltMax,
-                        waterLevelLow, floorSensor, uvLed,
+                        compOn,
+                        lowWaterSensor, floorSensor, uvLed,
                         triSol1, triSol2, triSol3,
                         airVentSol, cvSol,
                         pumpOn, coldSol, normalSol, hotSol1,
@@ -1033,6 +1003,58 @@ namespace BliMonitorTest
             finally
             {
                 SetBusy(false);
+            }
+        }
+
+        private void Grid_AutoGeneratedColumns(object sender, EventArgs e)
+        {
+            var snapshot = new List<DataGridColumn>(grid.Columns);
+            var replacements = new List<(int index, DataGridColumn newCol)>();
+
+            foreach (var col in snapshot)
+            {
+                col.CanUserSort = true;
+
+                switch (col.Header?.ToString())
+                {
+                    case "Compressor": col.Header = "콤프레셔(ON/OFF)"; break;
+                    case "uv_led": col.Header = "UV LED"; break;
+                    case "command": col.Header = "Command"; break;
+                    case "checksum": col.Header = "Checksum"; break;
+                }
+
+                if (col is DataGridTextColumn textCol)
+                {
+                    int idx = grid.Columns.IndexOf(textCol);
+
+                    Binding b = textCol.Binding as Binding;
+
+                    var template = new DataTemplate();
+                    var f = new FrameworkElementFactory(typeof(TextBlock));
+                    f.SetValue(TextBlock.StyleProperty, FindResource("CenterCellTextBlock"));
+                    if (b != null)
+                    {
+                        f.SetBinding(TextBlock.TextProperty, b);
+                        f.SetBinding(TextBlock.ToolTipProperty, b);
+                    }
+                    template.VisualTree = f;
+
+                    var tplCol = new DataGridTemplateColumn
+                    {
+                        Header = textCol.Header,
+                        SortMemberPath = textCol.SortMemberPath,
+                        CellTemplate = template
+                    };
+
+                    replacements.Add((idx, tplCol));
+                }
+            }
+
+            // 역순 교체: 분해 대신 Item1/Item2 사용
+            foreach (var r in replacements.OrderByDescending(r => r.index))
+            {
+                grid.Columns.RemoveAt(r.index);
+                grid.Columns.Insert(r.index, r.newCol);
             }
         }
 

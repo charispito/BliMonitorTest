@@ -46,15 +46,15 @@ namespace BliMonitorTest.util.MonitoringDb
                         created_at_ms    INTEGER NOT NULL,
 
                         start_packet     INTEGER,
-                        cmd_byte         INTEGER,
+                        command          INTEGER,         -- 변경: cmd_byte → command
                         payload_size     INTEGER,
                         model_no         INTEGER,
                         sw_ver           INTEGER,
-                        heater_temp_b    INTEGER,
-                        cold_temp_b      INTEGER,
+                        heater_temp      INTEGER,         -- 변경 주석 유지
+                        cold_temp        INTEGER,         -- 변경 주석 유지
                         low_water_sensor INTEGER,
                         floor_sensor     INTEGER,
-                        uv_led_byte      INTEGER,
+                        uv_led           INTEGER,         -- 변경: uv_led_byte → uv_led (0/1)
                         sol_3way1        INTEGER,
                         sol_3way2        INTEGER,
                         sol_3way3        INTEGER,
@@ -66,8 +66,8 @@ namespace BliMonitorTest.util.MonitoringDb
                         normal_sol       INTEGER,
                         hot_sol1         INTEGER,
                         needle_pos       INTEGER,
-                        pel_voltage_b    INTEGER,
-                        checksum_byte    INTEGER,
+                        Compressor       INTEGER,         -- 변경: pel_voltage → Compressor (0/1)
+                        checksum         INTEGER,         -- 변경: checksum_byte → checksum
                         end_packet       INTEGER
                     );
 
@@ -127,24 +127,24 @@ namespace BliMonitorTest.util.MonitoringDb
                 cmd.CommandText = @"
                     INSERT INTO receive_data (
                         source_type, channel_no, created_at, created_at_ms,
-                        start_packet, cmd_byte, payload_size,
-                        model_no, sw_ver, heater_temp_b, cold_temp_b,
-                        low_water_sensor, floor_sensor, uv_led_byte,
+                        start_packet, command, payload_size,
+                        model_no, sw_ver, heater_temp, cold_temp,
+                        low_water_sensor, floor_sensor, uv_led,
                         sol_3way1, sol_3way2, sol_3way3,
                         air_vent_sol, cv_sol, button_flags,
                         pump, cold_sol, normal_sol, hot_sol1,
-                        needle_pos, pel_voltage_b,
-                        checksum_byte, end_packet
+                        needle_pos, Compressor,
+                        checksum, end_packet
                     ) VALUES (
                         $source_type, $channel_no, $created_at, $created_at_ms,
-                        $start_packet, $cmd_byte, $payload_size,
-                        $model_no, $sw_ver, $heater_temp_b, $cold_temp_b,
-                        $low_water_sensor, $floor_sensor, $uv_led_byte,
+                        $start_packet, $command, $payload_size,
+                        $model_no, $sw_ver, $heater_temp, $cold_temp,
+                        $low_water_sensor, $floor_sensor, $uv_led,
                         $sol_3way1, $sol_3way2, $sol_3way3,
                         $air_vent_sol, $cv_sol, $button_flags,
                         $pump, $cold_sol, $normal_sol, $hot_sol1,
-                        $needle_pos, $pel_voltage_b,
-                        $checksum_byte, $end_packet
+                        $needle_pos, $Compressor,
+                        $checksum, $end_packet
                     );
                 ";
 
@@ -154,15 +154,17 @@ namespace BliMonitorTest.util.MonitoringDb
                 cmd.Parameters.AddWithValue("$created_at_ms", createdAtMs);
 
                 cmd.Parameters.AddWithValue("$start_packet", resp.StartPacket);
-                cmd.Parameters.AddWithValue("$cmd_byte", resp.CmdByte);
+                cmd.Parameters.AddWithValue("$command", resp.CmdByte);        // 입력은 기존 속성 사용
                 cmd.Parameters.AddWithValue("$payload_size", resp.PayloadSize);
                 cmd.Parameters.AddWithValue("$model_no", resp.ModelNo);
                 cmd.Parameters.AddWithValue("$sw_ver", resp.SwVer);
-                cmd.Parameters.AddWithValue("$heater_temp_b", resp.HeaterTempB);
-                cmd.Parameters.AddWithValue("$cold_temp_b", resp.ColdTempB);
+
+                // 값 매핑 (바이트 그대로 저장)
+                cmd.Parameters.AddWithValue("$heater_temp", resp.HeaterTempB);
+                cmd.Parameters.AddWithValue("$cold_temp", resp.ColdTempB);
                 cmd.Parameters.AddWithValue("$low_water_sensor", resp.LowWater);
                 cmd.Parameters.AddWithValue("$floor_sensor", resp.FloorSensor);
-                cmd.Parameters.AddWithValue("$uv_led_byte", resp.UvLedByte);
+                cmd.Parameters.AddWithValue("$uv_led", resp.UvLedByte);       // 이름만 변경
                 cmd.Parameters.AddWithValue("$sol_3way1", resp.Sol3Way1);
                 cmd.Parameters.AddWithValue("$sol_3way2", resp.Sol3Way2);
                 cmd.Parameters.AddWithValue("$sol_3way3", resp.Sol3Way3);
@@ -174,141 +176,32 @@ namespace BliMonitorTest.util.MonitoringDb
                 cmd.Parameters.AddWithValue("$normal_sol", resp.NormalSol);
                 cmd.Parameters.AddWithValue("$hot_sol1", resp.HotSol1);
                 cmd.Parameters.AddWithValue("$needle_pos", resp.NeedlePos);
-                cmd.Parameters.AddWithValue("$pel_voltage_b", resp.PelVoltageB);
-                cmd.Parameters.AddWithValue("$checksum_byte", resp.Checksum);
+
+                // Compressor: ON/OFF(0/1)로 저장
+                cmd.Parameters.AddWithValue("$Compressor", resp.PelVoltageB); // 기존 바이트를 그대로 사용(0/1로 오는 전제)
+
+                cmd.Parameters.AddWithValue("$checksum", resp.Checksum);
                 cmd.Parameters.AddWithValue("$end_packet", resp.EndPacket);
 
                 try { cmd.ExecuteNonQuery(); }
-                catch (Exception ex) { log.Error("InsertDb 예외 : " + ex); }
-            }
-        }
-
-        // ---------------------------
-        // 조회(Query) 유틸 (조회화면에서 사용)
-        // ---------------------------
-        public sealed class ReceiveDataRow
-        {
-            public long Id { get; set; }
-            public int SourceType { get; set; }
-            public int ChannelNo { get; set; }
-
-            public string CreatedAt { get; set; }
-            public long CreatedAtMs { get; set; }
-
-            public int Mode { get; set; }
-            public string RemainTimeText { get; set; }
-            public int? RemainSeconds { get; set; }
-
-            public double HeaterTemp { get; set; }
-            public double HeaterOffTime { get; set; }
-            public double AirTemp { get; set; }
-            public int FanSpeed { get; set; }
-
-            public double? AvgHeaterOffTime { get; set; }
-            public double HotAirTemp { get; set; }
-            public double HotAirOntime { get; set; }
-
-            public string MotorState { get; set; }
-            public int? MotorCode { get; set; }
-            public double MotorCurrent { get; set; }
-
-            public int Number { get; set; }
-        }
-
-        /// <summary>
-        /// 조회 (기간 + 단/다채널 + 채널 필터)
-        /// - sourceType: 0=전체, 1=단일, 2=다채널
-        /// - channelNo: 0=전체
-        /// </summary>
-        public static System.Collections.Generic.List<ReceiveDataRow> QueryReceiveData( ref SqliteConnection db, string dbPath, ref bool dbReady, DateTime from, DateTime to, int sourceType, int channelNo, int limit
-        )
-        {
-            EnsureDb(ref db, dbPath, ref dbReady);
-
-            long fromMs = ToUnixMs(from);
-            long toMs = ToUnixMs(to);
-
-            if (limit <= 0) limit = 2000;
-
-            var rows = new System.Collections.Generic.List<ReceiveDataRow>();
-
-            using (var cmd = db.CreateCommand())
-            {
-                cmd.CommandText = @"
-                    SELECT
-                        id,
-                        source_type, channel_no,
-                        created_at, created_at_ms,
-                        mode, remain_time_text, remain_seconds,
-                        heater_temp, heater_off_time,
-                        air_temp, fan_speed,
-                        avg_heater_off_time, hot_air_temp, hot_air_ontime,
-                        motor_state, motor_code, motor_current,
-                        number
-                    FROM receive_data
-                    WHERE created_at_ms BETWEEN $fromMs AND $toMs
-                      AND ($sourceType = 0 OR source_type = $sourceType)
-                      AND ($channelNo  = 0 OR channel_no  = $channelNo)
-                    ORDER BY created_at_ms DESC
-                    LIMIT $limit;
-                    ";
-                cmd.Parameters.AddWithValue("$fromMs", fromMs);
-                cmd.Parameters.AddWithValue("$toMs", toMs);
-                cmd.Parameters.AddWithValue("$sourceType", sourceType);
-                cmd.Parameters.AddWithValue("$channelNo", channelNo);
-                cmd.Parameters.AddWithValue("$limit", limit);
-
-                using (var r = cmd.ExecuteReader())
+                catch (Exception ex)
                 {
-                    while (r.Read())
-                    {
-                        var row = new ReceiveDataRow
-                        {
-                            Id = r.GetInt64(0),
-                            SourceType = r.GetInt32(1),
-                            ChannelNo = r.GetInt32(2),
-                            CreatedAt = r.IsDBNull(3) ? null : r.GetString(3),
-                            CreatedAtMs = r.GetInt64(4),
-
-                            Mode = r.IsDBNull(5) ? 0 : r.GetInt32(5),
-                            RemainTimeText = r.IsDBNull(6) ? null : r.GetString(6),
-                            RemainSeconds = r.IsDBNull(7) ? (int?)null : r.GetInt32(7),
-
-                            HeaterTemp = r.IsDBNull(8) ? 0 : r.GetDouble(8),
-                            HeaterOffTime = r.IsDBNull(9) ? 0 : r.GetDouble(9),
-
-                            AirTemp = r.IsDBNull(10) ? 0 : r.GetDouble(10),
-                            FanSpeed = r.IsDBNull(11) ? 0 : r.GetInt32(11),
-
-                            AvgHeaterOffTime = r.IsDBNull(12) ? (double?)null : r.GetDouble(12),
-                            HotAirTemp = r.IsDBNull(13) ? 0 : r.GetDouble(13),
-                            HotAirOntime = r.IsDBNull(14) ? 0 : r.GetDouble(14),
-
-                            MotorState = r.IsDBNull(15) ? null : r.GetString(15),
-                            MotorCode = r.IsDBNull(16) ? (int?)null : r.GetInt32(16),
-                            MotorCurrent = r.IsDBNull(17) ? 0 : r.GetDouble(17),
-
-                            Number = r.IsDBNull(18) ? 0 : r.GetInt32(18),
-                        };
-
-                        rows.Add(row);
-                    }
+                    log.Error("InsertDb 예외 : " + ex);
+                    log.Error(FormatSqlLog(cmd, "INSERT receive_data"));
                 }
             }
-
-            return rows;
         }
 
-        public static void InsertErrorEvent( ref SqliteConnection db, string dbPath, ref bool dbReady, int sourceType, int channelNo, DateTime createdAt, string snapshotId, string fileName,
-            int errorSlot, string errorText, int? runMode, double? heaterTemp, double? heaterOffTime, double? hotAirTemp, double? hotAirOnTime, int? runCount, double? exhaustTemp
-        )
+        public static void InsertErrorEvent(
+            ref SqliteConnection db, string dbPath, ref bool dbReady,
+            int sourceType, int channelNo, DateTime createdAt, string snapshotId, string fileName,
+            int errorSlot, string errorText, int? runMode, double? heaterTemp, double? heaterOffTime, double? hotAirTemp, double? hotAirOnTime, int? runCount, double? exhaustTemp)
         {
             EnsureDb(ref db, dbPath, ref dbReady);
 
             long createdAtMs = new DateTimeOffset(createdAt).ToUnixTimeMilliseconds();
             string createdAtIso = createdAt.ToString("yyyy-MM-dd HH:mm:ss.fff", System.Globalization.CultureInfo.InvariantCulture);
 
-            // NULL → 0 정규화 (숫자 필드)
             int runModeV = runMode ?? 0;
             double heaterTempV = heaterTemp ?? 0;
             double heaterOffV = heaterOffTime ?? 0;
@@ -342,9 +235,8 @@ namespace BliMonitorTest.util.MonitoringDb
                 cmd.Parameters.AddWithValue("$snapshot_id", snapshotId ?? "");
                 cmd.Parameters.AddWithValue("$file_name", (object)fileName ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("$error_slot", errorSlot);
-                cmd.Parameters.AddWithValue("$error_text", (object)(errorText ?? "")); // 빈 문자열로 통일
+                cmd.Parameters.AddWithValue("$error_text", (object)(errorText ?? ""));
 
-                // 숫자들은 절대 NULL 안 보냄
                 cmd.Parameters.AddWithValue("$run_mode", runModeV);
                 cmd.Parameters.AddWithValue("$heater_temp", heaterTempV);
                 cmd.Parameters.AddWithValue("$heater_off_time", heaterOffV);
@@ -357,7 +249,8 @@ namespace BliMonitorTest.util.MonitoringDb
             }
         }
 
-        /// 하부는 내부 헬퍼 및 로그 유틸
+        // ===== 내부 헬퍼 및 로그 유틸 =====
+
         private static long ToUnixMs(DateTime dt)
         {
             var dto = new DateTimeOffset(dt);
@@ -409,27 +302,24 @@ namespace BliMonitorTest.util.MonitoringDb
             return "'" + Convert.ToString(value, CultureInfo.InvariantCulture).Replace("'", "''") + "'";
         }
 
-        public static string RenderFinalSqlForLog(Microsoft.Data.Sqlite.SqliteCommand cmd)
+        public static string RenderFinalSqlForLog(SqliteCommand cmd)
         {
-            var parameters = cmd.Parameters.Cast<Microsoft.Data.Sqlite.SqliteParameter>().OrderByDescending(p => p.ParameterName == null ? 0 : p.ParameterName.Length).ToList();
-
+            var parameters = cmd.Parameters.Cast<SqliteParameter>().OrderByDescending(p => p.ParameterName == null ? 0 : p.ParameterName.Length).ToList();
             string sql = cmd.CommandText ?? "";
 
             for (int i = 0; i < parameters.Count; i++)
             {
                 var p = parameters[i];
                 var name = p.ParameterName;
-
                 if (string.IsNullOrWhiteSpace(name))
                     continue;
-
                 sql = sql.Replace(name, ToSqlLiteral(p.Value));
             }
 
             return sql;
         }
 
-        public static string FormatSqlLog(Microsoft.Data.Sqlite.SqliteCommand cmd, string title)
+        public static string FormatSqlLog(SqliteCommand cmd, string title)
         {
             var sb = new StringBuilder();
 
@@ -447,12 +337,11 @@ namespace BliMonitorTest.util.MonitoringDb
             }
             else
             {
-                foreach (Microsoft.Data.Sqlite.SqliteParameter p in cmd.Parameters)
+                foreach (SqliteParameter p in cmd.Parameters)
                 {
                     object v = p.Value;
                     string raw = (v == null || v == DBNull.Value) ? "NULL" : v.ToString();
                     string lit = ToSqlLiteral(v);
-
                     sb.AppendLine(string.Format("- {0} = {1}  | literal={2}  | DbType={3}", p.ParameterName, raw, lit, p.DbType));
                 }
             }
@@ -468,10 +357,8 @@ namespace BliMonitorTest.util.MonitoringDb
         public static string DumpCommand(SqliteCommand cmd)
         {
             var sb = new System.Text.StringBuilder();
-
             sb.AppendLine("---- SQL ----");
             sb.AppendLine(cmd.CommandText);
-
             sb.AppendLine("---- PARAMS ----");
             foreach (SqliteParameter p in cmd.Parameters)
             {
@@ -479,7 +366,6 @@ namespace BliMonitorTest.util.MonitoringDb
                 string vs = (v == null || v == DBNull.Value) ? "NULL" : v.ToString();
                 sb.AppendLine($"{p.ParameterName} = {vs} (DbType={p.DbType})");
             }
-
             return sb.ToString();
         }
 
