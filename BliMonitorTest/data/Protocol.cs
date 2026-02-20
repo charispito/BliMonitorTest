@@ -12,8 +12,8 @@ namespace BliMonitorTest.data
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(Protocol));
 
-        public static byte STX = 0xCC;
-        public static byte ETX = 0xEF;
+        public static byte STX = 0x12;
+        public static byte ETX = 0x34;
         public static byte CONTROL = 0xAA;
         public static byte STATUS = 0xA0;
         public static byte START = 0x02;
@@ -24,18 +24,15 @@ namespace BliMonitorTest.data
         {
             byte[] command = new byte[7];
 
-            command[0] = 0x12;
+            command[0] = STX;
             command[1] = 0x01;
 
             
             command[2] = 0x99;
             command[3] = 0x07;
             command[4] = 0x00;
-            command[5] = (byte)(command[1] ^ command[2] ^ command[3] ^ command[4]);
+            command[5] = (byte)(command[1] ^ command[2] ^ command[3] ^ command[4] ^ 0xFF);
             command[6] = ETX;
-
-            command[5] = (byte)(command[5] ^ 0xFF);
-            command[6] = 0x34;
 
             return command;
         }
@@ -44,18 +41,14 @@ namespace BliMonitorTest.data
         {
             byte[] command = new byte[7];
 
-            command[0] = 0x12;
+            command[0] = STX;
             command[1] = 0x01;
 
             command[2] = 0xB9;
             command[3] = 0x07;
             command[4] = 0x00;
-            command[5] = (byte)(command[1] ^ command[2] ^ command[3] ^ command[4]);
+            command[5] = (byte)(command[1] ^ command[2] ^ command[3] ^ command[4] ^ 0xFF);
             command[6] = ETX;
-
-
-            command[5] = (byte)(command[5] ^ 0xFF);
-            command[6] = 0x34;
 
             return command;
         }
@@ -64,19 +57,15 @@ namespace BliMonitorTest.data
         {
             byte[] command = new byte[7];
 
-            command[0] = 0x12;
+            command[0] = STX;
             command[1] = 0x01;
             command[6] = 0x34;
 
             command[2] = 0xB6;
             command[3] = 0x07;
             command[4] = 0x00;
-            command[5] = (byte)(command[1] ^ command[2] ^ command[3] ^ command[4]);
+            command[5] = (byte)(command[1] ^ command[2] ^ command[3] ^ command[4] ^ 0xFF);
             command[6] = ETX;
-
-            command[5] = (byte)(command[5] ^ 0xFF);
-            command[6] = 0x34;
-
 
             return command;
         }
@@ -103,7 +92,7 @@ namespace BliMonitorTest.data
                     command[4] = END;
                     break;
             }
-            command[5] = (byte)(command[1] ^ command[2] ^ command[3] ^ command[4]);
+            command[5] = (byte)(command[1] ^ command[2] ^ command[3] ^ command[4] ^ 0xFF);
             command[6] = ETX;
 
             return command;
@@ -112,7 +101,7 @@ namespace BliMonitorTest.data
         public static byte[] GetNewCommand(int kind)
         {
             byte[] command = new byte[7];
-            command[0] = 0x12;
+            command[0] = STX;
             command[1] = 0x01;
             command[3] = 0x07;
             switch (kind)
@@ -131,7 +120,7 @@ namespace BliMonitorTest.data
                     break;
             }
             command[5] = (byte)(command[1] ^ command[2] ^ command[3] ^ command[4] ^ 0xFF);
-            command[6] = 0x34;
+            command[6] = ETX;
 
             return command;
         }
