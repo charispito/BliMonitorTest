@@ -1,10 +1,10 @@
-﻿using BliMonitorTest.data;
-using log4net;
-using Microsoft.Data.Sqlite;
-using System;
+﻿using System;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using BliMonitorTest.data;
+using log4net;
+using Microsoft.Data.Sqlite;
 
 namespace BliMonitorTest.util.MonitoringDb
 {
@@ -15,12 +15,6 @@ namespace BliMonitorTest.util.MonitoringDb
         public const int SOURCE_SINGLE = 1;
         public const int SOURCE_MULTI = 2;
 
-        // 테이블명 고정
-        private const string TABLE = "receive_data";
-
-        /// <summary>
-        /// DB 생성 및 테이블 생성 보장 (DB 삭제/재생성 전제: 마이그레이션 없음)
-        /// </summary>
         public static void EnsureDb(ref SqliteConnection db, string dbPath, ref bool dbReady)
         {
             if (dbReady && db != null && db.State == System.Data.ConnectionState.Open) return;
@@ -39,68 +33,94 @@ namespace BliMonitorTest.util.MonitoringDb
                     PRAGMA busy_timeout=5000;
 
                     CREATE TABLE IF NOT EXISTS receive_data (
-                        id               INTEGER PRIMARY KEY AUTOINCREMENT,
-                        source_type      INTEGER NOT NULL,
-                        channel_no       INTEGER NOT NULL,
-                        created_at       TEXT    NOT NULL,
-                        created_at_ms    INTEGER NOT NULL,
+                        id                     INTEGER PRIMARY KEY AUTOINCREMENT,
+                        source_type            INTEGER NOT NULL,
+                        channel_no             INTEGER NOT NULL,
+                        created_at             TEXT    NOT NULL,
+                        created_at_ms          INTEGER NOT NULL,
 
-                        start_packet     INTEGER,
-                        command          INTEGER,         -- 변경: cmd_byte → command
-                        payload_size     INTEGER,
-                        model_no         INTEGER,
-                        sw_ver           INTEGER,
-                        heater_temp      INTEGER,         -- 변경 주석 유지
-                        cold_temp        INTEGER,         -- 변경 주석 유지
-                        low_water_sensor INTEGER,
-                        floor_sensor     INTEGER,
-                        uv_led           INTEGER,         -- 변경: uv_led_byte → uv_led (0/1)
-                        sol_3way1        INTEGER,
-                        sol_3way2        INTEGER,
-                        sol_3way3        INTEGER,
-                        air_vent_sol     INTEGER,
-                        cv_sol           INTEGER,
-                        button_flags     INTEGER,
-                        pump             INTEGER,
-                        cold_sol         INTEGER,
-                        normal_sol       INTEGER,
-                        hot_sol1         INTEGER,
-                        needle_pos       INTEGER,
-                        Compressor       INTEGER,         -- 변경: pel_voltage → Compressor (0/1)
-                        checksum         INTEGER,         -- 변경: checksum_byte → checksum
-                        end_packet       INTEGER
+                        start_packet           INTEGER,
+                        version                INTEGER,
+                        command                INTEGER,
+                        payload_size           INTEGER,
+
+                        model_code             INTEGER,
+                        error_code             INTEGER,
+                        water_init_done        INTEGER,
+                        water_init_go          INTEGER,
+                        empty_detect           INTEGER,
+                        buffer_low             INTEGER,
+                        reheat_running         INTEGER,
+                        hot_ing                INTEGER,
+                        heater_pwm             INTEGER,
+                        night                  INTEGER,
+                        test_mode              INTEGER,
+                        mode_selected          INTEGER,
+                        qty_selected           INTEGER,
+                        dispense_phase         INTEGER,
+                        dispense_sub_phase     INTEGER,
+                        hot_temp_raw           INTEGER,
+                        cold_temp_raw          INTEGER,
+                        float_low_stable       INTEGER,
+                        ball_top_full_stable   INTEGER,
+                        water_buf_full_stable  INTEGER,
+                        heater_output          INTEGER,
+                        compressor_output      INTEGER,
+                        hot_valve_output       INTEGER,
+                        cold_select_output     INTEGER,
+                        outlet_valve_output    INTEGER,
+                        button_info            INTEGER,
+                        status_a               INTEGER,
+                        status_b               INTEGER,
+                        checksum               INTEGER,
+                        end_packet             INTEGER
                     );
 
                     CREATE INDEX IF NOT EXISTS idx_receive_data_time
                       ON receive_data(created_at_ms);
+
                     CREATE INDEX IF NOT EXISTS idx_receive_data_src_ch_time
                       ON receive_data(source_type, channel_no, created_at_ms);
-                    CREATE INDEX IF NOT EXISTS idx_receive_data_model
-                      ON receive_data(model_no);
 
-                    CREATE TABLE IF NOT EXISTS error_events (
-                        id               INTEGER PRIMARY KEY AUTOINCREMENT,
-                        source_type      INTEGER NOT NULL,
-                        channel_no       INTEGER NOT NULL,
-                        created_at       TEXT    NOT NULL,
-                        created_at_ms    INTEGER NOT NULL,
-                        snapshot_id      TEXT,
-                        file_name        TEXT,
-                        error_slot       INTEGER,
-                        error_text       TEXT,
-                        run_mode         INTEGER,
-                        heater_temp      REAL,
-                        heater_off_time  REAL,
-                        hot_air_temp     REAL,
-                        hot_air_on_time  REAL,
-                        run_count        INTEGER,
-                        exhaust_temp     REAL
+                    CREATE INDEX IF NOT EXISTS idx_receive_data_model_code
+                      ON receive_data(model_code);
+
+                    CREATE TABLE IF NOT EXISTS error_history (
+                        id                     INTEGER PRIMARY KEY AUTOINCREMENT,
+                        source_type            INTEGER NOT NULL,
+                        channel_no             INTEGER NOT NULL,
+                        created_at             TEXT    NOT NULL,
+                        created_at_ms          INTEGER NOT NULL,
+
+                        request_command        INTEGER,
+                        response_command       INTEGER,
+                        slot_no                INTEGER NOT NULL,
+
+                        valid_mark             INTEGER,
+                        sequence_no            INTEGER,
+                        error_code             INTEGER,
+                        hot_temp_raw           INTEGER,
+                        cold_temp_raw          INTEGER,
+                        adc_hot_raw            INTEGER,
+                        adc_cold_raw           INTEGER,
+                        water_init_done        INTEGER,
+                        status_a               INTEGER,
+                        status_b               INTEGER,
+                        buffer_low             INTEGER,
+                        record_crc             INTEGER
                     );
 
-                    CREATE INDEX IF NOT EXISTS idx_error_events_time
-                      ON error_events(created_at_ms);
-                    CREATE INDEX IF NOT EXISTS idx_error_events_src_ch_time
-                      ON error_events(source_type, channel_no, created_at_ms);
+                    CREATE INDEX IF NOT EXISTS idx_error_history_time
+                      ON error_history(created_at_ms);
+
+                    CREATE INDEX IF NOT EXISTS idx_error_history_src_ch_time
+                      ON error_history(source_type, channel_no, created_at_ms);
+
+                    CREATE INDEX IF NOT EXISTS idx_error_history_slot
+                      ON error_history(slot_no);
+
+                    CREATE INDEX IF NOT EXISTS idx_error_history_error_code
+                      ON error_history(error_code);
                 ";
                 cmd.ExecuteNonQuery();
             }
@@ -108,153 +128,191 @@ namespace BliMonitorTest.util.MonitoringDb
             dbReady = true;
         }
 
-        /// <summary>
-        /// (권장) 단일/다채널 모두 공용 Insert
-        /// - channelNo: 단일은 1 고정, 다채널은 실제 채널
-        /// - sourceType: 1=Single, 2=Multi
-        /// </summary>
-        public static void InsertDb(ref SqliteConnection db, string dbPath, ref bool dbReady, BliResponse57Packet resp, int channelNo, int sourceType)
+        public static void InsertDb(
+            ref SqliteConnection db,
+            string dbPath,
+            ref bool dbReady,
+            int sourceType,
+            int channelNo,
+            Duo8StatusPacket pkt)
+        {
+            InsertStatusData(ref db, dbPath, ref dbReady, sourceType, channelNo, pkt);
+        }
+
+        public static void InsertStatusData(
+            ref SqliteConnection db,
+            string dbPath,
+            ref bool dbReady,
+            int sourceType,
+            int channelNo,
+            Duo8StatusPacket pkt)
         {
             EnsureDb(ref db, dbPath, ref dbReady);
-            if (resp == null) return;
+            if (pkt == null) return;
 
             DateTime now = DateTime.Now;
             long createdAtMs = new DateTimeOffset(now).ToUnixTimeMilliseconds();
-            string createdAtIso = now.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
+            string createdAt = now.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
 
             using (var cmd = db.CreateCommand())
             {
                 cmd.CommandText = @"
                     INSERT INTO receive_data (
                         source_type, channel_no, created_at, created_at_ms,
-                        start_packet, command, payload_size,
-                        model_no, sw_ver, heater_temp, cold_temp,
-                        low_water_sensor, floor_sensor, uv_led,
-                        sol_3way1, sol_3way2, sol_3way3,
-                        air_vent_sol, cv_sol, button_flags,
-                        pump, cold_sol, normal_sol, hot_sol1,
-                        needle_pos, Compressor,
+                        start_packet, version, command, payload_size,
+                        model_code, error_code, water_init_done, water_init_go,
+                        empty_detect, buffer_low, reheat_running, hot_ing,
+                        heater_pwm, night, test_mode, mode_selected, qty_selected,
+                        dispense_phase, dispense_sub_phase,
+                        hot_temp_raw, cold_temp_raw,
+                        float_low_stable, ball_top_full_stable, water_buf_full_stable,
+                        heater_output, compressor_output, hot_valve_output,
+                        cold_select_output, outlet_valve_output,
+                        button_info, status_a, status_b,
                         checksum, end_packet
                     ) VALUES (
                         $source_type, $channel_no, $created_at, $created_at_ms,
-                        $start_packet, $command, $payload_size,
-                        $model_no, $sw_ver, $heater_temp, $cold_temp,
-                        $low_water_sensor, $floor_sensor, $uv_led,
-                        $sol_3way1, $sol_3way2, $sol_3way3,
-                        $air_vent_sol, $cv_sol, $button_flags,
-                        $pump, $cold_sol, $normal_sol, $hot_sol1,
-                        $needle_pos, $Compressor,
+                        $start_packet, $version, $command, $payload_size,
+                        $model_code, $error_code, $water_init_done, $water_init_go,
+                        $empty_detect, $buffer_low, $reheat_running, $hot_ing,
+                        $heater_pwm, $night, $test_mode, $mode_selected, $qty_selected,
+                        $dispense_phase, $dispense_sub_phase,
+                        $hot_temp_raw, $cold_temp_raw,
+                        $float_low_stable, $ball_top_full_stable, $water_buf_full_stable,
+                        $heater_output, $compressor_output, $hot_valve_output,
+                        $cold_select_output, $outlet_valve_output,
+                        $button_info, $status_a, $status_b,
                         $checksum, $end_packet
                     );
                 ";
 
                 cmd.Parameters.AddWithValue("$source_type", sourceType);
                 cmd.Parameters.AddWithValue("$channel_no", channelNo);
-                cmd.Parameters.AddWithValue("$created_at", createdAtIso);
+                cmd.Parameters.AddWithValue("$created_at", createdAt);
                 cmd.Parameters.AddWithValue("$created_at_ms", createdAtMs);
 
-                cmd.Parameters.AddWithValue("$start_packet", resp.StartPacket);
-                cmd.Parameters.AddWithValue("$command", resp.CmdByte);        // 입력은 기존 속성 사용
-                cmd.Parameters.AddWithValue("$payload_size", resp.PayloadSize);
-                cmd.Parameters.AddWithValue("$model_no", resp.ModelNo);
-                cmd.Parameters.AddWithValue("$sw_ver", resp.SwVer);
+                cmd.Parameters.AddWithValue("$start_packet", 0x12);
+                cmd.Parameters.AddWithValue("$version", 0x01);
+                cmd.Parameters.AddWithValue("$command", 0xA0);
+                cmd.Parameters.AddWithValue("$payload_size", 37);
 
-                // 값 매핑 (바이트 그대로 저장)
-                cmd.Parameters.AddWithValue("$heater_temp", resp.HeaterTempB);
-                cmd.Parameters.AddWithValue("$cold_temp", resp.ColdTempB);
-                cmd.Parameters.AddWithValue("$low_water_sensor", resp.LowWater);
-                cmd.Parameters.AddWithValue("$floor_sensor", resp.FloorSensor);
-                cmd.Parameters.AddWithValue("$uv_led", resp.UvLedByte);       // 이름만 변경
-                cmd.Parameters.AddWithValue("$sol_3way1", resp.Sol3Way1);
-                cmd.Parameters.AddWithValue("$sol_3way2", resp.Sol3Way2);
-                cmd.Parameters.AddWithValue("$sol_3way3", resp.Sol3Way3);
-                cmd.Parameters.AddWithValue("$air_vent_sol", resp.AirVentSol);
-                cmd.Parameters.AddWithValue("$cv_sol", resp.CvSol);
-                cmd.Parameters.AddWithValue("$button_flags", resp.ButtonFlags);
-                cmd.Parameters.AddWithValue("$pump", resp.Pump);
-                cmd.Parameters.AddWithValue("$cold_sol", resp.ColdSol);
-                cmd.Parameters.AddWithValue("$normal_sol", resp.NormalSol);
-                cmd.Parameters.AddWithValue("$hot_sol1", resp.HotSol1);
-                cmd.Parameters.AddWithValue("$needle_pos", resp.NeedlePos);
+                cmd.Parameters.AddWithValue("$model_code", pkt.ModelCode);
+                cmd.Parameters.AddWithValue("$error_code", pkt.ErrorCode);
+                cmd.Parameters.AddWithValue("$water_init_done", pkt.WaterInitDone);
+                cmd.Parameters.AddWithValue("$water_init_go", pkt.WaterInitGo);
+                cmd.Parameters.AddWithValue("$empty_detect", pkt.EmptyDetect);
+                cmd.Parameters.AddWithValue("$buffer_low", pkt.BufferLow);
+                cmd.Parameters.AddWithValue("$reheat_running", pkt.ReheatRunning);
+                cmd.Parameters.AddWithValue("$hot_ing", pkt.HotIng);
+                cmd.Parameters.AddWithValue("$heater_pwm", pkt.HeaterPwm);
+                cmd.Parameters.AddWithValue("$night", pkt.Night);
+                cmd.Parameters.AddWithValue("$test_mode", pkt.TestMode);
+                cmd.Parameters.AddWithValue("$mode_selected", pkt.ModeSelected);
+                cmd.Parameters.AddWithValue("$qty_selected", pkt.QtySelected);
+                cmd.Parameters.AddWithValue("$dispense_phase", pkt.DispensePhase);
+                cmd.Parameters.AddWithValue("$dispense_sub_phase", pkt.DispenseSubPhase);
+                cmd.Parameters.AddWithValue("$hot_temp_raw", pkt.HotTempRaw);
+                cmd.Parameters.AddWithValue("$cold_temp_raw", pkt.ColdTempRaw);
+                cmd.Parameters.AddWithValue("$float_low_stable", pkt.FloatLowStable);
+                cmd.Parameters.AddWithValue("$ball_top_full_stable", pkt.BallTopFullStable);
+                cmd.Parameters.AddWithValue("$water_buf_full_stable", pkt.WaterBufFullStable);
+                cmd.Parameters.AddWithValue("$heater_output", pkt.HeaterOutput);
+                cmd.Parameters.AddWithValue("$compressor_output", pkt.CompressorOutput);
+                cmd.Parameters.AddWithValue("$hot_valve_output", pkt.HotValveOutput);
+                cmd.Parameters.AddWithValue("$cold_select_output", pkt.ColdSelectOutput);
+                cmd.Parameters.AddWithValue("$outlet_valve_output", pkt.OutletValveOutput);
+                cmd.Parameters.AddWithValue("$button_info", pkt.ButtonInfo);
+                cmd.Parameters.AddWithValue("$status_a", pkt.StatusA);
+                cmd.Parameters.AddWithValue("$status_b", pkt.StatusB);
+                cmd.Parameters.AddWithValue("$checksum", pkt.Checksum);
+                cmd.Parameters.AddWithValue("$end_packet", 0x34);
 
-                // Compressor: ON/OFF(0/1)로 저장
-                cmd.Parameters.AddWithValue("$Compressor", resp.PelVoltageB); // 기존 바이트를 그대로 사용(0/1로 오는 전제)
-
-                cmd.Parameters.AddWithValue("$checksum", resp.Checksum);
-                cmd.Parameters.AddWithValue("$end_packet", resp.EndPacket);
-
-                try { cmd.ExecuteNonQuery(); }
+                try
+                {
+                    cmd.ExecuteNonQuery();
+                }
                 catch (Exception ex)
                 {
-                    log.Error("InsertDb 예외 : " + ex);
+                    log.Error("InsertStatusData 예외 : " + ex);
                     log.Error(FormatSqlLog(cmd, "INSERT receive_data"));
                 }
             }
         }
 
-        public static void InsertErrorEvent(
-            ref SqliteConnection db, string dbPath, ref bool dbReady,
-            int sourceType, int channelNo, DateTime createdAt, string snapshotId, string fileName,
-            int errorSlot, string errorText, int? runMode, double? heaterTemp, double? heaterOffTime, double? hotAirTemp, double? hotAirOnTime, int? runCount, double? exhaustTemp)
+        public static void InsertErrorHistory(
+            ref SqliteConnection db,
+            string dbPath,
+            ref bool dbReady,
+            int sourceType,
+            int channelNo,
+            Duo8ErrorResponse resp)
         {
             EnsureDb(ref db, dbPath, ref dbReady);
+            if (resp == null || resp.Records == null || resp.Records.Count == 0) return;
 
-            long createdAtMs = new DateTimeOffset(createdAt).ToUnixTimeMilliseconds();
-            string createdAtIso = createdAt.ToString("yyyy-MM-dd HH:mm:ss.fff", System.Globalization.CultureInfo.InvariantCulture);
+            DateTime now = DateTime.Now;
+            long createdAtMs = new DateTimeOffset(now).ToUnixTimeMilliseconds();
+            string createdAt = now.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
 
-            int runModeV = runMode ?? 0;
-            double heaterTempV = heaterTemp ?? 0;
-            double heaterOffV = heaterOffTime ?? 0;
-            double hotAirTempV = hotAirTemp ?? 0;
-            double hotAirOnV = hotAirOnTime ?? 0;
-            int runCountV = runCount ?? 0;
-            double exhaustTempV = exhaustTemp ?? 0;
-
-            using (var cmd = db.CreateCommand())
+            for (int i = 0; i < resp.Records.Count; i++)
             {
-                cmd.CommandText = @"
-                    INSERT INTO error_events(
-                        source_type, channel_no, created_at, created_at_ms,
-                        snapshot_id, file_name, error_slot, error_text,
-                        run_mode, heater_temp, heater_off_time,
-                        hot_air_temp, hot_air_on_time,
-                        run_count, exhaust_temp
-                    ) VALUES(
-                        $source_type, $channel_no, $created_at, $created_at_ms,
-                        $snapshot_id, $file_name, $error_slot, $error_text,
-                        $run_mode, $heater_temp, $heater_off_time,
-                        $hot_air_temp, $hot_air_on_time,
-                        $run_count, $exhaust_temp
-                    );
-                ";
+                var r = resp.Records[i];
 
-                cmd.Parameters.AddWithValue("$source_type", sourceType);
-                cmd.Parameters.AddWithValue("$channel_no", channelNo);
-                cmd.Parameters.AddWithValue("$created_at", createdAtIso);
-                cmd.Parameters.AddWithValue("$created_at_ms", createdAtMs);
-                cmd.Parameters.AddWithValue("$snapshot_id", snapshotId ?? "");
-                cmd.Parameters.AddWithValue("$file_name", (object)fileName ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("$error_slot", errorSlot);
-                cmd.Parameters.AddWithValue("$error_text", (object)(errorText ?? ""));
+                using (var cmd = db.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                        INSERT INTO error_history (
+                            source_type, channel_no, created_at, created_at_ms,
+                            request_command, response_command, slot_no,
+                            valid_mark, sequence_no, error_code,
+                            hot_temp_raw, cold_temp_raw,
+                            adc_hot_raw, adc_cold_raw,
+                            water_init_done, status_a, status_b,
+                            buffer_low, record_crc
+                        ) VALUES (
+                            $source_type, $channel_no, $created_at, $created_at_ms,
+                            $request_command, $response_command, $slot_no,
+                            $valid_mark, $sequence_no, $error_code,
+                            $hot_temp_raw, $cold_temp_raw,
+                            $adc_hot_raw, $adc_cold_raw,
+                            $water_init_done, $status_a, $status_b,
+                            $buffer_low, $record_crc
+                        );
+                    ";
 
-                cmd.Parameters.AddWithValue("$run_mode", runModeV);
-                cmd.Parameters.AddWithValue("$heater_temp", heaterTempV);
-                cmd.Parameters.AddWithValue("$heater_off_time", heaterOffV);
-                cmd.Parameters.AddWithValue("$hot_air_temp", hotAirTempV);
-                cmd.Parameters.AddWithValue("$hot_air_on_time", hotAirOnV);
-                cmd.Parameters.AddWithValue("$run_count", runCountV);
-                cmd.Parameters.AddWithValue("$exhaust_temp", exhaustTempV);
+                    cmd.Parameters.AddWithValue("$source_type", sourceType);
+                    cmd.Parameters.AddWithValue("$channel_no", channelNo);
+                    cmd.Parameters.AddWithValue("$created_at", createdAt);
+                    cmd.Parameters.AddWithValue("$created_at_ms", createdAtMs);
 
-                cmd.ExecuteNonQuery();
+                    cmd.Parameters.AddWithValue("$request_command", 0xB9);
+                    cmd.Parameters.AddWithValue("$response_command", 0xB9);
+                    cmd.Parameters.AddWithValue("$slot_no", i + 1);
+
+                    cmd.Parameters.AddWithValue("$valid_mark", r.IsValid ? 1 : 0);
+                    cmd.Parameters.AddWithValue("$sequence_no", r.Sequence);
+                    cmd.Parameters.AddWithValue("$error_code", r.ErrorCode);
+                    cmd.Parameters.AddWithValue("$hot_temp_raw", r.HotTempRaw);
+                    cmd.Parameters.AddWithValue("$cold_temp_raw", r.ColdTempRaw);
+                    cmd.Parameters.AddWithValue("$adc_hot_raw", r.AdcHotRaw);
+                    cmd.Parameters.AddWithValue("$adc_cold_raw", r.AdcColdRaw);
+                    cmd.Parameters.AddWithValue("$water_init_done", r.WaterInitDone != 0 ? 1 : 0);
+                    cmd.Parameters.AddWithValue("$status_a", r.StatusA);
+                    cmd.Parameters.AddWithValue("$status_b", r.StatusB);
+                    cmd.Parameters.AddWithValue("$buffer_low", r.BufferLow != 0 ? 1 : 0);
+                    cmd.Parameters.AddWithValue("$record_crc", r.Crc);
+
+                    try
+                    {
+                        cmd.ExecuteNonQuery();
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Error("InsertErrorHistory 예외 : " + ex);
+                        log.Error(FormatSqlLog(cmd, "INSERT error_history"));
+                    }
+                }
             }
-        }
-
-        // ===== 내부 헬퍼 및 로그 유틸 =====
-
-        private static long ToUnixMs(DateTime dt)
-        {
-            var dto = new DateTimeOffset(dt);
-            return dto.ToUnixTimeMilliseconds();
         }
 
         public static string ToSqlLiteral(object value)
@@ -272,7 +330,7 @@ namespace BliMonitorTest.util.MonitoringDb
             }
 
             if (value is bool)
-                return ((bool)value) ? "1" : "0";
+                return (bool)value ? "1" : "0";
 
             if (value is byte || value is sbyte ||
                 value is short || value is ushort ||
@@ -283,17 +341,11 @@ namespace BliMonitorTest.util.MonitoringDb
             if (value is float || value is double || value is decimal)
                 return Convert.ToString(value, CultureInfo.InvariantCulture);
 
-            if (value is DateTime)
-            {
-                var dt = (DateTime)value;
+            if (value is DateTime dt)
                 return "'" + dt.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) + "'";
-            }
 
-            if (value is DateTimeOffset)
-            {
-                var dto = (DateTimeOffset)value;
+            if (value is DateTimeOffset dto)
                 return "'" + dto.ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.InvariantCulture) + "'";
-            }
 
             var bytes = value as byte[];
             if (bytes != null)
@@ -304,15 +356,18 @@ namespace BliMonitorTest.util.MonitoringDb
 
         public static string RenderFinalSqlForLog(SqliteCommand cmd)
         {
-            var parameters = cmd.Parameters.Cast<SqliteParameter>().OrderByDescending(p => p.ParameterName == null ? 0 : p.ParameterName.Length).ToList();
+            var parameters = cmd.Parameters.Cast<SqliteParameter>()
+                .OrderByDescending(p => p.ParameterName == null ? 0 : p.ParameterName.Length)
+                .ToList();
+
             string sql = cmd.CommandText ?? "";
 
-            for (int i = 0; i < parameters.Count; i++)
+            foreach (var p in parameters)
             {
-                var p = parameters[i];
                 var name = p.ParameterName;
                 if (string.IsNullOrWhiteSpace(name))
                     continue;
+
                 sql = sql.Replace(name, ToSqlLiteral(p.Value));
             }
 
@@ -356,28 +411,32 @@ namespace BliMonitorTest.util.MonitoringDb
 
         public static string DumpCommand(SqliteCommand cmd)
         {
-            var sb = new System.Text.StringBuilder();
+            var sb = new StringBuilder();
             sb.AppendLine("---- SQL ----");
             sb.AppendLine(cmd.CommandText);
             sb.AppendLine("---- PARAMS ----");
+
             foreach (SqliteParameter p in cmd.Parameters)
             {
                 object v = p.Value;
                 string vs = (v == null || v == DBNull.Value) ? "NULL" : v.ToString();
                 sb.AppendLine($"{p.ParameterName} = {vs} (DbType={p.DbType})");
             }
+
             return sb.ToString();
         }
 
         public static string DumpParamsOneLine(SqliteCommand cmd)
         {
             var parts = new System.Collections.Generic.List<string>();
+
             foreach (SqliteParameter p in cmd.Parameters)
             {
                 object v = p.Value;
                 string vs = (v == null || v == DBNull.Value) ? "NULL" : v.ToString();
                 parts.Add($"{p.ParameterName}={vs}");
             }
+
             return string.Join(", ", parts);
         }
     }

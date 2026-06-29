@@ -6,28 +6,13 @@ using log4net;
 using OxyPlot;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.IO;
 using System.IO.Ports;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Timers;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using FontWeights = System.Windows.FontWeights;
 using Timer = System.Timers.Timer;
-
-// Dummy Serial Port Namespace  
 using BliMonitorTest.dummy;
 
 namespace BliMonitorTest
@@ -49,39 +34,54 @@ namespace BliMonitorTest
         private List<OxyColor> colorList = new List<OxyColor>();
 
         private volatile bool _useDummyCached;
-        // UI 접근 없이 작업 스레드에서 안전하게 읽을 수 있는 프로퍼티
         private bool UseDummy => _useDummyCached;
 
         private byte[] _dummyLastBuffer;
         private readonly DummyValueGenerator _dummyGen = new DummyValueGenerator();
 
+        private readonly object _connWatchLock = new object();
+        private System.Timers.Timer _connectionWatchdog;
+        private DateTime _lastResponseAt = DateTime.MinValue;
+        private bool _waitingFirstResponse = false;
+        private readonly TimeSpan _connectionTimeout = TimeSpan.FromSeconds(5);
+
         public OneChannelWindow()
         {
             InitializeComponent();
             setItems(channel);
+
             FileName.TextChanged += FileName_TextChanged;
             Loaded += OneChannelWindow_Loaded;
+
             port = new SerialPort();
             port.BaudRate = 9600;
             port.DataReceived += Port_DataReceived;
+
             PortList.box.ItemsSource = SerialPort.GetPortNames();
+
             ConnectButton.Click += ConnectButton_Click;
             RefreshButton.Click += RefreshButton_Click;
+
             channel.port = port;
             channel.OnTestStart += OnStart;
             channel.OnParameterLoadAction += Channel_OnParameterLoadAction;
             channel.OnCheckChanged += Channel_OnCheckChanged;
-            _useDummyCached = (UseDummyCheck?.IsChecked == true);       // 초기 캐시 동기화 (UI 스레드)
+
+            _useDummyCached = (UseDummyCheck?.IsChecked == true);
             UseDummyCheck.Checked += UseDummyCheck_Checked;
             UseDummyCheck.Unchecked += UseDummyCheck_Unchecked;
+
             timer = new Timer();
             timer.Interval = 1000;
             timer.Elapsed += Timer_Elapsed;
             timer.Start();
+
             SaveCheck.Checked += SaveCheck_Checked;
             SaveCheck.Unchecked += SaveCheck_Unchecked;
+
             TestTime = TimeSpan.Zero;
             channel.chartView = Chart;
+
             colorList.Add(OxyColor.FromRgb(255, 0, 0));
             colorList.Add(OxyColor.FromRgb(0, 0, 255));
             colorList.Add(OxyColor.FromRgb(246, 190, 7));
@@ -92,21 +92,31 @@ namespace BliMonitorTest
             colorList.Add(OxyColor.FromRgb(0, 0, 0));
         }
 
+        public bool IsDummyMode
+        {
+            get { return _useDummyCached; }
+        }
+
         private void Channel_OnCheckChanged()
         {
             if (parameterReceived == null)
                 parameterReceived = new List<byte>();
             parameterReceived.Clear();
+
             if (receivedData == null)
                 receivedData = new List<byte>();
             receivedData.Clear();
+
             if (channel.Item3Check.IsChecked.Value)
             {
-                typeof(System.Windows.Controls.Primitives.ButtonBase).GetMethod("OnClick", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(channel.Item3Check, new object[0]);
-                typeof(System.Windows.Controls.Primitives.ButtonBase).GetMethod("OnClick", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(channel.Item3Check, new object[0]);
-            }
+                typeof(System.Windows.Controls.Primitives.ButtonBase)
+                    .GetMethod("OnClick", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                    .Invoke(channel.Item3Check, new object[0]);
 
-            channel.Item3.label.Content = "평균히터오프타임";
+                typeof(System.Windows.Controls.Primitives.ButtonBase)
+                    .GetMethod("OnClick", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                    .Invoke(channel.Item3Check, new object[0]);
+            }
         }
 
         private void Channel_OnParameterLoadAction()
@@ -150,26 +160,22 @@ namespace BliMonitorTest
         {
             if (channel.ConnectState != 1) return;
 
-            bool useDummy = UseDummy;
-
             try
             {
                 if (!UseDummy)
                 {
-                    if (port.IsOpen)
+                    if (port != null && port.IsOpen)
                     {
                         TestTime += TimeSpan.FromSeconds(1);
 
                         if (parameterCnt > 0)
                         {
-                            Console.WriteLine("ParameterLoad");
                             receivedData.Clear();
                             parameterCnt--;
-                            TestTime += TimeSpan.FromSeconds(1);
                         }
                         else
                         {
-                            byte[] command = Protocol.GetNewCommand(1);
+                            byte[] command = Protocol.GetStatusRequest();
                             port.Write(command, 0, command.Length);
                             command.PrintHex(1);
                         }
@@ -177,27 +183,22 @@ namespace BliMonitorTest
                 }
                 else
                 {
-                    var rsp = new byte[57];
+                    TestTime += TimeSpan.FromSeconds(1);
 
-                    // 샘플 생성(TO-BE)
+                    var rsp = new byte[37];
                     var sample = _dummyGen.Next();
 
-                    if (rsp != null && rsp.Length > 0)
-                        if (rsp != null && rsp.Length >= 57)
-                        {
-                            // 패치 + 체크섬/ETX까지 완료
-                            BliMonitorTest.dummy.DummyFramePatcher.PatchStatusResponse57(rsp, sample);
+                    DummyValueGenerator.PatchStatusResponse37(rsp, sample);
 
-                            _dummyLastBuffer = rsp;
+                    _dummyLastBuffer = rsp;
 
-                            log.Debug("============        LOG DATA OneChannelWindow [DoPeriodicTickCore] MAKE PACKET DATA       ==================");
-                            ByteLogHelper.LogPacket(rsp, "RX");
-                            ByteLogHelper.ToHexWith0x(rsp);
-                            ByteLogHelper.DumpLinesWith0x(rsp, 16);
-                            log.Debug("============        LOG DATA OneChannelWindow [DoPeriodicTickCore] MAKE PACKET DATA       ==================");
+                    log.Debug("============ LOG DATA OneChannelWindow [DoPeriodicTickCore] MAKE STATUS PACKET START ============");
+                    ByteLogHelper.LogPacket(rsp, "RX");
+                    ByteLogHelper.ToHexWith0x(rsp);
+                    ByteLogHelper.DumpLinesWith0x(rsp, 16);
+                    log.Debug("============ LOG DATA OneChannelWindow [DoPeriodicTickCore] MAKE STATUS PACKET END ============");
 
-                            InvokePortDataReceivedWith(rsp);
-                        }
+                    InvokePortDataReceivedWith(rsp);
                 }
             }
             catch (Exception ex)
@@ -208,7 +209,7 @@ namespace BliMonitorTest
 
         private void Port_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
-            if (UseDummy) return; // 더미는 Timer 경로에서 처리
+            if (UseDummy) return;
 
             try
             {
@@ -232,6 +233,10 @@ namespace BliMonitorTest
 
                 Dispatcher.Invoke(() =>
                 {
+                    _lastResponseAt = DateTime.Now;
+                    _waitingFirstResponse = false;
+                    StopConnectionWatchdog();
+
                     ByteLogHelper.LogPacket(buf, "RX");
                     receiveData(buf, buf.Length);
                 });
@@ -242,221 +247,90 @@ namespace BliMonitorTest
             }
         }
 
-        private void CheckNewDataValid(byte[] array)
-        {
-            int stx_cnt = 0;
-            int etx_cnt = 0;
-            List<int> STXIndex = new List<int>();
-            List<int> ETXIndex = new List<int>();
-            if (array.Length < 4)
-            {
-                return;
-            }
-            if (array[3] == array.Length)
-            {
-                CheckCommand(array);
-            }
-            else
-            {
-                for (int i = 0; i < array.Length; i++)
-                {
-                    if (array[i] == 0x12)
-                    {
-                        STXIndex.Add(i);
-                        stx_cnt++;
-                    }
-                    else if (array[i] == 0x34)
-                    {
-                        ETXIndex.Add(i);
-                        etx_cnt++;
-                    }
-                }
-                if (stx_cnt > 1)
-                {
-                    if (stx_cnt == etx_cnt)
-                    {
-                        for (int i = 0; i < STXIndex.Count; i++)
-                        {
-                            ArrayView<byte> command = new ArrayView<byte>(array, STXIndex[i], ETXIndex[i] - STXIndex[i] + 1);
-                            if (command[3] == command.Length)
-                            {
-                                CheckCommand(command.ToArray());
-                            }
-                            else
-                            {
-
-                            }
-                            command.ToArray().PrintHex(1);
-                        }
-                    }
-                    else
-                    {
-
-                        if (etx_cnt > stx_cnt)
-                        {
-                            for (int i = 0; i < STXIndex.Count; i++)
-                            {
-                                ArrayView<byte> command = new ArrayView<byte>(array, STXIndex[i], ETXIndex[i + 1] - STXIndex[i] + 1);
-                                command.ToArray().PrintHex(1);
-                                CheckCommand(command.ToArray());
-                            }
-                        }
-                        else
-                        {
-                            for (int i = 0; i < ETXIndex.Count; i++)
-                            {
-                                ArrayView<byte> command = new ArrayView<byte>(array, STXIndex[i], ETXIndex[i] - STXIndex[i] + 1);
-                                command.ToArray().PrintHex(1);
-                                CheckCommand(command.ToArray());
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        private void CheckDataValid(byte[] array)
-        {
-            int stx_cnt = 0;
-            int etx_cnt = 0;
-            List<int> STXIndex = new List<int>();
-            List<int> ETXIndex = new List<int>();
-
-            if (array.Length < 3)
-            {
-                return;
-            }
-            if (array[3] == array.Length)
-            {
-                CheckCommand(array);
-            }
-            else
-            {
-                for (int i = 0; i < array.Length; i++)
-                {
-                    if (array[i] == 0xCC)
-                    {
-                        STXIndex.Add(i);
-                        stx_cnt++;
-                    }
-                    else if (array[i] == 0xEF)
-                    {
-                        ETXIndex.Add(i);
-                        etx_cnt++;
-                    }
-                }
-                if (stx_cnt > 1)
-                {
-                    if (stx_cnt == etx_cnt)
-                    {
-                        for (int i = 0; i < STXIndex.Count; i++)
-                        {
-                            ArrayView<byte> command = new ArrayView<byte>(array, STXIndex[i], ETXIndex[i] - STXIndex[i] + 1);
-                            if (command[3] == command.Length)
-                            {
-                                CheckCommand(command.ToArray());
-                            }
-                            else
-                            {
-
-                            }
-                            command.ToArray().PrintHex(1);
-                        }
-                    }
-                    else
-                    {
-
-                        if (etx_cnt > stx_cnt)
-                        {
-                            for (int i = 0; i < STXIndex.Count; i++)
-                            {
-                                ArrayView<byte> command = new ArrayView<byte>(array, STXIndex[i], ETXIndex[i + 1] - STXIndex[i] + 1);
-                                command.ToArray().PrintHex(1);
-                                CheckCommand(command.ToArray());
-                            }
-                        }
-                        else
-                        {
-                            for (int i = 0; i < ETXIndex.Count; i++)
-                            {
-                                ArrayView<byte> command = new ArrayView<byte>(array, STXIndex[i], ETXIndex[i] - STXIndex[i] + 1);
-                                command.ToArray().PrintHex(1);
-                                CheckCommand(command.ToArray());
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
         private void ConnectButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                // 이미 연결되어 있으면 해제
-                if (port != null && port.IsOpen)
+                if (channel.ConnectState == 1)
                 {
-                    // 타이머 중지 및 핸들러 제거
                     StopTimerSafe();
+                    StopConnectionWatchdog();
 
-                    // 수신 핸들러 해제
                     try { port.DataReceived -= Port_DataReceived; } catch { }
 
-                    // 로그 스트림 닫기
                     if (channel.streamWriter != null)
                     {
                         try { channel.streamWriter.Close(); } catch { }
                         channel.streamWriter = null;
                     }
 
-                    // 포트 닫기
-                    try { port.Close(); } catch { }
+                    if (port != null && port.IsOpen)
+                    {
+                        try { port.Close(); } catch { }
+                    }
 
-                    // 상태/버튼
+                    lock (_rxLock)
+                    {
+                        _rxBuffer.Clear();
+                    }
+
+                    // 연결이 끊어졌을 때 ParameterWindow가 열려있으면 강제로 닫기
+                    CloseParameterWindowIfOpen();
+
                     channel.ConnectState = 0;
                     ConnectButton.Content = "연결";
                     return;
                 }
 
-                // 포트 선택 확인
-                if (PortList.box.SelectedIndex == -1)
+                if (!UseDummy)
                 {
-                    ToastMessage.ToastService.AppToast.Show("포트가 선택 되지 않았습니다.");
-                    return;
+                    if (PortList.box.SelectedIndex == -1)
+                    {
+                        ToastMessage.ToastService.AppToast.Show("포트가 선택 되지 않았습니다.");
+                        return;
+                    }
+
+                    port.PortName = PortList.box.SelectedItem.ToString();
+
+                    try { port.DataReceived -= Port_DataReceived; } catch { }
+                    if (!port.IsOpen)
+                        port.Open();
+                    port.DataReceived += Port_DataReceived;
+                }
+                else
+                {
+                    lock (_rxLock)
+                    {
+                        _rxBuffer.Clear();
+                    }
                 }
 
-                // 포트 열기 및 수신 핸들러 재등록(중복 제거 후 등록)
-                port.PortName = PortList.box.SelectedItem.ToString();
-
-                // 재연결 시 핸들러는 항상 ‘제거 후 등록’
-                try { port.DataReceived -= Port_DataReceived; } catch { }
-                port.Open();
-                port.DataReceived += Port_DataReceived;
-
-                // 상태/버튼
                 channel.ConnectState = 1;
                 ConnectButton.Content = "해제";
 
-                // 타이머 확실히 시작(Elapsed 중복 제거 후 Start)
                 StartTimerSafe();
-
-                // 즉시 1회 수행(바로 동작 확인)
+                StartConnectionWatchdog();
                 DoPeriodicTickCore();
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine(ex);
+                ToastMessage.ToastService.AppToast.Show("연결 처리 중 문제가 발생했습니다.");
             }
         }
 
         private void InvokePortDataReceivedWith(byte[] buf)
         {
             if (buf == null || buf.Length == 0) return;
+
             Dispatcher.Invoke(() =>
             {
+                _lastResponseAt = DateTime.Now;
+                _waitingFirstResponse = false;
+                StopConnectionWatchdog();
+
                 receiveData(buf, buf.Length);
             });
-
         }
 
         private void OneChannelWindow_Loaded(object sender, RoutedEventArgs e)
@@ -478,24 +352,53 @@ namespace BliMonitorTest
 
         private void setItems(OneChannelValueDetail item)
         {
-            item.Item1.label.Content = "히터 온도";
-            item.Item2.label.Content = "냉수 온도";
-            item.Item3.label.Content = "수위센서";
-            item.Item4.label.Content = "플로어센서";
-            item.Item5.label.Content = "UV LED";
-            item.Item6.label.Content = "3방 SOL";
+            item.Item1.label.Content = "온수 Temp";
+            item.Item2.label.Content = "냉수 Temp";
+            item.Item3.label.Content = "초기급수 완료";
+            item.Item4.label.Content = "초기급수 진행";
+            item.Item5.label.Content = "물부족 감지";
+            item.Item6.label.Content = "버퍼수위 부족";
+            item.Item7.label.Content = "재가열 동작";
+            item.Item8.label.Content = "가열 진행";
+            item.Item9.label.Content = "히터 PWM";
+            item.Item10.label.Content = "야간 상태";
+            item.Item17.label.Content = "Float Stable";
+            item.Item18.label.Content = "BallTop Stable";
+            item.Item19.label.Content = "WaterBuf Stable";
 
-            item.Item11.label.Content = "Air Vent Sol";
-            item.Item12.label.Content = "C/V";
-            item.Item13.label.Content = "PUMP";
-            item.Item14.label.Content = "Cold Sol";
-            item.Item15.label.Content = "Normal Sol";
-            item.Item16.label.Content = "Hot Sol";
+            item.Item11.label.Content = "테스트 모드";
+            item.Item12.label.Content = "제품 모델";
+            item.Item13.label.Content = "에러 코드";
+            item.Item14.label.Content = "모드 / 용량";
+            item.Item15.label.Content = "출수 단계";
+            item.Item16.label.Content = "출수 세부단계";
+            item.Item20.label.Content = "히터 출력";
+            item.Item21.label.Content = "컴프 출력";
+            item.Item22.label.Content = "온수 밸브";
+            item.Item23.label.Content = "냉수 선택 밸브";
+            item.Item24.label.Content = "출수 밸브";
+            item.Item25.label.Content = "버튼 상태";
+            item.Item26.label.Content = "상태 비트";
 
-            item.Item17.label.Content = "Needle 위치";
-            item.Item18.label.Content = "Model";
-            item.Statebox.label.Content = "상태";
+            item.Item40.label.Content = "A Heater";
+            item.Item41.label.Content = "A Comp";
+            item.Item42.label.Content = "A HotValve";
+            item.Item43.label.Content = "A ColdSel";
+            item.Item44.label.Content = "A Outlet";
+            item.Item45.label.Content = "A PumpOut";
+            item.Item46.label.Content = "A PumpDia";
+            item.Item47.label.Content = "A Airvent";
+            item.Item48.label.Content = "B Float";
+            item.Item49.label.Content = "B BallTop";
+            item.Item50.label.Content = "B WaterBuf";
+            item.Item51.label.Content = "B Empty";
+            item.Item52.label.Content = "B BufLow";
+            item.Item53.label.Content = "B Reheat";
+            item.Item54.label.Content = "B HotIng";
+            item.Item55.label.Content = "B Disp";
 
+            item.Statebox.label.Content = "상태 / 에러";
+            item.ChannelView.label.Content = "연결상태";
         }
 
         private int getIndex()
@@ -515,14 +418,14 @@ namespace BliMonitorTest
             switch ((sender as Control).Name)
             {
                 case "Item1Check":
-                    if (channel.Item1Check.IsChecked.Value)
+                    if (channel.Item1Check.IsChecked == true)
                     {
                         if (seriesList.Count < 8)
                         {
                             int index = getIndex();
                             seriesList[10] = index;
                             Chart.ViewModel.setSeries(index, 0, colorList[index]);
-                            Chart.setLegend(index, "히터 온도");
+                            Chart.setLegend(index, "온수 Temp Raw");
                         }
                         else
                         {
@@ -533,21 +436,25 @@ namespace BliMonitorTest
                     else
                     {
                         channel.list1.Clear();
-                        int index = seriesList[10];
-                        seriesList.Remove(10);
-                        Chart.ViewModel.unSetSeries(index);
-                        Chart.setLegend(index, "");
+                        if (seriesList.ContainsKey(10))
+                        {
+                            int index = seriesList[10];
+                            seriesList.Remove(10);
+                            Chart.ViewModel.unSetSeries(index);
+                            Chart.setLegend(index, "");
+                        }
                     }
                     break;
+
                 case "Item2Check":
-                    if (channel.Item2Check.IsChecked.Value)
+                    if (channel.Item2Check.IsChecked == true)
                     {
                         if (seriesList.Count < 8)
                         {
                             int index = getIndex();
                             seriesList[11] = index;
-                            Chart.setLegend(index, "냉수 온도");
                             Chart.ViewModel.setSeries(index, 0, colorList[index]);
+                            Chart.setLegend(index, "냉수 Temp Raw");
                         }
                         else
                         {
@@ -558,21 +465,25 @@ namespace BliMonitorTest
                     else
                     {
                         channel.list2.Clear();
-                        int index = seriesList[11];
-                        seriesList.Remove(11);
-                        Chart.ViewModel.unSetSeries(index);
-                        Chart.setLegend(index, "");
+                        if (seriesList.ContainsKey(11))
+                        {
+                            int index = seriesList[11];
+                            seriesList.Remove(11);
+                            Chart.ViewModel.unSetSeries(index);
+                            Chart.setLegend(index, "");
+                        }
                     }
                     break;
+
                 case "Item3Check":
-                    if (channel.Item3Check.IsChecked.Value)
+                    if (channel.Item3Check.IsChecked == true)
                     {
                         if (seriesList.Count < 8)
                         {
                             int index = getIndex();
                             seriesList[12] = index;
                             Chart.ViewModel.setSeries(index, 1, colorList[index]);
-                            Chart.setLegend(index, "수위센서");
+                            Chart.setLegend(index, "초기급수 완료");
                         }
                         else
                         {
@@ -583,21 +494,25 @@ namespace BliMonitorTest
                     else
                     {
                         channel.list3.Clear();
-                        int index = seriesList[12];
-                        seriesList.Remove(12);
-                        Chart.ViewModel.unSetSeries(index);
-                        Chart.setLegend(index, "");
+                        if (seriesList.ContainsKey(12))
+                        {
+                            int index = seriesList[12];
+                            seriesList.Remove(12);
+                            Chart.ViewModel.unSetSeries(index);
+                            Chart.setLegend(index, "");
+                        }
                     }
                     break;
+
                 case "Item4Check":
-                    if (channel.Item4Check.IsChecked.Value)
+                    if (channel.Item4Check.IsChecked == true)
                     {
                         if (seriesList.Count < 8)
                         {
                             int index = getIndex();
                             seriesList[13] = index;
                             Chart.ViewModel.setSeries(index, 1, colorList[index]);
-                            Chart.setLegend(index, "플로어센서");
+                            Chart.setLegend(index, "물부족 감지");
                         }
                         else
                         {
@@ -608,21 +523,25 @@ namespace BliMonitorTest
                     else
                     {
                         channel.list4.Clear();
-                        int index = seriesList[13];
-                        seriesList.Remove(13);
-                        Chart.ViewModel.unSetSeries(index);
-                        Chart.setLegend(index, "");
+                        if (seriesList.ContainsKey(13))
+                        {
+                            int index = seriesList[13];
+                            seriesList.Remove(13);
+                            Chart.ViewModel.unSetSeries(index);
+                            Chart.setLegend(index, "");
+                        }
                     }
                     break;
+
                 case "Item5Check":
-                    if (channel.Item5Check.IsChecked.Value)
+                    if (channel.Item5Check.IsChecked == true)
                     {
                         if (seriesList.Count < 8)
                         {
                             int index = getIndex();
                             seriesList[14] = index;
                             Chart.ViewModel.setSeries(index, 1, colorList[index]);
-                            Chart.setLegend(index, "Air Vent Sol");
+                            Chart.setLegend(index, "히터 출력");
                         }
                         else
                         {
@@ -633,21 +552,25 @@ namespace BliMonitorTest
                     else
                     {
                         channel.list5.Clear();
-                        int index = seriesList[14];
-                        seriesList.Remove(14);
-                        Chart.ViewModel.unSetSeries(index);
-                        Chart.setLegend(index, "");
+                        if (seriesList.ContainsKey(14))
+                        {
+                            int index = seriesList[14];
+                            seriesList.Remove(14);
+                            Chart.ViewModel.unSetSeries(index);
+                            Chart.setLegend(index, "");
+                        }
                     }
                     break;
+
                 case "Item6Check":
-                    if (channel.Item6Check.IsChecked.Value)
+                    if (channel.Item6Check.IsChecked == true)
                     {
                         if (seriesList.Count < 8)
                         {
                             int index = getIndex();
                             seriesList[15] = index;
-                            Chart.ViewModel.setSeries(index, 0, colorList[index]);
-                            Chart.setLegend(index, "C/V");
+                            Chart.ViewModel.setSeries(index, 1, colorList[index]);
+                            Chart.setLegend(index, "컴프 출력");
                         }
                         else
                         {
@@ -658,21 +581,25 @@ namespace BliMonitorTest
                     else
                     {
                         channel.list6.Clear();
-                        int index = seriesList[15];
-                        seriesList.Remove(15);
-                        Chart.ViewModel.unSetSeries(index);
-                        Chart.setLegend(index, "");
+                        if (seriesList.ContainsKey(15))
+                        {
+                            int index = seriesList[15];
+                            seriesList.Remove(15);
+                            Chart.ViewModel.unSetSeries(index);
+                            Chart.setLegend(index, "");
+                        }
                     }
                     break;
+
                 case "Item7Check":
-                    if (channel.Item7Check.IsChecked.Value)
+                    if (channel.Item7Check.IsChecked == true)
                     {
                         if (seriesList.Count < 8)
                         {
                             int index = getIndex();
                             seriesList[16] = index;
                             Chart.ViewModel.setSeries(index, 1, colorList[index]);
-                            Chart.setLegend(index, "PUMP");
+                            Chart.setLegend(index, "온수 밸브");
                         }
                         else
                         {
@@ -683,21 +610,25 @@ namespace BliMonitorTest
                     else
                     {
                         channel.list7.Clear();
-                        int index = seriesList[16];
-                        seriesList.Remove(16);
-                        Chart.ViewModel.unSetSeries(index);
-                        Chart.setLegend(index, "");
+                        if (seriesList.ContainsKey(16))
+                        {
+                            int index = seriesList[16];
+                            seriesList.Remove(16);
+                            Chart.ViewModel.unSetSeries(index);
+                            Chart.setLegend(index, "");
+                        }
                     }
                     break;
+
                 case "Item8Check":
-                    if (channel.Item8Check.IsChecked.Value)
+                    if (channel.Item8Check.IsChecked == true)
                     {
                         if (seriesList.Count < 8)
                         {
                             int index = getIndex();
                             seriesList[17] = index;
-                            Chart.ViewModel.setSeries(index, 2, colorList[index]);
-                            Chart.setLegend(index, "Cold Sol");
+                            Chart.ViewModel.setSeries(index, 1, colorList[index]);
+                            Chart.setLegend(index, "출수 밸브");
                         }
                         else
                         {
@@ -708,12 +639,124 @@ namespace BliMonitorTest
                     else
                     {
                         channel.list8.Clear();
-                        int index = seriesList[17];
-                        seriesList.Remove(17);
-                        Chart.ViewModel.unSetSeries(index);
-                        Chart.setLegend(index, "");
+                        if (seriesList.ContainsKey(17))
+                        {
+                            int index = seriesList[17];
+                            seriesList.Remove(17);
+                            Chart.ViewModel.unSetSeries(index);
+                            Chart.setLegend(index, "");
+                        }
                     }
                     break;
+            }
+        }
+
+        private void StartConnectionWatchdog()
+        {
+            lock (_connWatchLock)
+            {
+                StopConnectionWatchdog();
+
+                _waitingFirstResponse = true;
+                _lastResponseAt = DateTime.Now;
+
+                _connectionWatchdog = new System.Timers.Timer(500);
+                _connectionWatchdog.AutoReset = true;
+                _connectionWatchdog.Elapsed += ConnectionWatchdog_Elapsed;
+                _connectionWatchdog.Start();
+            }
+        }
+
+        private void StopConnectionWatchdog()
+        {
+            lock (_connWatchLock)
+            {
+                if (_connectionWatchdog != null)
+                {
+                    try
+                    {
+                        _connectionWatchdog.Stop();
+                        _connectionWatchdog.Elapsed -= ConnectionWatchdog_Elapsed;
+                        _connectionWatchdog.Dispose();
+                    }
+                    catch { }
+                    _connectionWatchdog = null;
+                }
+
+                _waitingFirstResponse = false;
+            }
+        }
+
+        private void ConnectionWatchdog_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            try
+            {
+                if (!_waitingFirstResponse) return;
+
+                if (DateTime.Now - _lastResponseAt < _connectionTimeout)
+                    return;
+
+                _waitingFirstResponse = false;
+
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    try
+                    {
+                        StopTimerSafe();
+                        StopConnectionWatchdog();
+
+                        try { port.DataReceived -= Port_DataReceived; } catch { }
+                        try
+                        {
+                            if (port != null && port.IsOpen)
+                                port.Close();
+                        }
+                        catch { }
+
+                        lock (_rxLock)
+                        {
+                            _rxBuffer.Clear();
+                        }
+
+                        // 연결이 끊어졌을 때 ParameterWindow가 열려있으면 강제로 닫기
+                        CloseParameterWindowIfOpen();
+
+                        channel.ConnectState = 0;
+                        ConnectButton.Content = "연결";
+
+                        ToastMessage.ToastService.AppToast.Show("장비 응답이 없어 연결을 자동 해제했습니다.");
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Warn("ConnectionWatchdog 자동 해제 실패", ex);
+                    }
+                }));
+            }
+            catch (Exception ex)
+            {
+                log.Warn("ConnectionWatchdog_Elapsed 실패", ex);
+            }
+        }
+
+        private void CloseParameterWindowIfOpen()
+        {
+            try
+            {
+                if (channel?.parameterWindow != null)
+                {
+                    var win = channel.parameterWindow;
+
+                    if (win.IsVisible)
+                    {
+                        win.Close();
+                    }
+
+                    channel.parameterWindow = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Warn("ParameterWindow 강제 종료 실패", ex);
             }
         }
 
@@ -725,7 +768,7 @@ namespace BliMonitorTest
                 timer.Interval = 1000;
                 timer.AutoReset = true;
             }
-            // 중복 방지: 이벤트 핸들러를 항상 ‘먼저 제거 → 다시 등록’
+
             timer.Elapsed -= Timer_Elapsed;
             timer.Elapsed += Timer_Elapsed;
         }
@@ -733,8 +776,8 @@ namespace BliMonitorTest
         private void StartTimerSafe()
         {
             EnsureTimer();
-            timer.Stop();   // 상태 초기화
-            timer.Start();  // 확실히 시작
+            timer.Stop();
+            timer.Start();
         }
 
         private void StopTimerSafe()
@@ -742,94 +785,18 @@ namespace BliMonitorTest
             if (timer != null)
             {
                 timer.Stop();
-                timer.Elapsed -= Timer_Elapsed; // 재연결 시 중복 방지
+                timer.Elapsed -= Timer_Elapsed;
             }
         }
 
-        // UI 스레드에서만 호출되어 캐시 업데이트
         private void UseDummyCheck_Checked(object sender, RoutedEventArgs e)
         {
             _useDummyCached = true;
         }
+
         private void UseDummyCheck_Unchecked(object sender, RoutedEventArgs e)
         {
             _useDummyCached = false;
         }
-
-        private List<byte[]> ExtractFramesFromBuffer(List<byte> buf)
-        {
-            // STX=0x12, VER=0x01, ETX=0x34
-            byte stx = (byte)0x12;
-            byte ver = (byte)0x01;
-            byte etx = (byte)0x34;
-
-            var frames = new List<byte[]>();
-
-            while (true)
-            {
-                // 1) STX 찾기
-                int stxPos = buf.IndexOf(stx);
-                if (stxPos < 0)
-                {
-                    // STX가 없다면 전부 노이즈로 보고 비움
-                    buf.Clear();
-                    break;
-                }
-
-                // STX 앞 찌꺼기 제거
-                if (stxPos > 0)
-                    buf.RemoveRange(0, stxPos);
-
-                // 2) 최소 헤더(0..3) 확보: STX VER CMD SIZE
-                if (buf.Count < 4)
-                    break;
-
-                // VER 확인
-                if (buf[1] != ver)
-                {
-                    // STX는 맞았지만 다음 바이트가 기대 VER이 아님 → STX 1바이트 버리고 재탐색
-                    buf.RemoveAt(0);
-                    continue;
-                }
-
-                // CMD 확인(원하는 커맨드만 프레임으로 인정)
-                byte cmd = buf[2];
-                if (!_allowedCmd.Contains(cmd))
-                {
-                    buf.RemoveAt(0);
-                    continue;
-                }
-
-                // 3) SIZE 읽기
-                int size = buf[3];
-
-                // SIZE sanity 체크
-                if (size < MIN_FRAME_LEN || size > MAX_FRAME_LEN)
-                {
-                    buf.RemoveAt(0);
-                    continue;
-                }
-
-                // 아직 프레임 전체가 안 모였으면 대기
-                if (buf.Count < size)
-                    break;
-
-                // 4) ETX 확인 (프레임 끝)
-                if (buf[size - 1] != etx)
-                {
-                    // 경계가 밀렸거나 가짜 STX
-                    buf.RemoveAt(0);
-                    continue;
-                }
-
-                // 5) 프레임 추출 + 버퍼에서 소비
-                byte[] frame = buf.GetRange(0, size).ToArray();
-                frames.Add(frame);
-                buf.RemoveRange(0, size);
-            }
-
-            return frames;
-        }
-
     }
 }

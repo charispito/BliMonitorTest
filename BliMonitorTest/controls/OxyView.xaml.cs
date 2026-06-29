@@ -131,23 +131,6 @@ namespace BliMonitorTest.controls
                 one.ClearChartDataAndResetTime();
                 return;
             }
-
-            // 다채널 메인 창: 이미 this.ViewModel 클리어로 충분 (필요 시 추가 커버)
-            BliMonitorTest.MultiWindow1 multi1 = win as BliMonitorTest.MultiWindow1;
-            if (multi1 != null)
-            {
-                // 기본적으로 this.ViewModel만 지우면 충분합니다.
-                // multi1.Chart.ViewModel와 this.ViewModel가 동일한 경우 이미 반영됨.
-                return;
-            }
-
-            // 다채널 보조 창(MultiWindow2)도 동일 처리
-            BliMonitorTest.MultiWindow2 multi2 = win as BliMonitorTest.MultiWindow2;
-            if (multi2 != null)
-            {
-                // this.ViewModel 클리어로 충분. 필요시 multi2 내 다른 OxyView를 추가로 처리.
-                return;
-            }
         }
 
 
@@ -242,8 +225,6 @@ namespace BliMonitorTest.controls
                 vm.FullscreenPlotModel.InvalidatePlot(true);
             }
         }
-
-
         private void BtnOpenDb_Click(object sender, RoutedEventArgs e)
         {
             var receiveDataQueryWindow = new ReceiveDataQueryWindow();

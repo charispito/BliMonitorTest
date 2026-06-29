@@ -4,18 +4,22 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:BliMonitorTest.controls"
-             mc:Ignorable="d" d:DesignWidth="800" Height="270">
+             mc:Ignorable="d"
+             d:DesignWidth="1100"
+             Height="570">
+
     <Border Margin="6" BorderBrush="#AAA" BorderThickness="1" Background="#FFF">
-        <Grid ShowGridLines="False">
+        <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="5"/>
                 <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition/>
+                <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition/>
-                <ColumnDefinition/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="300"/>
                 <ColumnDefinition Width="5"/>
             </Grid.ColumnDefinitions>
+
             <Grid.RowDefinitions>
                 <RowDefinition Height="5"/>
                 <RowDefinition Height="38"/>
@@ -24,35 +28,105 @@
                 <RowDefinition Height="38"/>
                 <RowDefinition Height="38"/>
                 <RowDefinition Height="38"/>
+                <RowDefinition Height="38"/>
+                <RowDefinition Height="38"/>
+                <RowDefinition Height="38"/>
+                <RowDefinition Height="38"/>
+                <RowDefinition Height="38"/>
+                <RowDefinition Height="38"/>
+                <RowDefinition Height="38"/>
+                <RowDefinition Height="46"/>
+                <RowDefinition Height="*"/>
                 <RowDefinition Height="5"/>
             </Grid.RowDefinitions>
-            <local:DoubleLabel Grid.Row="1" Grid.Column="2" Margin="5, 3" x:Name="Item1"/>
-            <local:DoubleLabel Grid.Row="2" Grid.Column="2" Margin="5, 3" x:Name="Item2"/>
-            <local:DoubleLabel Grid.Row="3" Grid.Column="2" Margin="5, 3" x:Name="Item3"/>
-            <local:DoubleLabel Grid.Row="4" Grid.Column="2" Margin="5, 3" x:Name="Item4"/>
-            <local:DoubleLabel Grid.Row="5" Grid.Column="2" Margin="5, 3" x:Name="Item5"/>
-            <local:DoubleLabel Grid.Row="6" Grid.Column="2" Margin="5, 3" x:Name="Item6"/>
+
+            <!-- 좌측 체크 -->
             <CheckBox x:Name="Item1Check" Grid.Row="1" Grid.Column="1" VerticalAlignment="Center"/>
             <CheckBox x:Name="Item2Check" Grid.Row="2" Grid.Column="1" VerticalAlignment="Center"/>
             <CheckBox x:Name="Item3Check" Grid.Row="3" Grid.Column="1" VerticalAlignment="Center"/>
             <CheckBox x:Name="Item4Check" Grid.Row="4" Grid.Column="1" VerticalAlignment="Center"/>
 
-            <local:DoubleLabel Grid.Row="1" Grid.Column="4" Margin="5, 3" x:Name="Item11"/>
-            <local:DoubleLabel Grid.Row="2" Grid.Column="4" Margin="5, 3" x:Name="Item12"/>
-            <local:DoubleLabel Grid.Row="3" Grid.Column="4" Margin="5, 3" x:Name="Item13"/>
-            <local:DoubleLabel Grid.Row="4" Grid.Column="4" Margin="5, 3" x:Name="Item14"/>
-            <local:DoubleLabel Grid.Row="5" Grid.Column="4" Margin="5, 3" x:Name="Item15"/>
-            <local:DoubleLabel Grid.Row="6" Grid.Column="4" Margin="5, 3" x:Name="Item16"/>
+            <!-- 좌측 정보 -->
+            <local:DoubleLabel Grid.Row="1" Grid.Column="2" Margin="5,3" x:Name="Item1"/>
+            <local:DoubleLabel Grid.Row="2" Grid.Column="2" Margin="5,3" x:Name="Item2"/>
+            <local:DoubleLabel Grid.Row="3" Grid.Column="2" Margin="5,3" x:Name="Item3"/>
+            <local:DoubleLabel Grid.Row="4" Grid.Column="2" Margin="5,3" x:Name="Item4"/>
+            <local:DoubleLabel Grid.Row="5" Grid.Column="2" Margin="5,3" x:Name="Item5"/>
+            <local:DoubleLabel Grid.Row="6" Grid.Column="2" Margin="5,3" x:Name="Item6"/>
+            <local:DoubleLabel Grid.Row="7" Grid.Column="2" Margin="5,3" x:Name="Item7"/>
+            <local:DoubleLabel Grid.Row="8" Grid.Column="2" Margin="5,3" x:Name="Item8"/>
+            <local:DoubleLabel Grid.Row="9" Grid.Column="2" Margin="5,3" x:Name="Item9"/>
+            <local:DoubleLabel Grid.Row="10" Grid.Column="2" Margin="5,3" x:Name="Item10"/>
+            <local:DoubleLabel Grid.Row="11" Grid.Column="2" Margin="5,3" x:Name="Item17"/>
+            <local:DoubleLabel Grid.Row="12" Grid.Column="2" Margin="5,3" x:Name="Item18"/>
+            <local:DoubleLabel Grid.Row="13" Grid.Column="2" Margin="5,3" x:Name="Item19"/>
+
+            <!-- 가운데 체크 -->
             <CheckBox x:Name="Item5Check" Grid.Row="1" Grid.Column="3" VerticalAlignment="Center"/>
             <CheckBox x:Name="Item6Check" Grid.Row="2" Grid.Column="3" VerticalAlignment="Center"/>
             <CheckBox x:Name="Item7Check" Grid.Row="3" Grid.Column="3" VerticalAlignment="Center"/>
             <CheckBox x:Name="Item8Check" Grid.Row="4" Grid.Column="3" VerticalAlignment="Center"/>
 
-            <local:DoubleLabel Grid.Row="2" Grid.Column="5" Margin="5,3,5,3" x:Name="Item17" TitleBackground="#652822E8"/>
-            <local:DoubleLabel Grid.Row="3" Grid.Column="5" Margin="5,3,5,3" x:Name="Item18" TitleBackground="#652822E8"/>
-            <local:DoubleLabel Grid.Row="4" Grid.Column="5" Margin="5,3,5,3" x:Name="Statebox" TitleBackground="#652822E8"/>
-            <local:DoubleLabel TitleBroderBrush="Black" ContentBroderBrush="Black" ContentSize="14" TitleSize="14" Grid.RowSpan="1" x:Name="ChannelView" Grid.Row="1" Grid.Column="5" TitleBackground="#FFF" Margin="5, 4" Title="연결상태"/>
-            <Button Padding="0" x:Name="ParameterButton" Grid.Row="6" Grid.Column="5" Margin="5,2,5,4" Content="파라미터(설정)" FontSize="15" Background="#652822E8" MinWidth="150"/>
+            <!-- 가운데 정보 -->
+            <local:DoubleLabel Grid.Row="1" Grid.Column="4" Margin="5,3" x:Name="Item11"/>
+            <local:DoubleLabel Grid.Row="2" Grid.Column="4" Margin="5,3" x:Name="Item12"/>
+            <local:DoubleLabel Grid.Row="3" Grid.Column="4" Margin="5,3" x:Name="Item13"/>
+            <local:DoubleLabel Grid.Row="4" Grid.Column="4" Margin="5,3" x:Name="Item14"/>
+            <local:DoubleLabel Grid.Row="5" Grid.Column="4" Margin="5,3" x:Name="Item15"/>
+            <local:DoubleLabel Grid.Row="6" Grid.Column="4" Margin="5,3" x:Name="Item16"/>
+            <local:DoubleLabel Grid.Row="7" Grid.Column="4" Margin="5,3" x:Name="Item20"/>
+            <local:DoubleLabel Grid.Row="8" Grid.Column="4" Margin="5,3" x:Name="Item21"/>
+            <local:DoubleLabel Grid.Row="9" Grid.Column="4" Margin="5,3" x:Name="Item22"/>
+            <local:DoubleLabel Grid.Row="10" Grid.Column="4" Margin="5,3" x:Name="Item23"/>
+            <local:DoubleLabel Grid.Row="11" Grid.Column="4" Margin="5,3" x:Name="Item24"/>
+            <local:DoubleLabel Grid.Row="12" Grid.Column="4" Margin="5,3" x:Name="Item25"/>
+            <local:DoubleLabel Grid.Row="13" Grid.Column="4" Margin="5,3" x:Name="Item26"/>
+
+            <!-- 파라미터 버튼 -->
+            <Button x:Name="ParameterButton"
+                    Grid.Row="14"
+                    Grid.Column="4"
+                    Margin="5,5,5,5"
+                    Content="파라미터(설정)"
+                    FontSize="15"
+                    Background="#652822E8"
+                    MinWidth="150"/>
+
+            <!-- 우측 상태 스크롤 영역 -->
+            <Border Grid.Row="1" Grid.Column="5" Grid.RowSpan="15" Margin="5,3" BorderBrush="#DDD" BorderThickness="1" Background="#FAFAFA">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="6">
+                        <local:DoubleLabel TitleBroderBrush="Black"
+                                           ContentBroderBrush="Black"
+                                           ContentSize="14"
+                                           TitleSize="14"
+                                           x:Name="ChannelView"
+                                           TitleBackground="#FFF"
+                                           Margin="0,0,0,8"
+                                           Title="연결상태"/>
+
+                        <local:DoubleLabel Margin="0,0,0,3" x:Name="Item40" TitleBackground="#652822E8"/>
+                        <local:DoubleLabel Margin="0,0,0,3" x:Name="Item41" TitleBackground="#652822E8"/>
+                        <local:DoubleLabel Margin="0,0,0,3" x:Name="Item42" TitleBackground="#652822E8"/>
+                        <local:DoubleLabel Margin="0,0,0,3" x:Name="Item43" TitleBackground="#652822E8"/>
+                        <local:DoubleLabel Margin="0,0,0,3" x:Name="Item44" TitleBackground="#652822E8"/>
+                        <local:DoubleLabel Margin="0,0,0,3" x:Name="Item45" TitleBackground="#652822E8"/>
+                        <local:DoubleLabel Margin="0,0,0,3" x:Name="Item46" TitleBackground="#652822E8"/>
+                        <local:DoubleLabel Margin="0,0,0,8" x:Name="Item47" TitleBackground="#652822E8"/>
+
+                        <local:DoubleLabel Margin="0,0,0,3" x:Name="Item48" TitleBackground="#652822E8"/>
+                        <local:DoubleLabel Margin="0,0,0,3" x:Name="Item49" TitleBackground="#652822E8"/>
+                        <local:DoubleLabel Margin="0,0,0,3" x:Name="Item50" TitleBackground="#652822E8"/>
+                        <local:DoubleLabel Margin="0,0,0,3" x:Name="Item51" TitleBackground="#652822E8"/>
+                        <local:DoubleLabel Margin="0,0,0,3" x:Name="Item52" TitleBackground="#652822E8"/>
+                        <local:DoubleLabel Margin="0,0,0,3" x:Name="Item53" TitleBackground="#652822E8"/>
+                        <local:DoubleLabel Margin="0,0,0,3" x:Name="Item54" TitleBackground="#652822E8"/>
+                        <local:DoubleLabel Margin="0,0,0,8" x:Name="Item55" TitleBackground="#652822E8"/>
+
+                        <local:DoubleLabel Margin="0,0,0,3" x:Name="Statebox" TitleBackground="#652822E8"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
         </Grid>
     </Border>
 </UserControl>

@@ -1,10 +1,4 @@
-﻿using BliMonitorTest.controls;
-using BliMonitorTest.data;
-using BliMonitorTest.setting;
-using BliMonitorTest.util;
-using BliMonitorTest.util.MonitoringDb;
-using log4net;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -21,6 +15,16 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using System.Xml.Linq;
+using BliMonitorTest.controls;
+using BliMonitorTest.data;
+using BliMonitorTest.setting;
+using BliMonitorTest.util;
+using BliMonitorTest.util.MonitoringDb;
+using log4net;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Spreadsheet;
+using Microsoft.Win32;
 
 namespace BliMonitorTest
 {
@@ -79,6 +83,14 @@ namespace BliMonitorTest
         // 에러 데이터 DB저장 관련 상수
         private readonly int _channelNoForDb = 1;
 
+        private Duo8ErrorResponse _lastErrorResponse;
+
+        private Duo8StatusPacket _lastStatusPacket;
+        private DateTime _lastStatusUiUpdateAt = DateTime.MinValue;
+
+        // 상태 UI 갱신 주기 (기본 10초)
+        private TimeSpan _statusUiRefreshInterval = TimeSpan.FromSeconds(10);
+
         public ParameterWindow(SerialPort port, OneChannelValueDetail detail)
         {
             InitializeComponent();
@@ -114,61 +126,46 @@ namespace BliMonitorTest
 
         private void Initialize2()
         {
-            ObservableCollection<SettingData> list = new ObservableCollection<SettingData>();
-            list.Add(new SettingData() { Name = "에러 내용" });
-            list.Add(new SettingData() { Name = "운전 모드" });
-            list.Add(new SettingData() { Name = "히터 온도" });
-            list.Add(new SettingData() { Name = "히터 오프 타임" });
-            list.Add(new SettingData() { Name = "배기 온도" });
-            list.Add(new SettingData() { Name = "열풍 온도" });
-            list.Add(new SettingData() { Name = "열풍 On Time" });
-            list.Add(new SettingData() { Name = "운전 횟수" });
+            /*
+            ObservableCollection<ErrorData> list = new ObservableCollection<ErrorData>();
+            list.Add(new ErrorData() { Name = "유효" });
+            list.Add(new ErrorData() { Name = "SEQ" });
+            list.Add(new ErrorData() { Name = "에러코드" });
+            list.Add(new ErrorData() { Name = "에러명" });
+            list.Add(new ErrorData() { Name = "온수 Temp" });
+            list.Add(new ErrorData() { Name = "냉수 Temp" });
+            list.Add(new ErrorData() { Name = "ADC HOT" });
+            list.Add(new ErrorData() { Name = "ADC COLD" });
+            
             ErrorGrid.ItemsSource = list;
-            MicomGrid.ItemsSource = getModeData();
-            MicomGrid2.ItemsSource = getModeData();
-            MicomGrid3.ItemsSource = getModeData();
-            MicomGrid4.ItemsSource = getModeData();
-            MicomGrid5.ItemsSource = getModeData();
-            MotorGrid.ItemsSource = getMotorData();
-            mode11 = getModeData();
-            mode12 = getModeData();
-            mode13 = getModeData();
-            mode14 = getModeData();
-            mode15 = getModeData();
-            SetGrid1.ItemsSource = mode11;
-            SetGrid2.ItemsSource = mode12;
-            SetGrid3.ItemsSource = mode13;
-            SetGrid4.ItemsSource = mode14;
-            SetGrid5.ItemsSource = mode15;
-            motor1 = getMotorData();
-            fan1 = getFanData();
-            heater11 = getHeaterData();
-            heater12 = getHeaterData2();
-            SetGrid6.ItemsSource = motor1;
-            HeaterGrid.ItemsSource = getHeaterData();
-            FanGrid.ItemsSource = getFanData();
-            HeaterGrid2.ItemsSource = getHeaterData2();
-            HeaterGridSetting.ItemsSource = heater11;
-            FanGrid2.ItemsSource = fan1;
-            HeaterGridSetting2.ItemsSource = heater12;
-            ComplieGrid.ItemsSource = getCompileData(2022, 1, 1, 0);
+            */
+
+            ErrorGrid.ItemsSource = BuildDefaultErrorRows();
+
+            InitBottomDuo8Editor();
+            CopyToEditButton.Click += CopyToEditButton_Click;
+
             SaveButton.Click += SaveButton_Click;
             DeleteButton.Click += DeleteButton_Click;
             RefreshButton.Click += RefreshButton_Click;
             ErrorSaveButton.Click += ErrorSaveButton_Click;
             ErrorDeleteButton.Click += ErrorDeleteButton_Click;
             ErrorRefreshButton.Click += ErrorRefreshButton_Click;
+            ErrorExcelButton.Click += ErrorExcelButton_Click;
             OpenErrorDataQueryButton.Click += OpenErrorDataQueryButton_Click;
 
             // 검색 필터 이벤트 연결 (XAML의 x:Name 동일 가정)
             FileSearchBox.TextChanged += FileSearchBox_TextChanged;
             ErrorSearchBox.TextChanged += ErrorSearchBox_TextChanged;
 
-            if (port != null)
+            OneChannelWindow parent = Window.GetWindow(oneChannel) as OneChannelWindow;
+            bool isDummyMode = parent != null && parent.IsDummyMode;
+
+            // 더미가 체크되었다면 더미데이터 설정
+            if (port != null || isDummyMode)
             {
                 Loaded += ParameterWindow_Loaded1;
                 Closed += ParameterWindow_Closed1;
-                RightButton.Click += RightButton_Click;
                 ReadParamButton.Click += ReadParamButton_Click;
                 ReadErrorButton.Click += (s, e) =>
                 {
@@ -180,21 +177,38 @@ namespace BliMonitorTest
 
                     try
                     {
+                        _isReadingError = true;
+                        ReadErrorButton.IsEnabled = false;
+
+                        if (isDummyMode)
+                        {
+                            var gen = new BliMonitorTest.dummy.DummyValueGenerator();
+                            byte[] dummyErr = gen.BuildDummyErrorResponse();
+                            setError(dummyErr);
+                            ToastMessage.ToastService.AppToast.Show("더미 에러 정보를 갱신했습니다.");
+                            return;
+                        }
+
                         byte[] command = Protocol.GetError();
                         command.PrintHex(1);
-                        oneChannel.setParameter();
-                        port.Write(command, 0, command.Length);
-                    } catch (Exception ex) {
-                        log.Error("ReadErrorButton 전송 실패", ex);
-                        _isReadingError = false;
-                        ReadErrorButton.IsEnabled = true;
-                        //MessageBox.Show("에러 요청 전송 중 문제가 발생했습니다.");
-                        ToastMessage.ToastService.AppToast.Show("에러 요청 전송 중 문제가 발생했습니다.");
-                    } finally {
-                        // 향후 패킷수신시 자동 저장 기능 구현 예정
-                        AutoSaveErrorDataToFileDebounced();
 
-                        // 요청 상태 해제
+                        if (port != null && port.IsOpen)
+                        {
+                            oneChannel.setParameter();
+                            port.Write(command, 0, command.Length);
+                        }
+                        else
+                        {
+                            ToastMessage.ToastService.AppToast.Show("포트가 연결되어 있지 않습니다.");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Error("ReadErrorButton 전송 실패", ex);
+                        ToastMessage.ToastService.AppToast.Show("에러 요청 전송 중 문제가 발생했습니다.");
+                    }
+                    finally
+                    {
                         _isReadingError = false;
                         ReadErrorButton.IsEnabled = true;
                     }
@@ -204,8 +218,256 @@ namespace BliMonitorTest
                 ResetErrorButton.Click += ResetErrorButton_Click;
             }
 
+            
+            // 신규 제품에서는 파라미터 제어 기능 제외
+            if (ReadParamButton != null) ReadParamButton.IsEnabled = true;
+            if (WriteParamButton != null) WriteParamButton.IsEnabled = false;
+            if (CopyToEditButton != null) CopyToEditButton.IsEnabled = true;
+
+            // 에러그리드 초기값 셋팅
+            SetDefaultErrorGrid();
+
+            // 하단을 상태정보 표시용으로 사용
+            SetBottomStatusGridDefaults();
+
             InitCollectionViews();
             this.KeyDown += Window_KeyDown;
+        }
+
+        private ObservableCollection<StatusViewRow> _receivedRows = new ObservableCollection<StatusViewRow>();
+        private ObservableCollection<StatusViewRow> _editableRows = new ObservableCollection<StatusViewRow>();
+
+        private void InitBottomDuo8Editor()
+        {
+            try
+            {
+                _receivedRows = BuildEmptyDuo8RowSet();
+                _editableRows = BuildEmptyDuo8RowSet();
+
+                ReceivedParamGrid.ItemsSource = ToTwoColumnRows(_receivedRows);
+                EditableParamGrid.ItemsSource = ToTwoColumnRows(_editableRows);
+            }
+            catch (Exception ex)
+            {
+                log.Warn("InitBottomDuo8Editor 실패", ex);
+            }
+        }
+
+        private ObservableCollection<StatusViewRow> BuildEmptyDuo8RowSet()
+        {
+            return new ObservableCollection<StatusViewRow>
+            {
+                new StatusViewRow { Name = "제품코드", Value = "" },
+                new StatusViewRow { Name = "에러코드", Value = "" },
+                new StatusViewRow { Name = "초기급수 완료", Value = "" },
+                new StatusViewRow { Name = "초기급수 진행", Value = "" },
+                new StatusViewRow { Name = "물부족 감지", Value = "" },
+                new StatusViewRow { Name = "버퍼수위 부족", Value = "" },
+                new StatusViewRow { Name = "재가열 동작", Value = "" },
+                new StatusViewRow { Name = "가열 진행", Value = "" },
+                new StatusViewRow { Name = "히터 PWM", Value = "" },
+                new StatusViewRow { Name = "야간 상태", Value = "" },
+                new StatusViewRow { Name = "테스트 모드", Value = "" },
+                new StatusViewRow { Name = "선택 모드", Value = "" },
+                new StatusViewRow { Name = "선택 용량", Value = "" },
+                new StatusViewRow { Name = "출수 단계", Value = "" },
+                new StatusViewRow { Name = "출수 세부단계", Value = "" },
+                new StatusViewRow { Name = "온수 Temp Raw", Value = "" },
+                new StatusViewRow { Name = "냉수 Temp Raw", Value = "" },
+                new StatusViewRow { Name = "Float Stable", Value = "" },
+                new StatusViewRow { Name = "BallTop Stable", Value = "" },
+                new StatusViewRow { Name = "WaterBuf Stable", Value = "" },
+                new StatusViewRow { Name = "히터 출력", Value = "" },
+                new StatusViewRow { Name = "컴프 출력", Value = "" },
+                new StatusViewRow { Name = "온수 밸브", Value = "" },
+                new StatusViewRow { Name = "냉수 선택 밸브", Value = "" },
+                new StatusViewRow { Name = "출수 밸브", Value = "" },
+
+                new StatusViewRow { Name = "Button HOT 선택", Value = "" },
+                new StatusViewRow { Name = "Button WARM 선택", Value = "" },
+                new StatusViewRow { Name = "Button NORMAL 선택", Value = "" },
+                new StatusViewRow { Name = "Button COOL 선택", Value = "" },
+                new StatusViewRow { Name = "Button COLD 선택", Value = "" },
+                new StatusViewRow { Name = "Button REHEAT", Value = "" },
+                new StatusViewRow { Name = "Button 150mL", Value = "" },
+                new StatusViewRow { Name = "Button 1000mL", Value = "" },
+                new StatusViewRow { Name = "Button OUTLET", Value = "" },
+
+                new StatusViewRow { Name = "A Heater", Value = "" },
+                new StatusViewRow { Name = "A Comp", Value = "" },
+                new StatusViewRow { Name = "A HotValve", Value = "" },
+                new StatusViewRow { Name = "A ColdSel", Value = "" },
+                new StatusViewRow { Name = "A Outlet", Value = "" },
+                new StatusViewRow { Name = "A PumpOut", Value = "" },
+                new StatusViewRow { Name = "A PumpDia", Value = "" },
+                new StatusViewRow { Name = "A Airvent", Value = "" },
+
+                new StatusViewRow { Name = "B Float", Value = "" },
+                new StatusViewRow { Name = "B BallTop", Value = "" },
+                new StatusViewRow { Name = "B WaterBuf", Value = "" },
+                new StatusViewRow { Name = "B Empty", Value = "" },
+                new StatusViewRow { Name = "B BufLow", Value = "" },
+                new StatusViewRow { Name = "B Reheat", Value = "" },
+                new StatusViewRow { Name = "B HotIng", Value = "" },
+                new StatusViewRow { Name = "B Disp", Value = "" },
+
+                new StatusViewRow { Name = "ButtonInfo", Value = "" },
+                new StatusViewRow { Name = "Status A", Value = "" },
+                new StatusViewRow { Name = "Status B", Value = "" }
+            };
+        }
+
+        private void CopyToEditButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (_receivedRows == null || _receivedRows.Count == 0)
+                {
+                    ToastMessage.ToastService.AppToast.Show("복사할 수신 데이터가 없습니다.");
+                    return;
+                }
+
+                _editableRows.Clear();
+
+                foreach (var row in _receivedRows)
+                {
+                    _editableRows.Add(new StatusViewRow
+                    {
+                        Name = row.Name,
+                        Value = row.Value
+                    });
+                }
+
+                EditableParamGrid.ItemsSource = null;
+                EditableParamGrid.ItemsSource = ToTwoColumnRows(_editableRows);
+
+                RightSet = true;
+                ToastMessage.ToastService.AppToast.Show("좌측 수신 데이터를 우측 편집 영역으로 복사했습니다.");
+            }
+            catch (Exception ex)
+            {
+                log.Warn("CopyToEditButton_Click 실패", ex);
+                ToastMessage.ToastService.AppToast.Show("복사 중 문제가 발생했습니다.");
+            }
+        }
+
+        private void SetBottomStatusGridDefaults()
+        {
+            try
+            {
+                _receivedRows = BuildEmptyDuo8RowSet();
+                _editableRows = BuildEmptyDuo8RowSet();
+
+                if (ReceivedParamGrid != null)
+                    ReceivedParamGrid.ItemsSource = ToTwoColumnRows(_receivedRows);
+
+                if (EditableParamGrid != null)
+                    EditableParamGrid.ItemsSource = ToTwoColumnRows(_editableRows);
+            }
+            catch (Exception ex)
+            {
+                log.Warn("SetBottomStatusGridDefaults 실패", ex);
+            }
+        }
+
+        public void setStatus(byte[] data)
+        {
+            Duo8StatusPacket pkt = Duo8PacketParser.ParseStatus(data);
+            if (pkt == null)
+                return;
+
+            _lastStatusPacket = pkt;
+
+            DateTime now = DateTime.Now;
+            if ((now - _lastStatusUiUpdateAt) < _statusUiRefreshInterval)
+                return;
+
+            _lastStatusUiUpdateAt = now;
+            RefreshStatusUi(pkt);
+        }
+
+        public void SetStatusUiRefreshIntervalSeconds(int seconds)
+        {
+            if (seconds < 1)
+                seconds = 1;
+
+            _statusUiRefreshInterval = TimeSpan.FromSeconds(seconds);
+        }
+
+        private void RefreshStatusUi(Duo8StatusPacket pkt)
+        {
+            if (pkt == null)
+                return;
+
+            ushort buttonInfo = pkt.ButtonInfo;
+            byte statusA = pkt.StatusA;
+            byte statusB = pkt.StatusB;
+
+            var statusList = new ObservableCollection<BliMonitorTest.data.StatusViewRow>();
+
+            statusList.Add(new StatusViewRow() { Name = "제품코드", Value = Duo8ValueText.GetModelName(pkt.ModelCode) + $" (0x{pkt.ModelCode:X2})" });
+            statusList.Add(new StatusViewRow() { Name = "에러코드", Value = $"0x{pkt.ErrorCode:X2} / {Duo8ValueText.GetErrorText(pkt.ErrorCode)}" });
+            statusList.Add(new StatusViewRow() { Name = "초기급수 완료", Value = Duo8ValueText.ToYesNo(pkt.WaterInitDone) });
+            statusList.Add(new StatusViewRow() { Name = "초기급수 진행", Value = Duo8ValueText.ToYesNo(pkt.WaterInitGo) });
+            statusList.Add(new StatusViewRow() { Name = "물부족 감지", Value = Duo8ValueText.ToYesNo(pkt.EmptyDetect) });
+            statusList.Add(new StatusViewRow() { Name = "버퍼수위 부족", Value = Duo8ValueText.ToYesNo(pkt.BufferLow) });
+            statusList.Add(new StatusViewRow() { Name = "재가열 동작", Value = Duo8ValueText.ToOnOff(pkt.ReheatRunning) });
+            statusList.Add(new StatusViewRow() { Name = "가열 진행", Value = Duo8ValueText.ToOnOff(pkt.HotIng) });
+            statusList.Add(new StatusViewRow() { Name = "히터 PWM", Value = pkt.HeaterPwm.ToString() });
+            statusList.Add(new StatusViewRow() { Name = "야간 상태", Value = Duo8ValueText.ToOnOff(pkt.Night) });
+            statusList.Add(new StatusViewRow() { Name = "테스트 모드", Value = Duo8ValueText.ToOnOff(pkt.TestMode) });
+            statusList.Add(new StatusViewRow() { Name = "선택 모드", Value = Duo8ValueText.GetModeText(pkt.ModeSelected) });
+            statusList.Add(new StatusViewRow() { Name = "선택 용량", Value = Duo8ValueText.GetQtyText(pkt.QtySelected) });
+            statusList.Add(new StatusViewRow() { Name = "출수 단계", Value = Duo8ValueText.GetDispensePhaseText(pkt.DispensePhase) });
+            statusList.Add(new StatusViewRow() { Name = "출수 세부단계", Value = Duo8ValueText.GetDispenseSubPhaseText(pkt.DispenseSubPhase) });
+            statusList.Add(new StatusViewRow() { Name = "온수 Temp Raw", Value = pkt.HotTempRaw.ToString() });
+            statusList.Add(new StatusViewRow() { Name = "냉수 Temp Raw", Value = pkt.ColdTempRaw.ToString() });
+            statusList.Add(new StatusViewRow() { Name = "Float Stable", Value = Duo8ValueText.ToYesNo(pkt.FloatLowStable) });
+            statusList.Add(new StatusViewRow() { Name = "BallTop Stable", Value = Duo8ValueText.ToYesNo(pkt.BallTopFullStable) });
+            statusList.Add(new StatusViewRow() { Name = "WaterBuf Stable", Value = Duo8ValueText.ToYesNo(pkt.WaterBufFullStable) });
+            statusList.Add(new StatusViewRow() { Name = "히터 출력", Value = Duo8ValueText.ToOnOff(pkt.HeaterOutput) });
+            statusList.Add(new StatusViewRow() { Name = "컴프 출력", Value = Duo8ValueText.ToOnOff(pkt.CompressorOutput) });
+            statusList.Add(new StatusViewRow() { Name = "온수 밸브", Value = Duo8ValueText.ToOnOff(pkt.HotValveOutput) });
+            statusList.Add(new StatusViewRow() { Name = "냉수 선택 밸브", Value = Duo8ValueText.ToOnOff(pkt.ColdSelectOutput) });
+            statusList.Add(new StatusViewRow() { Name = "출수 밸브", Value = Duo8ValueText.ToOnOff(pkt.OutletValveOutput) });
+
+            statusList.Add(new StatusViewRow() { Name = "HOT 선택", Value = Duo8ValueText.GetBitState((buttonInfo & 0x0001) != 0) });
+            statusList.Add(new StatusViewRow() { Name = "WARM 선택", Value = Duo8ValueText.GetBitState((buttonInfo & 0x0002) != 0) });
+            statusList.Add(new StatusViewRow() { Name = "NORMAL 선택", Value = Duo8ValueText.GetBitState((buttonInfo & 0x0004) != 0) });
+            statusList.Add(new StatusViewRow() { Name = "COOL 선택", Value = Duo8ValueText.GetBitState((buttonInfo & 0x0008) != 0) });
+            statusList.Add(new StatusViewRow() { Name = "COLD 선택", Value = Duo8ValueText.GetBitState((buttonInfo & 0x0010) != 0) });
+            statusList.Add(new StatusViewRow() { Name = "REHEAT", Value = Duo8ValueText.GetBitState((buttonInfo & 0x0020) != 0) });
+            statusList.Add(new StatusViewRow() { Name = "150mL", Value = Duo8ValueText.GetBitState((buttonInfo & 0x0040) != 0) });
+            statusList.Add(new StatusViewRow() { Name = "1000mL", Value = Duo8ValueText.GetBitState((buttonInfo & 0x0080) != 0) });
+            statusList.Add(new StatusViewRow() { Name = "OUTLET", Value = Duo8ValueText.GetBitState((buttonInfo & 0x0100) != 0) });
+
+            statusList.Add(new StatusViewRow() { Name = "A Heater", Value = Duo8ValueText.GetBitState((statusA & 0x01) != 0) });
+            statusList.Add(new StatusViewRow() { Name = "A Compressor", Value = Duo8ValueText.GetBitState((statusA & 0x02) != 0) });
+            statusList.Add(new StatusViewRow() { Name = "A Hot Valve", Value = Duo8ValueText.GetBitState((statusA & 0x04) != 0) });
+            statusList.Add(new StatusViewRow() { Name = "A Cold Select", Value = Duo8ValueText.GetBitState((statusA & 0x08) != 0) });
+            statusList.Add(new StatusViewRow() { Name = "A Outlet Valve", Value = Duo8ValueText.GetBitState((statusA & 0x10) != 0) });
+            statusList.Add(new StatusViewRow() { Name = "A Pump Outlet", Value = Duo8ValueText.GetBitState((statusA & 0x20) != 0) });
+            statusList.Add(new StatusViewRow() { Name = "A Pump Diaphragm", Value = Duo8ValueText.GetBitState((statusA & 0x40) != 0) });
+            statusList.Add(new StatusViewRow() { Name = "A Pump Airvent", Value = Duo8ValueText.GetBitState((statusA & 0x80) != 0) });
+
+            statusList.Add(new StatusViewRow() { Name = "B Float Sensor", Value = Duo8ValueText.GetBitState((statusB & 0x01) != 0) });
+            statusList.Add(new StatusViewRow() { Name = "B Ball Top", Value = Duo8ValueText.GetBitState((statusB & 0x02) != 0) });
+            statusList.Add(new StatusViewRow() { Name = "B Water Buffer", Value = Duo8ValueText.GetBitState((statusB & 0x04) != 0) });
+            statusList.Add(new StatusViewRow() { Name = "B Empty Detect", Value = Duo8ValueText.GetBitState((statusB & 0x08) != 0) });
+            statusList.Add(new StatusViewRow() { Name = "B Buffer Low", Value = Duo8ValueText.GetBitState((statusB & 0x10) != 0) });
+            statusList.Add(new StatusViewRow() { Name = "B Reheat Running", Value = Duo8ValueText.GetBitState((statusB & 0x20) != 0) });
+            statusList.Add(new StatusViewRow() { Name = "B Hot Ing", Value = Duo8ValueText.GetBitState((statusB & 0x40) != 0) });
+            statusList.Add(new StatusViewRow() { Name = "B Dispensing", Value = Duo8ValueText.GetBitState((statusB & 0x80) != 0) });
+
+            statusList.Add(new StatusViewRow() { Name = "Button Raw", Value = $"0x{pkt.ButtonInfo:X4}" });
+            statusList.Add(new StatusViewRow() { Name = "StatusA Raw", Value = $"0x{pkt.StatusA:X2}" });
+            statusList.Add(new StatusViewRow() { Name = "StatusB Raw", Value = $"0x{pkt.StatusB:X2}" });
+
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                _receivedRows = statusList;
+                ReceivedParamGrid.ItemsSource = ToTwoColumnRows(_receivedRows);
+            }));
         }
 
         private void Window_KeyDown(object sender, KeyEventArgs e)
@@ -256,83 +518,66 @@ namespace BliMonitorTest
         {
             SetList();
             SetErrorList();
+            ClearParameterFileInputs();
+            ClearErrorFileInputs();
+            ToastMessage.ToastService.AppToast.Show("파일 목록을 새로고침했습니다.");
         }
 
         private void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
             DeleteSelectedCore(FileList.SelectedItems, hardDelete: false, kind: "Param");
+            ClearParameterFileInputs();
         }
 
         private void ListDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            ListBoxItem item = sender as ListBoxItem;
-            FileName.Text = item.Content.ToString();
-            SettingItem setting = management.ReadFromFile(item.Content.ToString());
-            mode11.Clear();
-            mode12.Clear();
-            mode13.Clear();
-            mode14.Clear();
-            mode15.Clear();
-            motor1.Clear();
-            fan1.Clear();
-            heater11.Clear();
-            heater12.Clear();
-            RightSet = true;
+            try
+            {
+                ListBoxItem item = sender as ListBoxItem;
+                if (item == null || item.Content == null)
+                    return;
 
-            foreach (SectionItem section in setting.mode1)
-            {
-                mode11.Add(new SettingData() { Name = section.Name, Value = section.Value1, Value2 = section.Value2 });
+                string fileName = item.Content.ToString();
+                if (string.IsNullOrWhiteSpace(fileName))
+                    return;
+
+                FileName.Text = fileName;
+                LoadParameterFile(fileName);
+                ToastMessage.ToastService.AppToast.Show("파라미터 파일을 불러왔습니다.");
             }
-            foreach (SectionItem section in setting.mode2)
+            catch (Exception ex)
             {
-                mode12.Add(new SettingData() { Name = section.Name, Value = section.Value1, Value2 = section.Value2 });
-            }
-            foreach (SectionItem section in setting.mode3)
-            {
-                mode13.Add(new SettingData() { Name = section.Name, Value = section.Value1, Value2 = section.Value2 });
-            }
-            foreach (SectionItem section in setting.mode4)
-            {
-                mode14.Add(new SettingData() { Name = section.Name, Value = section.Value1, Value2 = section.Value2 });
-            }
-            foreach (SectionItem section in setting.mode5)
-            {
-                mode15.Add(new SettingData() { Name = section.Name, Value = section.Value1, Value2 = section.Value2 });
-            }
-            foreach (SectionItem section in setting.motor)
-            {
-                motor1.Add(new SettingData() { Name = section.Name, Value = section.Value1, Value2 = section.Value2 });
-            }
-            foreach (SectionItem section in setting.fan)
-            {
-                fan1.Add(new SettingData() { Name = section.Name, Value = section.Value1, Value2 = section.Value2 });
-            }
-            foreach (SectionItem section in setting.heater1)
-            {
-                heater11.Add(new SettingData() { Name = section.Name, Value = section.Value1, Value2 = section.Value2 });
-            }
-            foreach (SectionItem section in setting.heater2)
-            {
-                heater12.Add(new SettingData() { Name = section.Name, Value = section.Value1, Value2 = section.Value2 });
+                log.Error("ListDoubleClick 실패", ex);
+                ToastMessage.ToastService.AppToast.Show("파라미터 파일을 불러오는 중 문제가 발생했습니다.");
             }
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            if (FileName.Text.Length == 0)
+            try
             {
-                //MessageBox.Show("파일명을 입력 하세요.");
-                ToastMessage.ToastService.AppToast.Show("파일명을 입력 하세요.");
-                return;
-            }
-            else
-            {
-                SettingItem item = GetSettingSectionData();
-                management.CreateConfig(FileName.Text.ToString(), item);
+                if (string.IsNullOrWhiteSpace(FileName.Text))
+                {
+                    ToastMessage.ToastService.AppToast.Show("파일명을 입력 하세요.");
+                    return;
+                }
+
+                if (_editableRows == null || _editableRows.Count == 0)
+                {
+                    ToastMessage.ToastService.AppToast.Show("저장할 파라미터 정보가 없습니다.");
+                    return;
+                }
+
+                SaveParameterFile(FileName.Text.Trim());
                 SetList();
-                SetErrorList();
-                //MessageBox.Show("저장 되었습니다.");
-                ToastMessage.ToastService.AppToast.Show("저장 되었습니다.");
+                ClearParameterFileInputs();
+
+                ToastMessage.ToastService.AppToast.Show("파라미터 정보를 저장했습니다.");
+            }
+            catch (Exception ex)
+            {
+                log.Error("SaveButton_Click 실패", ex);
+                ToastMessage.ToastService.AppToast.Show("파라미터 저장 중 문제가 발생했습니다.");
             }
         }
 
@@ -520,24 +765,33 @@ namespace BliMonitorTest
 
         private void WriteParamButton_Click(object sender, RoutedEventArgs e)
         {
-            if (!RightSet)
+            try
             {
-                //MessageBox.Show("값이 설정 되지 않았습니다.");
-                ToastMessage.ToastService.AppToast.Show("값이 설정 되지 않았습니다.");
-                return;
+                if (_editableRows == null || _editableRows.Count == 0)
+                {
+                    ToastMessage.ToastService.AppToast.Show("쓰기 대상 파라미터가 없습니다.");
+                    return;
+                }
+
+                if (!RightSet)
+                {
+                    ToastMessage.ToastService.AppToast.Show("먼저 좌측 데이터를 우측으로 복사(COPY)하세요.");
+                    return;
+                }
+
+                // TODO:
+                // 1. _editableRows 값을 Duo8 파라미터 Write 패킷 구조로 변환
+                // 2. MCU Write 명령 프레임 생성
+                // 3. port 또는 Dummy 인터페이스로 전송
+                // 4. 응답 ACK 처리
+
+                ToastMessage.ToastService.AppToast.Show("신규 제품 PARAMETER WRITE는 추후 구현 예정입니다.");
             }
-
-            byte[] command = GetParameterSettingData();
-
-            log.Debug("============        LOG DATA ParameterWindow.cs [WriteParamButton_Click] RESPONSE START       ==================");
-            log.Debug("WriteParamButton_Click RightSet : " + RightSet);
-            ByteLogHelper.LogPacket(command, "RX");
-            ByteLogHelper.ToHexWith0x(command);
-            ByteLogHelper.DumpLinesWith0x(command, 16);
-            log.Debug("============        LOG DATA ParameterWindow.cs [WriteParamButton_Click] RESPONSE END       ==================");
-
-            port.Write(command, 0, command.Length);
-            //PrintCommand(GetParameterSettingData());
+            catch (Exception ex)
+            {
+                log.Warn("WriteParamButton_Click 실패", ex);
+                ToastMessage.ToastService.AppToast.Show("파라미터 쓰기 준비 중 문제가 발생했습니다.");
+            }
         }
 
         private void ParameterWindow_Closed1(object sender, EventArgs e)
@@ -548,222 +802,361 @@ namespace BliMonitorTest
         private void ParameterWindow_Loaded1(object sender, RoutedEventArgs e)
         {
             oneChannel.ParameterMode = true;
-            byte[] command = Protocol.GetParameter();
-            port.Write(command, 0, command.Length);
-        }
 
-        private string GetErrorName(int[] errors0, int[] errors1)
-        {
-            Array.Reverse(errors0);
-            Array.Reverse(errors1);
-            StringBuilder builder = new StringBuilder();
-            int cnt = 0;
-            if (errors0 != null && errors0.Length > 0)
-                for (int i = 0; i < errors0.Length; i++)
+            try
+            {
+                OneChannelWindow parent = Window.GetWindow(oneChannel) as OneChannelWindow;
+                bool isDummyMode = parent != null && parent.IsDummyMode;
+
+                if (isDummyMode)
                 {
-                    if (errors0[i] == 1)
-                    {
-                        cnt++;
-                        switch (i)
-                        {
-                            case 0:
-                                return "모터 과부하";
-                            //builder.AppendLine("모터 과부하", true);
-                            //break;
-                            case 1:
-                                return "모터 단선";
-                            //builder.AppendLine("모터 단선", true);
-                            //break;
-                            case 2:
-                                return "히터 동작 이상";
-                            //builder.AppendLine("히터 동작 이상", true);
-                            //break;
-                            case 3:
-                                return "히터 동작 이상";
-                            //if (errors0[2] != 1)
-                            //    builder.AppendLine("히터 동작 이상", true);
-                            //else
-                            //    cnt--;
-                            //break;
-                            case 4:
-                                return "히터 센서 이상";
-                            //builder.AppendLine("히터 센서 이상", true);
-                            //break;
-                            case 5:
-                                return "배기 온도 이상";
-                            //builder.AppendLine("배기 온도 이상", true);
-                            //break;
-                            case 6:
-                                return "배기 센서 이상";
-                            //builder.AppendLine("배기 센서 이상", true);
-                            //break;
-                            case 7:
-                                return "배기 팬 이상";
-                                //builder.AppendLine("배기 팬 이상", true);
-                                //break;
-                        }
-                    }
+                    var gen = new BliMonitorTest.dummy.DummyValueGenerator();
+                    var rsp = new byte[37];
+                    var sample = gen.Next();
+                    BliMonitorTest.dummy.DummyValueGenerator.PatchStatusResponse37(rsp, sample);
+                    setStatus(rsp);
+                    return;
                 }
-            if (errors1 != null && errors1.Length > 0)
-                for (int i = 0; i < errors1.Length; i++)
+
+                byte[] command = Protocol.GetParameter();
+                command.PrintHex(1);
+
+                if (port != null && port.IsOpen)
                 {
-                    if (errors1[i] == 1)
-                    {
-                        cnt++;
-                        switch (i)
-                        {
-                            case 0:
-                                return "이물질감지";
-                            //builder.AppendLine("이물질감지", true);
-                            //break;
-                            case 1:
-                                return "도어 열림";
-                            //builder.AppendLine("도어 열림", true);
-                            //break;
-                            case 2:
-                                return "도어 열림";
-                            //if (errors1[1] != 1)
-                            //    builder.AppendLine("도어 열림", true);
-                            //else
-                            //    cnt--;
-                            //break;
-                            case 3:
-                                return "열풍 팬 에러";
-                            //builder.AppendLine("열풍 팬 에러", true);
-                            //break;
-                            case 4:
-                                return "열풍 히터 과열";
-                            //builder.AppendLine("열풍 히터 과열", true);
-                            //break;
-                            case 5:
-                                return "열풍 히터 오픈";
-                            //builder.AppendLine("열풍 히터 오픈", true);
-                            //break;
-                            case 6:
-                                return "만수, 워터센서 오픈";
-                            //builder.AppendLine("만수, 워터센서 오픈", true);
-                            //break;
-                            case 7:
-                                return "열풍 히터 저온";
-                                //builder.AppendLine("열풍 히터 저온", true);
-                                //break;
-                        }
-                    }
+                    oneChannel.setParameter();
+                    port.Write(command, 0, command.Length);
                 }
-            return builder.ToString();
+            }
+            catch (Exception ex)
+            {
+                log.Warn("ParameterWindow_Loaded1 상태조회 실패", ex);
+            }
         }
 
         private void ResetErrorButton_Click(object sender, RoutedEventArgs e)
         {
-            byte[] command = null;
-
-            command = Protocol.GetErrorReset();
-            command.PrintHex(1);
-
-            if (port != null)
+            try
             {
-                port.Write(command, 0, command.Length);
+                OneChannelWindow parent = Window.GetWindow(oneChannel) as OneChannelWindow;
+                bool isDummyMode = parent != null && parent.IsDummyMode;
+
+                if (isDummyMode)
+                {
+                    SetDefaultErrorGrid();
+                    ToastMessage.ToastService.AppToast.Show("더미 에러 정보를 초기화했습니다.");
+                    return;
+                }
+
+                byte[] command = Protocol.GetErrorReset();
+                command.PrintHex(1);
+
+                if (port != null && port.IsOpen)
+                {
+                    port.Write(command, 0, command.Length);
+                    ToastMessage.ToastService.AppToast.Show("에러 리셋 요청을 전송했습니다.");
+                }
+                else
+                {
+                    ToastMessage.ToastService.AppToast.Show("포트가 연결되어 있지 않습니다.");
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("ResetErrorButton_Click 실패", ex);
+                ToastMessage.ToastService.AppToast.Show("에러 리셋 중 문제가 발생했습니다.");
             }
         }
 
         private void ReadParamButton_Click(object sender, RoutedEventArgs e)
         {
-            byte[] command = Protocol.GetParameter();        // 0000  12 01 99 07 00 60 34
-            command.PrintHex(1);
-
-            if (port != null)
+            try
             {
-                oneChannel.setParameter();
-                //oneChannel.OnParameterLoadAction();
-                port.Write(command, 0, command.Length);
+                OneChannelWindow parent = Window.GetWindow(oneChannel) as OneChannelWindow;
+                bool isDummyMode = parent != null && parent.IsDummyMode;
+
+                if (isDummyMode)
+                {
+                    var gen = new BliMonitorTest.dummy.DummyValueGenerator();
+                    var rsp = new byte[37];
+                    var sample = gen.Next();
+                    BliMonitorTest.dummy.DummyValueGenerator.PatchStatusResponse37(rsp, sample);
+                    setStatus(rsp);
+
+                    ToastMessage.ToastService.AppToast.Show("더미 상태정보를 갱신했습니다.");
+                    return;
+                }
+
+                byte[] command = Protocol.GetParameter();
+                command.PrintHex(1);
+
+                if (port != null && port.IsOpen)
+                {
+                    oneChannel.setParameter();
+                    port.Write(command, 0, command.Length);
+                    ToastMessage.ToastService.AppToast.Show("상태정보 요청을 전송했습니다.");
+                }
+                else
+                {
+                    ToastMessage.ToastService.AppToast.Show("포트가 연결되어 있지 않습니다.");
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("ReadParamButton_Click 실패", ex);
+                ToastMessage.ToastService.AppToast.Show("상태 조회 중 문제가 발생했습니다.");
             }
         }
 
         private void ErrorListDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            var item = sender as ListBoxItem;
-            if (item == null) return;
-
-            var content = item.Content;
-            if (content == null) return;
-            string name = content.ToString();
-            if (name.Length == 0) return;
-
-            ErrorFileName.Text = name;
-
-            string path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ErrorData");
-            string full = System.IO.Path.Combine(path, name + ".config");
-            if (!File.Exists(full)) return;
-
-            var list = new ObservableCollection<ErrorData>();
-
             try
             {
-                var doc = System.Xml.Linq.XDocument.Load(full);
+                ListBoxItem item = sender as ListBoxItem;
+                if (item == null || item.Content == null)
+                    return;
+
+                string fileName = item.Content.ToString();
+                if (string.IsNullOrWhiteSpace(fileName))
+                    return;
+
+                string dir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ErrorData");
+                string full = System.IO.Path.Combine(dir, fileName + ".config");
+                if (!File.Exists(full))
+                {
+                    ToastMessage.ToastService.AppToast.Show("파일이 존재하지 않습니다.");
+                    return;
+                }
+
+                var doc = XDocument.Load(full);
                 var root = doc.Root;
                 if (root == null)
                 {
-                    //MessageBox.Show("잘못된 파일 형식입니다.");
-                    ToastMessage.ToastService.AppToast.Show("잘못된 파일 형식입니다.");
+                    ToastMessage.ToastService.AppToast.Show("에러 파일 형식이 올바르지 않습니다.");
                     return;
                 }
 
-                var section = root.Element("Error");
-                if (section == null)
+                string GetSlotValue(string nodeName, string fieldName)
                 {
-                    //MessageBox.Show("Error 섹션을 찾을 수 없습니다.");
-                    ToastMessage.ToastService.AppToast.Show("Error 섹션을 찾을 수 없습니다.");
-                    return;
+                    return NormalizeZero(root.Element(nodeName)?.Element(fieldName)?.Value ?? "");
                 }
 
-                foreach (var add in section.Elements("add"))
+                byte ParseHexByte(string text)
                 {
-                    string n = "";
-                    string val1 = "";
-                    string val2 = "";
-                    string val3 = "";
-                    string val4 = "";
-                    string val5 = "";
+                    if (string.IsNullOrWhiteSpace(text))
+                        return 0;
 
-                    var attrN = add.Attribute("Name");
-                    if (attrN != null) n = attrN.Value;
+                    string t = text.Trim();
+                    if (t.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+                        t = t.Substring(2);
 
-                    var attr1 = add.Attribute("Value1");
-                    if (attr1 != null) val1 = NormalizeZero(attr1.Value);
+                    if (byte.TryParse(t, System.Globalization.NumberStyles.HexNumber, null, out byte hexVal))
+                        return hexVal;
 
-                    var attr2 = add.Attribute("Value2");
-                    if (attr2 != null) val2 = NormalizeZero(attr2.Value);
+                    if (byte.TryParse(t, out byte decVal))
+                        return decVal;
 
-                    var attr3 = add.Attribute("Value3");
-                    if (attr3 != null) val3 = NormalizeZero(attr3.Value);
-
-                    var attr4 = add.Attribute("Value4");
-                    if (attr4 != null) val4 = NormalizeZero(attr4.Value);
-
-                    var attr5 = add.Attribute("Value5");
-                    if (attr5 != null) val5 = NormalizeZero(attr5.Value);
-
-                    list.Add(new ErrorData
-                    {
-                        Name = n,
-                        Value = val1,
-                        Value2 = val2,
-                        Value3 = val3,
-                        Value4 = val4,
-                        Value5 = val5
-                    });
+                    return 0;
                 }
 
-                Dispatcher.BeginInvoke(new Action(delegate
+                string GetStatusABitFromFile(int slot, byte mask)
                 {
-                    ErrorGrid.ItemsSource = list;
-                }));
+                    string raw = GetSlotValue($"error{slot}", "StatusA");
+                    byte b = ParseHexByte(raw);
+                    return Duo8ValueText.GetBitState((b & mask) != 0);
+                }
+
+                string GetStatusBBitFromFile(int slot, byte mask)
+                {
+                    string raw = GetSlotValue($"error{slot}", "StatusB");
+                    byte b = ParseHexByte(raw);
+                    return Duo8ValueText.GetBitState((b & mask) != 0);
+                }
+
+                ObservableCollection<ErrorData> list = new ObservableCollection<ErrorData>();
+
+                list.Add(new ErrorData
+                {
+                    Name = "유효",
+                    Value = GetSlotValue("error1", "Valid"),
+                    Value2 = GetSlotValue("error2", "Valid"),
+                    Value3 = GetSlotValue("error3", "Valid"),
+                    Value4 = GetSlotValue("error4", "Valid"),
+                    Value5 = GetSlotValue("error5", "Valid"),
+                    Value6 = GetSlotValue("error6", "Valid"),
+                    Value7 = GetSlotValue("error7", "Valid"),
+                    Value8 = GetSlotValue("error8", "Valid")
+                });
+
+                list.Add(new ErrorData
+                {
+                    Name = "SEQ",
+                    Value = GetSlotValue("error1", "Seq"),
+                    Value2 = GetSlotValue("error2", "Seq"),
+                    Value3 = GetSlotValue("error3", "Seq"),
+                    Value4 = GetSlotValue("error4", "Seq"),
+                    Value5 = GetSlotValue("error5", "Seq"),
+                    Value6 = GetSlotValue("error6", "Seq"),
+                    Value7 = GetSlotValue("error7", "Seq"),
+                    Value8 = GetSlotValue("error8", "Seq")
+                });
+
+                list.Add(new ErrorData
+                {
+                    Name = "에러코드",
+                    Value = GetSlotValue("error1", "ErrorCode"),
+                    Value2 = GetSlotValue("error2", "ErrorCode"),
+                    Value3 = GetSlotValue("error3", "ErrorCode"),
+                    Value4 = GetSlotValue("error4", "ErrorCode"),
+                    Value5 = GetSlotValue("error5", "ErrorCode"),
+                    Value6 = GetSlotValue("error6", "ErrorCode"),
+                    Value7 = GetSlotValue("error7", "ErrorCode"),
+                    Value8 = GetSlotValue("error8", "ErrorCode")
+                });
+
+                list.Add(new ErrorData
+                {
+                    Name = "에러명",
+                    Value = GetSlotValue("error1", "ErrorName"),
+                    Value2 = GetSlotValue("error2", "ErrorName"),
+                    Value3 = GetSlotValue("error3", "ErrorName"),
+                    Value4 = GetSlotValue("error4", "ErrorName"),
+                    Value5 = GetSlotValue("error5", "ErrorName"),
+                    Value6 = GetSlotValue("error6", "ErrorName"),
+                    Value7 = GetSlotValue("error7", "ErrorName"),
+                    Value8 = GetSlotValue("error8", "ErrorName")
+                });
+
+                list.Add(new ErrorData
+                {
+                    Name = "온수 Temp",
+                    Value = GetSlotValue("error1", "HotTemp"),
+                    Value2 = GetSlotValue("error2", "HotTemp"),
+                    Value3 = GetSlotValue("error3", "HotTemp"),
+                    Value4 = GetSlotValue("error4", "HotTemp"),
+                    Value5 = GetSlotValue("error5", "HotTemp"),
+                    Value6 = GetSlotValue("error6", "HotTemp"),
+                    Value7 = GetSlotValue("error7", "HotTemp"),
+                    Value8 = GetSlotValue("error8", "HotTemp")
+                });
+
+                list.Add(new ErrorData
+                {
+                    Name = "냉수 Temp",
+                    Value = GetSlotValue("error1", "ColdTemp"),
+                    Value2 = GetSlotValue("error2", "ColdTemp"),
+                    Value3 = GetSlotValue("error3", "ColdTemp"),
+                    Value4 = GetSlotValue("error4", "ColdTemp"),
+                    Value5 = GetSlotValue("error5", "ColdTemp"),
+                    Value6 = GetSlotValue("error6", "ColdTemp"),
+                    Value7 = GetSlotValue("error7", "ColdTemp"),
+                    Value8 = GetSlotValue("error8", "ColdTemp")
+                });
+
+                list.Add(new ErrorData
+                {
+                    Name = "ADC HOT",
+                    Value = GetSlotValue("error1", "AdcHot"),
+                    Value2 = GetSlotValue("error2", "AdcHot"),
+                    Value3 = GetSlotValue("error3", "AdcHot"),
+                    Value4 = GetSlotValue("error4", "AdcHot"),
+                    Value5 = GetSlotValue("error5", "AdcHot"),
+                    Value6 = GetSlotValue("error6", "AdcHot"),
+                    Value7 = GetSlotValue("error7", "AdcHot"),
+                    Value8 = GetSlotValue("error8", "AdcHot")
+                });
+
+                list.Add(new ErrorData
+                {
+                    Name = "ADC COLD",
+                    Value = GetSlotValue("error1", "AdcCold"),
+                    Value2 = GetSlotValue("error2", "AdcCold"),
+                    Value3 = GetSlotValue("error3", "AdcCold"),
+                    Value4 = GetSlotValue("error4", "AdcCold"),
+                    Value5 = GetSlotValue("error5", "AdcCold"),
+                    Value6 = GetSlotValue("error6", "AdcCold"),
+                    Value7 = GetSlotValue("error7", "AdcCold"),
+                    Value8 = GetSlotValue("error8", "AdcCold")
+                });
+
+                list.Add(new ErrorData
+                {
+                    Name = "초기급수 완료",
+                    Value = GetSlotValue("error1", "WaterInitDone"),
+                    Value2 = GetSlotValue("error2", "WaterInitDone"),
+                    Value3 = GetSlotValue("error3", "WaterInitDone"),
+                    Value4 = GetSlotValue("error4", "WaterInitDone"),
+                    Value5 = GetSlotValue("error5", "WaterInitDone"),
+                    Value6 = GetSlotValue("error6", "WaterInitDone"),
+                    Value7 = GetSlotValue("error7", "WaterInitDone"),
+                    Value8 = GetSlotValue("error8", "WaterInitDone")
+                });
+
+                list.Add(new ErrorData
+                {
+                    Name = "StatusA Raw",
+                    Value = GetSlotValue("error1", "StatusA"),
+                    Value2 = GetSlotValue("error2", "StatusA"),
+                    Value3 = GetSlotValue("error3", "StatusA"),
+                    Value4 = GetSlotValue("error4", "StatusA"),
+                    Value5 = GetSlotValue("error5", "StatusA"),
+                    Value6 = GetSlotValue("error6", "StatusA"),
+                    Value7 = GetSlotValue("error7", "StatusA"),
+                    Value8 = GetSlotValue("error8", "StatusA")
+                });
+
+                list.Add(new ErrorData
+                {
+                    Name = "StatusB Raw",
+                    Value = GetSlotValue("error1", "StatusB"),
+                    Value2 = GetSlotValue("error2", "StatusB"),
+                    Value3 = GetSlotValue("error3", "StatusB"),
+                    Value4 = GetSlotValue("error4", "StatusB"),
+                    Value5 = GetSlotValue("error5", "StatusB"),
+                    Value6 = GetSlotValue("error6", "StatusB"),
+                    Value7 = GetSlotValue("error7", "StatusB"),
+                    Value8 = GetSlotValue("error8", "StatusB")
+                });
+
+                list.Add(new ErrorData { Name = "A Heater", Value = GetStatusABitFromFile(1, 0x01), Value2 = GetStatusABitFromFile(2, 0x01), Value3 = GetStatusABitFromFile(3, 0x01), Value4 = GetStatusABitFromFile(4, 0x01), Value5 = GetStatusABitFromFile(5, 0x01), Value6 = GetStatusABitFromFile(6, 0x01), Value7 = GetStatusABitFromFile(7, 0x01), Value8 = GetStatusABitFromFile(8, 0x01) });
+                list.Add(new ErrorData { Name = "A Compressor", Value = GetStatusABitFromFile(1, 0x02), Value2 = GetStatusABitFromFile(2, 0x02), Value3 = GetStatusABitFromFile(3, 0x02), Value4 = GetStatusABitFromFile(4, 0x02), Value5 = GetStatusABitFromFile(5, 0x02), Value6 = GetStatusABitFromFile(6, 0x02), Value7 = GetStatusABitFromFile(7, 0x02), Value8 = GetStatusABitFromFile(8, 0x02) });
+                list.Add(new ErrorData { Name = "A HotValve", Value = GetStatusABitFromFile(1, 0x04), Value2 = GetStatusABitFromFile(2, 0x04), Value3 = GetStatusABitFromFile(3, 0x04), Value4 = GetStatusABitFromFile(4, 0x04), Value5 = GetStatusABitFromFile(5, 0x04), Value6 = GetStatusABitFromFile(6, 0x04), Value7 = GetStatusABitFromFile(7, 0x04), Value8 = GetStatusABitFromFile(8, 0x04) });
+                list.Add(new ErrorData { Name = "A ColdSelect", Value = GetStatusABitFromFile(1, 0x08), Value2 = GetStatusABitFromFile(2, 0x08), Value3 = GetStatusABitFromFile(3, 0x08), Value4 = GetStatusABitFromFile(4, 0x08), Value5 = GetStatusABitFromFile(5, 0x08), Value6 = GetStatusABitFromFile(6, 0x08), Value7 = GetStatusABitFromFile(7, 0x08), Value8 = GetStatusABitFromFile(8, 0x08) });
+                list.Add(new ErrorData { Name = "A OutletValve", Value = GetStatusABitFromFile(1, 0x10), Value2 = GetStatusABitFromFile(2, 0x10), Value3 = GetStatusABitFromFile(3, 0x10), Value4 = GetStatusABitFromFile(4, 0x10), Value5 = GetStatusABitFromFile(5, 0x10), Value6 = GetStatusABitFromFile(6, 0x10), Value7 = GetStatusABitFromFile(7, 0x10), Value8 = GetStatusABitFromFile(8, 0x10) });
+                list.Add(new ErrorData { Name = "A PumpOutlet", Value = GetStatusABitFromFile(1, 0x20), Value2 = GetStatusABitFromFile(2, 0x20), Value3 = GetStatusABitFromFile(3, 0x20), Value4 = GetStatusABitFromFile(4, 0x20), Value5 = GetStatusABitFromFile(5, 0x20), Value6 = GetStatusABitFromFile(6, 0x20), Value7 = GetStatusABitFromFile(7, 0x20), Value8 = GetStatusABitFromFile(8, 0x20) });
+                list.Add(new ErrorData { Name = "A PumpDiaphragm", Value = GetStatusABitFromFile(1, 0x40), Value2 = GetStatusABitFromFile(2, 0x40), Value3 = GetStatusABitFromFile(3, 0x40), Value4 = GetStatusABitFromFile(4, 0x40), Value5 = GetStatusABitFromFile(5, 0x40), Value6 = GetStatusABitFromFile(6, 0x40), Value7 = GetStatusABitFromFile(7, 0x40), Value8 = GetStatusABitFromFile(8, 0x40) });
+                list.Add(new ErrorData { Name = "A PumpAirvent", Value = GetStatusABitFromFile(1, 0x80), Value2 = GetStatusABitFromFile(2, 0x80), Value3 = GetStatusABitFromFile(3, 0x80), Value4 = GetStatusABitFromFile(4, 0x80), Value5 = GetStatusABitFromFile(5, 0x80), Value6 = GetStatusABitFromFile(6, 0x80), Value7 = GetStatusABitFromFile(7, 0x80), Value8 = GetStatusABitFromFile(8, 0x80) });
+
+                list.Add(new ErrorData { Name = "B FloatSensor", Value = GetStatusBBitFromFile(1, 0x01), Value2 = GetStatusBBitFromFile(2, 0x01), Value3 = GetStatusBBitFromFile(3, 0x01), Value4 = GetStatusBBitFromFile(4, 0x01), Value5 = GetStatusBBitFromFile(5, 0x01), Value6 = GetStatusBBitFromFile(6, 0x01), Value7 = GetStatusBBitFromFile(7, 0x01), Value8 = GetStatusBBitFromFile(8, 0x01) });
+                list.Add(new ErrorData { Name = "B BallTop", Value = GetStatusBBitFromFile(1, 0x02), Value2 = GetStatusBBitFromFile(2, 0x02), Value3 = GetStatusBBitFromFile(3, 0x02), Value4 = GetStatusBBitFromFile(4, 0x02), Value5 = GetStatusBBitFromFile(5, 0x02), Value6 = GetStatusBBitFromFile(6, 0x02), Value7 = GetStatusBBitFromFile(7, 0x02), Value8 = GetStatusBBitFromFile(8, 0x02) });
+                list.Add(new ErrorData { Name = "B WaterBuffer", Value = GetStatusBBitFromFile(1, 0x04), Value2 = GetStatusBBitFromFile(2, 0x04), Value3 = GetStatusBBitFromFile(3, 0x04), Value4 = GetStatusBBitFromFile(4, 0x04), Value5 = GetStatusBBitFromFile(5, 0x04), Value6 = GetStatusBBitFromFile(6, 0x04), Value7 = GetStatusBBitFromFile(7, 0x04), Value8 = GetStatusBBitFromFile(8, 0x04) });
+                list.Add(new ErrorData { Name = "B EmptyDetect", Value = GetStatusBBitFromFile(1, 0x08), Value2 = GetStatusBBitFromFile(2, 0x08), Value3 = GetStatusBBitFromFile(3, 0x08), Value4 = GetStatusBBitFromFile(4, 0x08), Value5 = GetStatusBBitFromFile(5, 0x08), Value6 = GetStatusBBitFromFile(6, 0x08), Value7 = GetStatusBBitFromFile(7, 0x08), Value8 = GetStatusBBitFromFile(8, 0x08) });
+                list.Add(new ErrorData { Name = "B BufferLow", Value = GetStatusBBitFromFile(1, 0x10), Value2 = GetStatusBBitFromFile(2, 0x10), Value3 = GetStatusBBitFromFile(3, 0x10), Value4 = GetStatusBBitFromFile(4, 0x10), Value5 = GetStatusBBitFromFile(5, 0x10), Value6 = GetStatusBBitFromFile(6, 0x10), Value7 = GetStatusBBitFromFile(7, 0x10), Value8 = GetStatusBBitFromFile(8, 0x10) });
+                list.Add(new ErrorData { Name = "B ReheatRunning", Value = GetStatusBBitFromFile(1, 0x20), Value2 = GetStatusBBitFromFile(2, 0x20), Value3 = GetStatusBBitFromFile(3, 0x20), Value4 = GetStatusBBitFromFile(4, 0x20), Value5 = GetStatusBBitFromFile(5, 0x20), Value6 = GetStatusBBitFromFile(6, 0x20), Value7 = GetStatusBBitFromFile(7, 0x20), Value8 = GetStatusBBitFromFile(8, 0x20) });
+                list.Add(new ErrorData { Name = "B HotIng", Value = GetStatusBBitFromFile(1, 0x40), Value2 = GetStatusBBitFromFile(2, 0x40), Value3 = GetStatusBBitFromFile(3, 0x40), Value4 = GetStatusBBitFromFile(4, 0x40), Value5 = GetStatusBBitFromFile(5, 0x40), Value6 = GetStatusBBitFromFile(6, 0x40), Value7 = GetStatusBBitFromFile(7, 0x40), Value8 = GetStatusBBitFromFile(8, 0x40) });
+                list.Add(new ErrorData { Name = "B Dispensing", Value = GetStatusBBitFromFile(1, 0x80), Value2 = GetStatusBBitFromFile(2, 0x80), Value3 = GetStatusBBitFromFile(3, 0x80), Value4 = GetStatusBBitFromFile(4, 0x80), Value5 = GetStatusBBitFromFile(5, 0x80), Value6 = GetStatusBBitFromFile(6, 0x80), Value7 = GetStatusBBitFromFile(7, 0x80), Value8 = GetStatusBBitFromFile(8, 0x80) });
+
+                list.Add(new ErrorData
+                {
+                    Name = "버퍼수위 부족",
+                    Value = GetSlotValue("error1", "BufferLow"),
+                    Value2 = GetSlotValue("error2", "BufferLow"),
+                    Value3 = GetSlotValue("error3", "BufferLow"),
+                    Value4 = GetSlotValue("error4", "BufferLow"),
+                    Value5 = GetSlotValue("error5", "BufferLow"),
+                    Value6 = GetSlotValue("error6", "BufferLow"),
+                    Value7 = GetSlotValue("error7", "BufferLow"),
+                    Value8 = GetSlotValue("error8", "BufferLow")
+                });
+
+                ErrorGrid.ItemsSource = list;
+                ErrorFileName.Text = fileName;
+
+                ToastMessage.ToastService.AppToast.Show("에러 파일을 불러왔습니다.");
             }
             catch (Exception ex)
             {
-                log.Error("Error 파일 로드 실패", ex);
-                //MessageBox.Show("에러 파일을 읽는 중 문제가 발생했습니다.");
-                ToastMessage.ToastService.AppToast.Show("에러 파일을 읽는 중 문제가 발생했습니다.");
+                log.Error("ErrorListDoubleClick 실패", ex);
+                ToastMessage.ToastService.AppToast.Show("에러 파일을 불러오는 중 문제가 발생했습니다.");
             }
         }
 
@@ -791,110 +1184,45 @@ namespace BliMonitorTest
 
         private void ErrorSaveButton_Click(object sender, RoutedEventArgs e)
         {
-            if (ErrorFileName.Text == null || ErrorFileName.Text.Trim().Length == 0)
+            try
             {
-                //MessageBox.Show("에러 파일명을 입력하세요.");
-                ToastMessage.ToastService.AppToast.Show("에러 파일명을 입력하세요.");
-                return;
-            }
-
-            var src = ErrorGrid.ItemsSource as System.Collections.IEnumerable;
-            if (src == null)
-            {
-                //MessageBox.Show("저장할 에러 데이터가 없습니다.");
-                ToastMessage.ToastService.AppToast.Show("저장할 에러 데이터가 없습니다.");
-                return;
-            }
-
-            string dir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ErrorData");
-            if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
-            string full = System.IO.Path.Combine(dir, ErrorFileName.Text + ".config");
-
-            var sb = new StringBuilder();
-            sb.AppendLine("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
-            sb.AppendLine("<configuration>");
-            sb.AppendLine("  <configSections>");
-            sb.AppendLine("    <section name=\"Error\" type=\"BliMonitorTest.setting.SettingSection, BliMonitorTest, Version=1.0.0.9, Culture=neutral, PublicKeyToken=null\" />");
-            sb.AppendLine("  </configSections>");
-            sb.AppendLine("  <appSettings>");
-            sb.AppendLine("    <clear />");
-            sb.AppendLine("  </appSettings>");
-            sb.AppendLine("  <Error>");
-
-            int index = 1;
-            foreach (var row in src)
-            {
-                string name = "";
-                string v1 = "";
-                string v2 = "";
-                string v3 = "";
-                string v4 = "";
-                string v5 = "";
-
-                // ErrorData인 경우
-                var ed = row as ErrorData;
-                if (ed != null)
+                if (string.IsNullOrWhiteSpace(ErrorFileName.Text))
                 {
-                    name = ed.Name ?? "";
-                    v1 = ed.Value ?? "";
-                    v2 = ed.Value2 ?? "";
-                    v3 = ed.Value3 ?? "";
-                    v4 = ed.Value4 ?? "";
-                    v5 = ed.Value5 ?? "";
-                }
-                else
-                {
-                    // SettingData인 경우
-                    var sd = row as SettingData;
-                    if (sd != null)
-                    {
-                        name = sd.Name ?? "";
-
-                        // Value는 반드시 문자열화
-                        v1 = sd.Value.ToString();
-                        v2 = sd.Value2.ToString();
-                        v3 = sd.Value3.ToString();
-                        v4 = sd.Value4.ToString();
-                        v5 = sd.Value5.ToString();
-                    }
-                    else
-                    {
-                        continue;
-                    }
+                    ToastMessage.ToastService.AppToast.Show("에러 파일명을 입력하세요.");
+                    return;
                 }
 
-                // 저장용 0 정규화
-                v1 = NormalizeZeroForSave(v1);
-                v2 = NormalizeZeroForSave(v2);
-                v3 = NormalizeZeroForSave(v3);
-                v4 = NormalizeZeroForSave(v4);
-                v5 = NormalizeZeroForSave(v5);
+                string dir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ErrorData");
+                if (!Directory.Exists(dir))
+                    Directory.CreateDirectory(dir);
 
-                // XML 이스케이프 (string만)
-                name = System.Security.SecurityElement.Escape(name);
-                v1 = System.Security.SecurityElement.Escape(v1);
-                v2 = System.Security.SecurityElement.Escape(v2);
-                v3 = System.Security.SecurityElement.Escape(v3);
-                v4 = System.Security.SecurityElement.Escape(v4);
-                v5 = System.Security.SecurityElement.Escape(v5);
+                string full = System.IO.Path.Combine(dir, ErrorFileName.Text.Trim() + ".config");
 
-                // 단 한 번만 AppendLine
-                sb.AppendLine("    <add Name=\"" + name + "\" Value1=\"" + v1 + "\" Value2=\"" + v2 + "\" Value3=\"" + v3 + "\" Value4=\"" + v4 + "\" Value5=\"" + v5 + "\" Index=\"" + index.ToString() + "\" />");
-                index++;
+                XDocument doc = BuildErrorXmlFromGrid();
+                if (doc == null)
+                {
+                    ToastMessage.ToastService.AppToast.Show("저장할 에러 데이터가 없습니다.");
+                    return;
+                }
+
+                doc.Save(full);
+
+                // [추가] 수동 저장 후 DB 적재
+                if (_lastErrorResponse != null)
+                {
+                    MonitoringDbWriteService.Instance.EnqueueErrorHistory( _lastErrorResponse, BliMonitorTest.util.MonitoringDb.MonitoringDb.SOURCE_SINGLE, _channelNoForDb );
+                }
+
+                SetErrorList();
+                ClearErrorFileInputs();
+
+                ToastMessage.ToastService.AppToast.Show("에러 데이터를 저장했습니다.");
             }
-
-            sb.AppendLine("  </Error>");
-            sb.AppendLine("</configuration>");
-
-            File.WriteAllText(full, sb.ToString(), Encoding.UTF8);
-            SetErrorList();
-
-            // 에러데이터 DB에 적재
-            string fileOnly = System.IO.Path.GetFileNameWithoutExtension(full);
-            EnqueueErrorEventsFromGrid( fileNameForSnapshot: fileOnly, sourceType: BliMonitorTest.util.MonitoringDb.MonitoringDb.SOURCE_SINGLE, channelNo: _channelNoForDb
-            );
-
-            ToastMessage.ToastService.AppToast.Show("에러 데이터가 저장되었습니다.");
+            catch (Exception ex)
+            {
+                log.Error("ErrorSaveButton_Click 실패", ex);
+                ToastMessage.ToastService.AppToast.Show("에러 저장 중 문제가 발생했습니다.");
+            }
         }
 
         // null→"0"; trim 후 빈칸→"0"; 숫자면 0→"0", 그 외는 원문 유지; 숫자 아님은 원문 유지
@@ -915,51 +1243,21 @@ namespace BliMonitorTest
 
         private void ErrorRefreshButton_Click(object sender, RoutedEventArgs e)
         {
+            SetList();
             SetErrorList();
+            ClearParameterFileInputs();
+            ClearErrorFileInputs();
+            ToastMessage.ToastService.AppToast.Show("파일 목록을 새로고침했습니다.");
         }
 
         private void ErrorDeleteButton_Click(object sender, RoutedEventArgs e)
         {
             DeleteSelectedCore(ErrorFileList.SelectedItems, hardDelete: false, kind: "Error");
-        }
-
-        private void RightButton_Click(object sender, RoutedEventArgs e)
-        {
-            RightSet = true;
-            mode11.Clear();
-            mode12.Clear();
-            mode13.Clear();
-            mode14.Clear();
-            mode15.Clear();
-            motor1.Clear();
-            fan1.Clear();
-            heater11.Clear();
-            heater12.Clear();
-            mode11.AddRange(mode1);
-            mode12.AddRange(mode2);
-            mode13.AddRange(mode3);
-            mode14.AddRange(mode4);
-            mode15.AddRange(mode5);
-            motor1.AddRange(motor);
-            fan1.AddRange(fan);
-            heater11.AddRange(heater1);
-            heater12.AddRange(heater2);
-            SetGrid1.ItemsSource = mode11;
-            SetGrid2.ItemsSource = mode12;
-            SetGrid3.ItemsSource = mode13;
-            SetGrid4.ItemsSource = mode14;
-            SetGrid5.ItemsSource = mode15;
-            SetGrid6.ItemsSource = motor1;
-            FanGrid2.ItemsSource = fan1;
-            HeaterGridSetting.ItemsSource = heater11;
-            HeaterGridSetting2.ItemsSource = heater12;
+            ClearErrorFileInputs();
         }
 
         public void setParameter(byte[] data)
         {
-            log.Debug("parameterwindow  data.Length 537 : " + data.Length);
-            log.Debug("parameterwindow  data : " + data);
-
             if (data.Length != 70)
             {
                 return;
@@ -1150,25 +1448,44 @@ namespace BliMonitorTest
                 motor.Add(new SettingData() { Name = "과부하 감지 전류", Value = motor4 });
                 motor.Add(new SettingData() { Name = "과부하 감지 횟수", Value = motor5 });
 
-                MicomGrid.ItemsSource = null;
-                MicomGrid2.ItemsSource = null;
-                MicomGrid3.ItemsSource = null;
-                MicomGrid4.ItemsSource = null;
-                MicomGrid5.ItemsSource = null;
-                MotorGrid.ItemsSource = null;
-                FanGrid.ItemsSource = null;
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    var paramRows = new ObservableCollection<StatusViewRow>();
 
-                MicomGrid.ItemsSource = mode1;
-                MicomGrid2.ItemsSource = mode2;
-                MicomGrid3.ItemsSource = mode3;
-                MicomGrid4.ItemsSource = mode4;
-                MicomGrid5.ItemsSource = mode5;
-                MotorGrid.ItemsSource = motor;
-                FanGrid.ItemsSource = fan;
-                HeaterGrid.ItemsSource = heater1;
-                HeaterGrid2.ItemsSource = heater2;
+                    paramRows.Add(new StatusViewRow() { Name = "Mode1 ON TIME CW", Value = onTimeCW1.ToString() });
+                    paramRows.Add(new StatusViewRow() { Name = "Mode1 OFF TIME CW", Value = offTimeCW1.ToString() });
+                    paramRows.Add(new StatusViewRow() { Name = "Mode1 ON TIME CCW", Value = onTimeCCW1.ToString() });
+                    paramRows.Add(new StatusViewRow() { Name = "Mode1 OFF TIME CCW", Value = offTimeCCW1.ToString() });
+                    paramRows.Add(new StatusViewRow() { Name = "Mode1 HEATER TEMP", Value = HeaterTemp1.ToString() });
+                    paramRows.Add(new StatusViewRow() { Name = "Mode1 HEATER OFF TIME", Value = HeaterOffTime1.ToString() });
+
+                    paramRows.Add(new StatusViewRow() { Name = "Mode2 ON TIME CW", Value = onTimeCW2.ToString() });
+                    paramRows.Add(new StatusViewRow() { Name = "Mode2 OFF TIME CW", Value = offTimeCW2.ToString() });
+                    paramRows.Add(new StatusViewRow() { Name = "Mode2 ON TIME CCW", Value = onTimeCCW2.ToString() });
+                    paramRows.Add(new StatusViewRow() { Name = "Mode2 OFF TIME CCW", Value = offTimeCCW2.ToString() });
+                    paramRows.Add(new StatusViewRow() { Name = "Mode2 HEATER TEMP", Value = HeaterTemp2.ToString() });
+                    paramRows.Add(new StatusViewRow() { Name = "Mode2 HEATER OFF TIME", Value = HeaterOffTime2.ToString() });
+
+                    paramRows.Add(new StatusViewRow() { Name = "배기 FAN 대기 모드", Value = ExhaustFanWaitMode.ToString() });
+                    paramRows.Add(new StatusViewRow() { Name = "배기 FAN 운전 모드", Value = ExhaustFanOperateMode.ToString() });
+
+                    paramRows.Add(new StatusViewRow() { Name = "열풍 온도 Step1", Value = air_control1.ToString() });
+                    paramRows.Add(new StatusViewRow() { Name = "열풍 온도 Step2", Value = air_control2.ToString() });
+                    paramRows.Add(new StatusViewRow() { Name = "열풍 온도 Step3", Value = air_control3.ToString() });
+                    paramRows.Add(new StatusViewRow() { Name = "열풍 온도 Step4", Value = air_control4.ToString() });
+                    paramRows.Add(new StatusViewRow() { Name = "열풍 온도 Step5", Value = air_control5.ToString() });
+                    paramRows.Add(new StatusViewRow() { Name = "열풍 온도 Step6", Value = air_control6.ToString() });
+
+                    paramRows.Add(new StatusViewRow() { Name = "이물질 감지 시간", Value = motor1.ToString() });
+                    paramRows.Add(new StatusViewRow() { Name = "이물질 감지 전류", Value = motor2.ToString() });
+                    paramRows.Add(new StatusViewRow() { Name = "이물질 감지 횟수", Value = motor3.ToString() });
+                    paramRows.Add(new StatusViewRow() { Name = "과부하 감지 전류", Value = motor4.ToString() });
+                    paramRows.Add(new StatusViewRow() { Name = "과부하 감지 횟수", Value = motor5.ToString() });
+
+                    _receivedRows = paramRows;
+                    ReceivedParamGrid.ItemsSource = ToTwoColumnRows(_receivedRows);
+                }));
             }));
-
         }
 
         private byte[] GetParameterSettingData()
@@ -1250,110 +1567,220 @@ namespace BliMonitorTest
         }
         public void setError(byte[] data)
         {
-            //int motor01 = data[4];
-            //int motor02 = data[5];
-            int runmode0 = data[6] + 1;
-            int heaterTemp0 = data[7];
-            int heaterofftime0 = data[8];
-            int exhaustTemp0 = data[9];
-            int hotWindTemp0 = data[10];
-            int hotWindOnTime0 = data[11];
-            byte[] times1 = new byte[] { data[13], data[12] };
-            int intTimes1 = BitConverter.ToInt16(times1, 0);
+            Duo8ErrorResponse resp = Duo8PacketParser.ParseErrorResponse(data);
+            if (resp == null)
+            {
+                _isReadingError = false;
+                if (ReadErrorButton != null)
+                    ReadErrorButton.IsEnabled = true;
+                return;
+            }
 
-            int runmode1 = data[16] + 1;
-            int heaterTemp1 = data[17];
-            int heaterofftime1 = data[18];
-            int exhaustTemp1 = data[19];
-            int hotWindTemp1 = data[20];
-            int hotWindOnTime1 = data[21];
-            byte[] times2 = new byte[] { data[23], data[22] };
-            int intTimes2 = BitConverter.ToInt16(times2, 0);
+            _lastErrorResponse = resp;  // 마지막으로 읽은 에러 응답을 저장
 
-            int runmode2 = data[26] + 1;
-            int heaterTemp2 = data[27];
-            int heaterofftime2 = data[28];
-            int exhaustTemp2 = data[29];
-            int hotWindTemp2 = data[30];
-            int hotWindOnTime2 = data[31];
-            byte[] times3 = new byte[] { data[33], data[32] };
-            int intTimes3 = BitConverter.ToInt16(times3, 0);
+            string GetValid(int idx) => resp.Records.Count > idx ? (resp.Records[idx].IsValid ? "Y" : "N") : "";
+            string GetSeq(int idx) => resp.Records.Count > idx ? resp.Records[idx].Sequence.ToString() : "";
+            string GetErrorCode(int idx) => resp.Records.Count > idx ? $"0x{resp.Records[idx].ErrorCode:X2}" : "";
+            string GetErrorName(int idx) => resp.Records.Count > idx ? Duo8ValueText.GetErrorText(resp.Records[idx].ErrorCode) : "";
+            string GetHotTemp(int idx) => resp.Records.Count > idx ? resp.Records[idx].HotTempRaw.ToString() : "";
+            string GetColdTemp(int idx) => resp.Records.Count > idx ? resp.Records[idx].ColdTempRaw.ToString() : "";
+            string GetAdcHot(int idx) => resp.Records.Count > idx ? resp.Records[idx].AdcHotRaw.ToString() : "";
+            string GetAdcCold(int idx) => resp.Records.Count > idx ? resp.Records[idx].AdcColdRaw.ToString() : "";
+            string GetWaterInitDone(int idx) => resp.Records.Count > idx ? Duo8ValueText.ToYesNo(resp.Records[idx].WaterInitDone) : "";
+            string GetStatusARaw(int idx) => resp.Records.Count > idx ? $"0x{resp.Records[idx].StatusA:X2}" : "";
+            string GetStatusBRaw(int idx) => resp.Records.Count > idx ? $"0x{resp.Records[idx].StatusB:X2}" : "";
+            string GetBufferLow(int idx) => resp.Records.Count > idx ? Duo8ValueText.ToYesNo(resp.Records[idx].BufferLow) : "";
 
-            int runmode3 = data[36] + 1;
-            int heaterTemp3 = data[37];
-            int heaterofftime3 = data[38];
-            int exhaustTemp3 = data[39];
-            int hotWindTemp3 = data[40];
-            int hotWindOnTime3 = data[41];
-            byte[] times4 = new byte[] { data[43], data[42] };
-            int intTimes4 = BitConverter.ToInt16(times4, 0);
+            string GetStatusABit(int idx, byte mask)
+                => resp.Records.Count > idx ? Duo8ValueText.GetBitState((resp.Records[idx].StatusA & mask) != 0) : "";
 
-            int runmode4 = data[46] + 1;
-            int heaterTemp4 = data[47];
-            int heaterofftime4 = data[48];
-            int exhaustTemp4 = data[49];
-            int hotWindTemp4 = data[50];
-            int hotWindOnTime4 = data[51];
-            byte[] times5 = new byte[] { data[53], data[52] };
-            int intTimes5 = BitConverter.ToInt16(times5, 0);
-
-            byte[] times = new byte[] { data[67], data[66] };
-            Console.WriteLine("First: {0} Second: {1}", data[66].ToString("X2"), data[67].ToString("X2"));
-            int timesInt = BitConverter.ToInt16(times, 0);
-
-            byte error0 = data[4];
-            byte error1 = data[5];
-            byte error2 = data[14];
-            byte error3 = data[15];
-            byte error4 = data[24];
-            byte error5 = data[25];
-            byte error6 = data[34];
-            byte error7 = data[35];
-            byte error8 = data[44];
-            byte error9 = data[45];
-            int hot_air_fan_duty = data[30];
-            int[] binary0 = Enumerable.Range(1, 8).Select(i => error0 / (1 << (8 - i)) % 2).ToArray();
-            int[] binary1 = Enumerable.Range(1, 8).Select(i => error1 / (1 << (8 - i)) % 2).ToArray();
-            int[] binary2 = Enumerable.Range(1, 8).Select(i => error2 / (1 << (8 - i)) % 2).ToArray();
-            int[] binary3 = Enumerable.Range(1, 8).Select(i => error3 / (1 << (8 - i)) % 2).ToArray();
-            int[] binary4 = Enumerable.Range(1, 8).Select(i => error4 / (1 << (8 - i)) % 2).ToArray();
-            int[] binary5 = Enumerable.Range(1, 8).Select(i => error5 / (1 << (8 - i)) % 2).ToArray();
-            int[] binary6 = Enumerable.Range(1, 8).Select(i => error6 / (1 << (8 - i)) % 2).ToArray();
-            int[] binary7 = Enumerable.Range(1, 8).Select(i => error7 / (1 << (8 - i)) % 2).ToArray();
-            int[] binary8 = Enumerable.Range(1, 8).Select(i => error8 / (1 << (8 - i)) % 2).ToArray();
-            int[] binary9 = Enumerable.Range(1, 8).Select(i => error9 / (1 << (8 - i)) % 2).ToArray();
+            string GetStatusBBit(int idx, byte mask)
+                => resp.Records.Count > idx ? Duo8ValueText.GetBitState((resp.Records[idx].StatusB & mask) != 0) : "";
 
             ObservableCollection<ErrorData> list = new ObservableCollection<ErrorData>();
-            list.Add(new ErrorData() { Name = "에러 내용", Value = GetErrorName(binary0, binary1), Value2 = GetErrorName(binary2, binary3), Value3 = GetErrorName(binary4, binary5), Value4 = GetErrorName(binary6, binary7), Value5 = GetErrorName(binary8, binary9) });
-            list.Add(new ErrorData() { Name = "운전 모드", Value = runmode0.ToString(), Value2 = runmode1.ToString(), Value3 = runmode2.ToString(), Value4 = runmode3.ToString(), Value5 = runmode4.ToString() });
-            list.Add(new ErrorData() { Name = "히터 온도", Value = heaterTemp0.ToString(), Value2 = heaterTemp1.ToString(), Value3 = heaterTemp2.ToString(), Value4 = heaterTemp3.ToString(), Value5 = heaterTemp4.ToString() });
-            list.Add(new ErrorData() { Name = "히터 오프 타임", Value = heaterofftime0.ToString(), Value2 = heaterofftime1.ToString(), Value3 = heaterofftime2.ToString(), Value4 = heaterofftime3.ToString(), Value5 = heaterofftime4.ToString() });
-            list.Add(new ErrorData() { Name = "배기 온도", Value = exhaustTemp0.ToString(), Value2 = exhaustTemp1.ToString(), Value3 = exhaustTemp2.ToString(), Value4 = exhaustTemp3.ToString(), Value5 = exhaustTemp4.ToString() });
-            list.Add(new ErrorData() { Name = "열풍 온도", Value = hotWindTemp0.ToString(), Value2 = hotWindTemp1.ToString(), Value3 = hotWindTemp2.ToString(), Value4 = hotWindTemp3.ToString(), Value5 = hotWindTemp4.ToString() });
-            list.Add(new ErrorData() { Name = "열풍 On Time", Value = hotWindOnTime0.ToString(), Value2 = hotWindOnTime1.ToString(), Value3 = hotWindOnTime2.ToString(), Value4 = hotWindOnTime3.ToString(), Value5 = hotWindOnTime4.ToString() });
-            list.Add(new ErrorData() { Name = "운전 횟수", Value = intTimes1.ToString(), Value2 = intTimes2.ToString(), Value3 = intTimes3.ToString(), Value4 = intTimes4.ToString(), Value5 = intTimes5.ToString() });
+
+            list.Add(new ErrorData()
+            {
+                Name = "유효",
+                Value = GetValid(0),
+                Value2 = GetValid(1),
+                Value3 = GetValid(2),
+                Value4 = GetValid(3),
+                Value5 = GetValid(4),
+                Value6 = GetValid(5),
+                Value7 = GetValid(6),
+                Value8 = GetValid(7)
+            });
+
+            list.Add(new ErrorData()
+            {
+                Name = "SEQ",
+                Value = GetSeq(0),
+                Value2 = GetSeq(1),
+                Value3 = GetSeq(2),
+                Value4 = GetSeq(3),
+                Value5 = GetSeq(4),
+                Value6 = GetSeq(5),
+                Value7 = GetSeq(6),
+                Value8 = GetSeq(7)
+            });
+
+            list.Add(new ErrorData()
+            {
+                Name = "에러코드",
+                Value = GetErrorCode(0),
+                Value2 = GetErrorCode(1),
+                Value3 = GetErrorCode(2),
+                Value4 = GetErrorCode(3),
+                Value5 = GetErrorCode(4),
+                Value6 = GetErrorCode(5),
+                Value7 = GetErrorCode(6),
+                Value8 = GetErrorCode(7)
+            });
+
+            list.Add(new ErrorData()
+            {
+                Name = "에러명",
+                Value = GetErrorName(0),
+                Value2 = GetErrorName(1),
+                Value3 = GetErrorName(2),
+                Value4 = GetErrorName(3),
+                Value5 = GetErrorName(4),
+                Value6 = GetErrorName(5),
+                Value7 = GetErrorName(6),
+                Value8 = GetErrorName(7)
+            });
+
+            list.Add(new ErrorData()
+            {
+                Name = "온수 Temp",
+                Value = GetHotTemp(0),
+                Value2 = GetHotTemp(1),
+                Value3 = GetHotTemp(2),
+                Value4 = GetHotTemp(3),
+                Value5 = GetHotTemp(4),
+                Value6 = GetHotTemp(5),
+                Value7 = GetHotTemp(6),
+                Value8 = GetHotTemp(7)
+            });
+
+            list.Add(new ErrorData()
+            {
+                Name = "냉수 Temp",
+                Value = GetColdTemp(0),
+                Value2 = GetColdTemp(1),
+                Value3 = GetColdTemp(2),
+                Value4 = GetColdTemp(3),
+                Value5 = GetColdTemp(4),
+                Value6 = GetColdTemp(5),
+                Value7 = GetColdTemp(6),
+                Value8 = GetColdTemp(7)
+            });
+
+            list.Add(new ErrorData()
+            {
+                Name = "ADC HOT",
+                Value = GetAdcHot(0),
+                Value2 = GetAdcHot(1),
+                Value3 = GetAdcHot(2),
+                Value4 = GetAdcHot(3),
+                Value5 = GetAdcHot(4),
+                Value6 = GetAdcHot(5),
+                Value7 = GetAdcHot(6),
+                Value8 = GetAdcHot(7)
+            });
+
+            list.Add(new ErrorData()
+            {
+                Name = "ADC COLD",
+                Value = GetAdcCold(0),
+                Value2 = GetAdcCold(1),
+                Value3 = GetAdcCold(2),
+                Value4 = GetAdcCold(3),
+                Value5 = GetAdcCold(4),
+                Value6 = GetAdcCold(5),
+                Value7 = GetAdcCold(6),
+                Value8 = GetAdcCold(7)
+            });
+
+            list.Add(new ErrorData()
+            {
+                Name = "초기급수 완료",
+                Value = GetWaterInitDone(0),
+                Value2 = GetWaterInitDone(1),
+                Value3 = GetWaterInitDone(2),
+                Value4 = GetWaterInitDone(3),
+                Value5 = GetWaterInitDone(4),
+                Value6 = GetWaterInitDone(5),
+                Value7 = GetWaterInitDone(6),
+                Value8 = GetWaterInitDone(7)
+            });
+
+            list.Add(new ErrorData()
+            {
+                Name = "StatusA Raw",
+                Value = GetStatusARaw(0),
+                Value2 = GetStatusARaw(1),
+                Value3 = GetStatusARaw(2),
+                Value4 = GetStatusARaw(3),
+                Value5 = GetStatusARaw(4),
+                Value6 = GetStatusARaw(5),
+                Value7 = GetStatusARaw(6),
+                Value8 = GetStatusARaw(7)
+            });
+
+            list.Add(new ErrorData()
+            {
+                Name = "StatusB Raw",
+                Value = GetStatusBRaw(0),
+                Value2 = GetStatusBRaw(1),
+                Value3 = GetStatusBRaw(2),
+                Value4 = GetStatusBRaw(3),
+                Value5 = GetStatusBRaw(4),
+                Value6 = GetStatusBRaw(5),
+                Value7 = GetStatusBRaw(6),
+                Value8 = GetStatusBRaw(7)
+            });
+
+            list.Add(new ErrorData() { Name = "A Heater", Value = GetStatusABit(0, 0x01), Value2 = GetStatusABit(1, 0x01), Value3 = GetStatusABit(2, 0x01), Value4 = GetStatusABit(3, 0x01), Value5 = GetStatusABit(4, 0x01), Value6 = GetStatusABit(5, 0x01), Value7 = GetStatusABit(6, 0x01), Value8 = GetStatusABit(7, 0x01) });
+            list.Add(new ErrorData() { Name = "A Compressor", Value = GetStatusABit(0, 0x02), Value2 = GetStatusABit(1, 0x02), Value3 = GetStatusABit(2, 0x02), Value4 = GetStatusABit(3, 0x02), Value5 = GetStatusABit(4, 0x02), Value6 = GetStatusABit(5, 0x02), Value7 = GetStatusABit(6, 0x02), Value8 = GetStatusABit(7, 0x02) });
+            list.Add(new ErrorData() { Name = "A HotValve", Value = GetStatusABit(0, 0x04), Value2 = GetStatusABit(1, 0x04), Value3 = GetStatusABit(2, 0x04), Value4 = GetStatusABit(3, 0x04), Value5 = GetStatusABit(4, 0x04), Value6 = GetStatusABit(5, 0x04), Value7 = GetStatusABit(6, 0x04), Value8 = GetStatusABit(7, 0x04) });
+            list.Add(new ErrorData() { Name = "A ColdSelect", Value = GetStatusABit(0, 0x08), Value2 = GetStatusABit(1, 0x08), Value3 = GetStatusABit(2, 0x08), Value4 = GetStatusABit(3, 0x08), Value5 = GetStatusABit(4, 0x08), Value6 = GetStatusABit(5, 0x08), Value7 = GetStatusABit(6, 0x08), Value8 = GetStatusABit(7, 0x08) });
+            list.Add(new ErrorData() { Name = "A OutletValve", Value = GetStatusABit(0, 0x10), Value2 = GetStatusABit(1, 0x10), Value3 = GetStatusABit(2, 0x10), Value4 = GetStatusABit(3, 0x10), Value5 = GetStatusABit(4, 0x10), Value6 = GetStatusABit(5, 0x10), Value7 = GetStatusABit(6, 0x10), Value8 = GetStatusABit(7, 0x10) });
+            list.Add(new ErrorData() { Name = "A PumpOutlet", Value = GetStatusABit(0, 0x20), Value2 = GetStatusABit(1, 0x20), Value3 = GetStatusABit(2, 0x20), Value4 = GetStatusABit(3, 0x20), Value5 = GetStatusABit(4, 0x20), Value6 = GetStatusABit(5, 0x20), Value7 = GetStatusABit(6, 0x20), Value8 = GetStatusABit(7, 0x20) });
+            list.Add(new ErrorData() { Name = "A PumpDiaphragm", Value = GetStatusABit(0, 0x40), Value2 = GetStatusABit(1, 0x40), Value3 = GetStatusABit(2, 0x40), Value4 = GetStatusABit(3, 0x40), Value5 = GetStatusABit(4, 0x40), Value6 = GetStatusABit(5, 0x40), Value7 = GetStatusABit(6, 0x40), Value8 = GetStatusABit(7, 0x40) });
+            list.Add(new ErrorData() { Name = "A PumpAirvent", Value = GetStatusABit(0, 0x80), Value2 = GetStatusABit(1, 0x80), Value3 = GetStatusABit(2, 0x80), Value4 = GetStatusABit(3, 0x80), Value5 = GetStatusABit(4, 0x80), Value6 = GetStatusABit(5, 0x80), Value7 = GetStatusABit(6, 0x80), Value8 = GetStatusABit(7, 0x80) });
+
+            list.Add(new ErrorData() { Name = "B FloatSensor", Value = GetStatusBBit(0, 0x01), Value2 = GetStatusBBit(1, 0x01), Value3 = GetStatusBBit(2, 0x01), Value4 = GetStatusBBit(3, 0x01), Value5 = GetStatusBBit(4, 0x01), Value6 = GetStatusBBit(5, 0x01), Value7 = GetStatusBBit(6, 0x01), Value8 = GetStatusBBit(7, 0x01) });
+            list.Add(new ErrorData() { Name = "B BallTop", Value = GetStatusBBit(0, 0x02), Value2 = GetStatusBBit(1, 0x02), Value3 = GetStatusBBit(2, 0x02), Value4 = GetStatusBBit(3, 0x02), Value5 = GetStatusBBit(4, 0x02), Value6 = GetStatusBBit(5, 0x02), Value7 = GetStatusBBit(6, 0x02), Value8 = GetStatusBBit(7, 0x02) });
+            list.Add(new ErrorData() { Name = "B WaterBuffer", Value = GetStatusBBit(0, 0x04), Value2 = GetStatusBBit(1, 0x04), Value3 = GetStatusBBit(2, 0x04), Value4 = GetStatusBBit(3, 0x04), Value5 = GetStatusBBit(4, 0x04), Value6 = GetStatusBBit(5, 0x04), Value7 = GetStatusBBit(6, 0x04), Value8 = GetStatusBBit(7, 0x04) });
+            list.Add(new ErrorData() { Name = "B EmptyDetect", Value = GetStatusBBit(0, 0x08), Value2 = GetStatusBBit(1, 0x08), Value3 = GetStatusBBit(2, 0x08), Value4 = GetStatusBBit(3, 0x08), Value5 = GetStatusBBit(4, 0x08), Value6 = GetStatusBBit(5, 0x08), Value7 = GetStatusBBit(6, 0x08), Value8 = GetStatusBBit(7, 0x08) });
+            list.Add(new ErrorData() { Name = "B BufferLow", Value = GetStatusBBit(0, 0x10), Value2 = GetStatusBBit(1, 0x10), Value3 = GetStatusBBit(2, 0x10), Value4 = GetStatusBBit(3, 0x10), Value5 = GetStatusBBit(4, 0x10), Value6 = GetStatusBBit(5, 0x10), Value7 = GetStatusBBit(6, 0x10), Value8 = GetStatusBBit(7, 0x10) });
+            list.Add(new ErrorData() { Name = "B Reheat Running", Value = GetStatusBBit(0, 0x20), Value2 = GetStatusBBit(1, 0x20), Value3 = GetStatusBBit(2, 0x20), Value4 = GetStatusBBit(3, 0x20), Value5 = GetStatusBBit(4, 0x20), Value6 = GetStatusBBit(5, 0x20), Value7 = GetStatusBBit(6, 0x20), Value8 = GetStatusBBit(7, 0x20) });
+            list.Add(new ErrorData() { Name = "B HotIng", Value = GetStatusBBit(0, 0x40), Value2 = GetStatusBBit(1, 0x40), Value3 = GetStatusBBit(2, 0x40), Value4 = GetStatusBBit(3, 0x40), Value5 = GetStatusBBit(4, 0x40), Value6 = GetStatusBBit(5, 0x40), Value7 = GetStatusBBit(6, 0x40), Value8 = GetStatusBBit(7, 0x40) });
+            list.Add(new ErrorData() { Name = "B Dispensing", Value = GetStatusBBit(0, 0x80), Value2 = GetStatusBBit(1, 0x80), Value3 = GetStatusBBit(2, 0x80), Value4 = GetStatusBBit(3, 0x80), Value5 = GetStatusBBit(4, 0x80), Value6 = GetStatusBBit(5, 0x80), Value7 = GetStatusBBit(6, 0x80), Value8 = GetStatusBBit(7, 0x80) });
+
+            list.Add(new ErrorData()
+            {
+                Name = "버퍼수위 부족",
+                Value = GetBufferLow(0),
+                Value2 = GetBufferLow(1),
+                Value3 = GetBufferLow(2),
+                Value4 = GetBufferLow(3),
+                Value5 = GetBufferLow(4),
+                Value6 = GetBufferLow(5),
+                Value7 = GetBufferLow(6),
+                Value8 = GetBufferLow(7)
+            });
+
             Dispatcher.BeginInvoke(new Action(() =>
             {
                 ErrorGrid.ItemsSource = list;
-                RunCount.Content = timesInt;
-
-                // 화면 셋팅 직후 자동 저장 트리거 : 실기구로 부터 에러데이터 수신 시점
                 AutoSaveErrorDataToFileDebounced();
+                _isReadingError = false;
+                if (ReadErrorButton != null)
+                    ReadErrorButton.IsEnabled = true;
             }));
-        }
-
-        // 경로에 UTF-8로 저장. IOException 발생 시 1회 재시도(50ms 대기)
-        private static void WriteFileWithRetry(string path, string content)
-        {
-            try
-            {
-                File.WriteAllText(path, content, Encoding.UTF8);
-            }
-            catch (IOException)
-            {
-                System.Threading.Thread.Sleep(50);
-                File.WriteAllText(path, content, Encoding.UTF8);
-            }
         }
 
         // 기본 파일명(yyyyMMdd_HHmmss) 사용, 동일 초에 다중 저장 시 _clickNN 접미사로 충돌 방지
@@ -1370,8 +1797,64 @@ namespace BliMonitorTest
             return full;
         }
 
+        // 자동 저장: ErrorGrid.ItemsSource를 XML로 저장 (파일명 충돌 방지 + 재시도 + 90일 보존)
+        private void AutoSaveErrorDataToFile()
+        {
+            try
+            {
+                if (ErrorGrid == null)
+                    return;
+
+                XDocument doc = null;
+
+                Dispatcher.Invoke(() =>
+                {
+                    doc = BuildErrorXmlFromGrid();
+                });
+
+                if (doc == null)
+                    return;
+
+                string dir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ErrorData");
+                if (!Directory.Exists(dir))
+                    Directory.CreateDirectory(dir);
+
+                EnforceErrorDataRetention(dir);
+
+                /* 아래 함수로 대체
+                string baseName = "ErrorData_" + DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                string full = System.IO.Path.Combine(dir, baseName + ".config");
+
+                int suffix = 1;
+                while (File.Exists(full))
+                {
+                    full = System.IO.Path.Combine(dir, $"{baseName}_click{suffix:00}.config");
+                    suffix++;
+                }
+                */
+
+                string full = BuildUniqueErrorFilePath(dir);
+                doc.Save(full);
+
+                // [추가] 자동 저장 후 DB 적재
+                if (_lastErrorResponse != null)
+                {
+                    MonitoringDbWriteService.Instance.EnqueueErrorHistory( _lastErrorResponse, BliMonitorTest.util.MonitoringDb.MonitoringDb.SOURCE_SINGLE, _channelNoForDb );
+                }
+
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    SetErrorList();
+                }));
+            }
+            catch (Exception ex)
+            {
+                log.Error("AutoSaveErrorDataToFile 실패", ex);
+            }
+        }
+
         // ErrorData 보존 정책: 90일 초과 파일 삭제, 이어서 개수 상한(기본 10000) 초과 시 오래된 파일부터 정리
-        private void EnforceErrorDataRetention(string directory, int retentionDays, int maxFiles)
+        private void EnforceErrorDataRetention(string directory)
         {
             try
             {
@@ -1407,113 +1890,6 @@ namespace BliMonitorTest
             catch (Exception ex)
             {
                 log.Warn("EnforceErrorDataRetention 처리 중 문제", ex);
-            }
-        }
-
-        // 자동 저장: ErrorGrid.ItemsSource를 XML로 저장 (파일명 충돌 방지 + 재시도 + 90일 보존)
-        private void AutoSaveErrorDataToFile()
-        {
-            try
-            {
-                var src = ErrorGrid.ItemsSource as System.Collections.IEnumerable;
-                if (src == null)
-                {
-                    log.Warn("AutoSaveErrorDataToFile: ErrorGrid.ItemsSource가 비어 있음");
-                    return;
-                }
-
-                string dir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ErrorData");
-                if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
-
-                // XML 조립
-                var sb = new StringBuilder();
-                sb.AppendLine("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
-                sb.AppendLine("<configuration>");
-                sb.AppendLine("  <configSections>");
-                sb.AppendLine("    <section name=\"Error\" type=\"BliMonitorTest.setting.SettingSection, BliMonitorTest, Version=1.0.0.9, Culture=neutral, PublicKeyToken=null\" />");
-                sb.AppendLine("  </configSections>");
-                sb.AppendLine("  <appSettings>");
-                sb.AppendLine("    <clear />");
-                sb.AppendLine("  </appSettings>");
-                sb.AppendLine("  <Error>");
-
-                int index = 1;
-                foreach (var row in src)
-                {
-                    string name = "";
-                    string v1 = "";
-                    string v2 = "";
-                    string v3 = "";
-                    string v4 = "";
-                    string v5 = "";
-
-                    if (row is ErrorData ed)
-                    {
-                        name = ed.Name ?? "";
-                        v1 = ed.Value ?? "";
-                        v2 = ed.Value2 ?? "";
-                        v3 = ed.Value3 ?? "";
-                        v4 = ed.Value4 ?? "";
-                        v5 = ed.Value5 ?? "";
-                    }
-                    else if (row is SettingData sd)
-                    {
-                        name = sd.Name ?? "";
-                        v1 = sd.Value.ToString() ?? "";
-                        v2 = sd.Value2.ToString() ?? "";
-                        v3 = sd.Value3.ToString() ?? "";
-                        v4 = sd.Value4.ToString() ?? "";
-                        v5 = sd.Value5.ToString() ?? "";
-                    }
-                    else
-                    {
-                        continue;
-                    }
-
-                    v1 = NormalizeZeroForSave(v1);
-                    v2 = NormalizeZeroForSave(v2);
-                    v3 = NormalizeZeroForSave(v3);
-                    v4 = NormalizeZeroForSave(v4);
-                    v5 = NormalizeZeroForSave(v5);
-
-                    name = System.Security.SecurityElement.Escape(name);
-                    v1 = System.Security.SecurityElement.Escape(v1);
-                    v2 = System.Security.SecurityElement.Escape(v2);
-                    v3 = System.Security.SecurityElement.Escape(v3);
-                    v4 = System.Security.SecurityElement.Escape(v4);
-                    v5 = System.Security.SecurityElement.Escape(v5);
-
-                    sb.AppendLine($"    <add Name=\"{name}\" Value1=\"{v1}\" Value2=\"{v2}\" Value3=\"{v3}\" Value4=\"{v4}\" Value5=\"{v5}\" Index=\"{index}\" />");
-                    index++;
-                }
-
-                sb.AppendLine("  </Error>");
-                sb.AppendLine("</configuration>");
-
-                // 파일 경로 생성(충돌 방지)
-                string full = BuildUniqueErrorFilePath(dir);
-
-                // 저장(재시도 1회)
-                WriteFileWithRetry(full, sb.ToString());
-
-                // 리스트 갱신
-                SetErrorList();
-
-                // 보존 정책 실행(90일 + 개수 상한)
-                EnforceErrorDataRetention(dir, retentionDays, maxFiles);
-
-                // 에러 스냅샷 DB 큐 적재
-                string fileOnly = System.IO.Path.GetFileNameWithoutExtension(full);
-                EnqueueErrorEventsFromGrid( fileNameForSnapshot: fileOnly, sourceType: BliMonitorTest.util.MonitoringDb.MonitoringDb.SOURCE_SINGLE, channelNo: _channelNoForDb
-                );
-
-                log.Info($"AutoSaveErrorDataToFile: 자동 저장 완료 → {full}");
-            }
-            catch (Exception ex)
-            {
-                log.Error("AutoSaveErrorDataToFile 실패", ex);
-                //MessageBox.Show("에러 데이터를 자동 저장하는 중 문제가 발생했습니다.");
-                ToastMessage.ToastService.AppToast.Show("에러 데이터를 자동 저장하는 중 문제가 발생했습니다.");
             }
         }
 
@@ -1843,86 +2219,6 @@ namespace BliMonitorTest
             ApplyErrorFilter(tb?.Text);
         }
 
-        private void EnqueueErrorEventsFromGrid(string fileNameForSnapshot, int sourceType, int channelNo)
-        {
-            try
-            {
-                var src = ErrorGrid.ItemsSource as System.Collections.IEnumerable;
-                if (src == null) return;
-
-                // 5슬롯 버퍼(비-nullable)
-                string[] errorText = new string[5];
-                int[] runMode = new int[5];
-                double[] heaterTemp = new double[5];
-                double[] heaterOff = new double[5];
-                double[] hotAirTemp = new double[5];
-                double[] hotAirOn = new double[5];
-                int[] runCount = new int[5];
-                double[] exhaustTemp = new double[5];
-
-                foreach (var row in src)
-                {
-                    if (row is ErrorData ed)
-                    {
-                        switch (ed.Name)
-                        {
-                            case "에러 내용":
-                                errorText[0] = ed.Value; errorText[1] = ed.Value2; errorText[2] = ed.Value3; errorText[3] = ed.Value4; errorText[4] = ed.Value5;
-                                break;
-                            case "운전 모드":
-                                runMode[0] = TryInt0(ed.Value); runMode[1] = TryInt0(ed.Value2); runMode[2] = TryInt0(ed.Value3); runMode[3] = TryInt0(ed.Value4); runMode[4] = TryInt0(ed.Value5);
-                                break;
-                            case "히터 온도":
-                                heaterTemp[0] = TryDouble0(ed.Value); heaterTemp[1] = TryDouble0(ed.Value2); heaterTemp[2] = TryDouble0(ed.Value3); heaterTemp[3] = TryDouble0(ed.Value4); heaterTemp[4] = TryDouble0(ed.Value5);
-                                break;
-                            case "히터 오프 타임":
-                                heaterOff[0] = TryDouble0(ed.Value); heaterOff[1] = TryDouble0(ed.Value2); heaterOff[2] = TryDouble0(ed.Value3); heaterOff[3] = TryDouble0(ed.Value4); heaterOff[4] = TryDouble0(ed.Value5);
-                                break;
-                            case "배기 온도":
-                                exhaustTemp[0] = TryDouble0(ed.Value); exhaustTemp[1] = TryDouble0(ed.Value2); exhaustTemp[2] = TryDouble0(ed.Value3); exhaustTemp[3] = TryDouble0(ed.Value4); exhaustTemp[4] = TryDouble0(ed.Value5);
-                                break;
-                            case "열풍 온도":
-                                hotAirTemp[0] = TryDouble0(ed.Value); hotAirTemp[1] = TryDouble0(ed.Value2); hotAirTemp[2] = TryDouble0(ed.Value3); hotAirTemp[3] = TryDouble0(ed.Value4); hotAirTemp[4] = TryDouble0(ed.Value5);
-                                break;
-                            case "열풍 On Time":
-                                hotAirOn[0] = TryDouble0(ed.Value); hotAirOn[1] = TryDouble0(ed.Value2); hotAirOn[2] = TryDouble0(ed.Value3); hotAirOn[3] = TryDouble0(ed.Value4); hotAirOn[4] = TryDouble0(ed.Value5);
-                                break;
-                            case "운전 횟수":
-                                runCount[0] = TryInt0(ed.Value); runCount[1] = TryInt0(ed.Value2); runCount[2] = TryInt0(ed.Value3); runCount[3] = TryInt0(ed.Value4); runCount[4] = TryInt0(ed.Value5);
-                                break;
-                        }
-                    }
-                }
-
-                var now = DateTime.Now;
-                string snapshotId = now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "/" + Guid.NewGuid().ToString("N");
-
-                for (int slot = 0; slot < 5; slot++)
-                {
-                    BliMonitorTest.util.MonitoringDb.MonitoringDbWriteService.Instance.EnqueueErrorEvent(
-                        sourceType: sourceType,
-                        channelNo: channelNo,
-                        createdAt: now,
-                        snapshotId: snapshotId,
-                        fileName: fileNameForSnapshot,
-                        errorSlot: slot + 1,
-                        errorText: errorText[slot] ?? "",
-                        runMode: runMode[slot],
-                        heaterTemp: heaterTemp[slot],
-                        heaterOffTime: heaterOff[slot],
-                        hotAirTemp: hotAirTemp[slot],
-                        hotAirOnTime: hotAirOn[slot],
-                        runCount: runCount[slot],
-                        exhaustTemp: exhaustTemp[slot]
-                    );
-                }
-            }
-            catch (Exception ex)
-            {
-                log.Warn("EnqueueErrorEventsFromGrid 실패", ex);
-            }
-        }
-
         private static int TryInt0(string s)
         {
             if (int.TryParse((s ?? "").Trim(), out int v)) return v;
@@ -1940,6 +2236,10 @@ namespace BliMonitorTest
             return 0;
         }
 
+        private void ReceivedParamGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+
+        }
         private void OpenErrorDataQueryButton_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -1958,8 +2258,7 @@ namespace BliMonitorTest
                 // 초기 필터 세팅: 단일채널(SOURCE_SINGLE), 현재 채널 번호(_channelNoForDb)
                 win.SetInitialFilter(
                     sourceType: BliMonitorTest.util.MonitoringDb.MonitoringDb.SOURCE_SINGLE,
-                    channelNo: _channelNoForDb,
-                    fileNameLike: fileLike
+                    channelNo: _channelNoForDb
                 );
 
                 // 마지막에 Show
@@ -1971,6 +2270,440 @@ namespace BliMonitorTest
                 ToastMessage.ToastService.AppToast.Show("에러데이터 조회 화면을 여는 중 문제가 발생했습니다.");
             }
         }
+
+        private ObservableCollection<StatusViewRow2Col> ToTwoColumnRows(IEnumerable<StatusViewRow> source)
+        {
+            var result = new ObservableCollection<StatusViewRow2Col>();
+            if (source == null) return result;
+
+            var list = source.ToList();
+            for (int i = 0; i < list.Count; i += 2)
+            {
+                var left = list[i];
+                var right = (i + 1 < list.Count) ? list[i + 1] : null;
+
+                result.Add(new StatusViewRow2Col
+                {
+                    Name1 = left?.Name ?? "",
+                    Value1 = left?.Value ?? "",
+                    Name2 = right?.Name ?? "",
+                    Value2 = right?.Value ?? ""
+                });
+            }
+
+            return result;
+        }
+
+        private void SaveParameterFile(string fileName)
+        {
+            string dir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ParameterSetting");
+            if (!Directory.Exists(dir))
+                Directory.CreateDirectory(dir);
+
+            string full = System.IO.Path.Combine(dir, fileName + ".config");
+
+            var sb = new StringBuilder();
+            sb.AppendLine("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
+            sb.AppendLine("<configuration>");
+            sb.AppendLine("  <Parameter>");
+
+            int index = 1;
+            foreach (var row in _editableRows)
+            {
+                string name = System.Security.SecurityElement.Escape(row.Name ?? "");
+                string value = System.Security.SecurityElement.Escape((row.Value ?? "").Trim());
+
+                sb.AppendLine($"    <add Name=\"{name}\" Value=\"{value}\" Index=\"{index}\" />");
+                index++;
+            }
+
+            sb.AppendLine("  </Parameter>");
+            sb.AppendLine("</configuration>");
+
+            File.WriteAllText(full, sb.ToString(), Encoding.UTF8);
+        }
+
+        private void LoadParameterFile(string fileName)
+        {
+            string dir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ParameterSetting");
+            string full = System.IO.Path.Combine(dir, fileName + ".config");
+
+            if (!File.Exists(full))
+                return;
+
+            var doc = XDocument.Load(full);
+            var section = doc.Root?.Element("Parameter");
+            if (section == null)
+            {
+                ToastMessage.ToastService.AppToast.Show("파라미터 파일 형식이 올바르지 않습니다.");
+                return;
+            }
+
+            _editableRows.Clear();
+
+            foreach (var add in section.Elements("add"))
+            {
+                string name = add.Attribute("Name")?.Value ?? "";
+                string value = add.Attribute("Value")?.Value ?? "";
+
+                _editableRows.Add(new StatusViewRow
+                {
+                    Name = name,
+                    Value = value
+                });
+            }
+
+            EditableParamGrid.ItemsSource = null;
+            EditableParamGrid.ItemsSource = ToTwoColumnRows(_editableRows);
+
+            RightSet = true;
+        }
+
+        private void ClearErrorFileInputs()
+        {
+            if (ErrorFileName != null) ErrorFileName.Text = "";
+            if (ErrorSearchBox != null) ErrorSearchBox.Text = "";
+            if (ErrorFileList != null) ErrorFileList.SelectedItems.Clear();
+            ApplyErrorFilter("");
+        }
+
+        private void ClearParameterFileInputs()
+        {
+            if (FileName != null) FileName.Text = "";
+            if (FileSearchBox != null) FileSearchBox.Text = "";
+            if (FileList != null) FileList.SelectedItems.Clear();
+            ApplyFileFilter("");
+        }
+
+        private ErrorData FindErrorRow(ObservableCollection<ErrorData> rows, string name)
+        {
+            return rows.FirstOrDefault(r => string.Equals(r.Name, name, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private void SetErrorSlotValue(ErrorData row, int slot, string value)
+        {
+            if (row == null)
+                return;
+
+            switch (slot)
+            {
+                case 1: row.Value = value; break;
+                case 2: row.Value2 = value; break;
+                case 3: row.Value3 = value; break;
+                case 4: row.Value4 = value; break;
+                case 5: row.Value5 = value; break;
+                case 6: row.Value6 = value; break;
+                case 7: row.Value7 = value; break;
+                case 8: row.Value8 = value; break;
+            }
+        }
+
+
+        private ErrorData FindErrorRowByName(IEnumerable<ErrorData> rows, string name)
+        {
+            if (rows == null || string.IsNullOrWhiteSpace(name))
+                return null;
+
+            return rows.FirstOrDefault(r => string.Equals(r.Name, name, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private string GetErrorSlotValue(ErrorData row, int slot)
+        {
+            if (row == null) return "";
+
+            switch (slot)
+            {
+                case 1: return row.Value ?? "";
+                case 2: return row.Value2 ?? "";
+                case 3: return row.Value3 ?? "";
+                case 4: return row.Value4 ?? "";
+                case 5: return row.Value5 ?? "";
+                case 6: return row.Value6 ?? "";
+                case 7: return row.Value7 ?? "";
+                case 8: return row.Value8 ?? "";
+                default: return "";
+            }
+        }
+
+        private DocumentFormat.OpenXml.Spreadsheet.Cell CreateTextCell(string value)
+        {
+            return new DocumentFormat.OpenXml.Spreadsheet.Cell
+            {
+                DataType = DocumentFormat.OpenXml.Spreadsheet.CellValues.String,
+                CellValue = new DocumentFormat.OpenXml.Spreadsheet.CellValue(value ?? "")
+            };
+        }
+
+        private void ErrorExcelButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var src = ErrorGrid.ItemsSource as IEnumerable<ErrorData>;
+                if (src == null)
+                {
+                    ToastMessage.ToastService.AppToast.Show("엑셀로 저장할 에러 데이터가 없습니다.");
+                    return;
+                }
+
+                string defaultDir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ErrorData");
+                if (!Directory.Exists(defaultDir))
+                    Directory.CreateDirectory(defaultDir);
+
+                string defaultFileName;
+                if (!string.IsNullOrWhiteSpace(ErrorFileName.Text))
+                    defaultFileName = ErrorFileName.Text.Trim() + ".xlsx";
+                else
+                    defaultFileName = "ErrorData_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".xlsx";
+
+                SaveFileDialog dlg = new SaveFileDialog
+                {
+                    Title = "에러 엑셀 저장",
+                    Filter = "Excel Workbook (*.xlsx)|*.xlsx",
+                    DefaultExt = ".xlsx",
+                    AddExtension = true,
+                    InitialDirectory = defaultDir,
+                    FileName = defaultFileName,
+                    OverwritePrompt = true
+                };
+
+                bool? result = dlg.ShowDialog(this);
+                if (result != true)
+                    return;
+
+                string full = dlg.FileName;
+
+                using (var document = DocumentFormat.OpenXml.Packaging.SpreadsheetDocument.Create(
+                    full,
+                    DocumentFormat.OpenXml.SpreadsheetDocumentType.Workbook))
+                {
+                    var workbookPart = document.AddWorkbookPart();
+                    workbookPart.Workbook = new DocumentFormat.OpenXml.Spreadsheet.Workbook();
+
+                    var worksheetPart = workbookPart.AddNewPart<DocumentFormat.OpenXml.Packaging.WorksheetPart>();
+                    var sheetData = new DocumentFormat.OpenXml.Spreadsheet.SheetData();
+
+                    // 헤더
+                    var headerRow = new DocumentFormat.OpenXml.Spreadsheet.Row();
+                    headerRow.Append(
+                        CreateTextCell("항목"),
+                        CreateTextCell("Error1"),
+                        CreateTextCell("Error2"),
+                        CreateTextCell("Error3"),
+                        CreateTextCell("Error4"),
+                        CreateTextCell("Error5"),
+                        CreateTextCell("Error6"),
+                        CreateTextCell("Error7"),
+                        CreateTextCell("Error8")
+                    );
+                    sheetData.Append(headerRow);
+
+                    // 본문
+                    foreach (var row in src)
+                    {
+                        var excelRow = new DocumentFormat.OpenXml.Spreadsheet.Row();
+                        excelRow.Append(
+                            CreateTextCell(row.Name ?? ""),
+                            CreateTextCell(row.Value ?? ""),
+                            CreateTextCell(row.Value2 ?? ""),
+                            CreateTextCell(row.Value3 ?? ""),
+                            CreateTextCell(row.Value4 ?? ""),
+                            CreateTextCell(row.Value5 ?? ""),
+                            CreateTextCell(row.Value6 ?? ""),
+                            CreateTextCell(row.Value7 ?? ""),
+                            CreateTextCell(row.Value8 ?? "")
+                        );
+                        sheetData.Append(excelRow);
+                    }
+
+                    worksheetPart.Worksheet = new DocumentFormat.OpenXml.Spreadsheet.Worksheet(sheetData);
+
+                    var sheets = workbookPart.Workbook.AppendChild(new DocumentFormat.OpenXml.Spreadsheet.Sheets());
+                    var sheet = new DocumentFormat.OpenXml.Spreadsheet.Sheet()
+                    {
+                        Id = workbookPart.GetIdOfPart(worksheetPart),
+                        SheetId = 1,
+                        Name = "ErrorData"
+                    };
+                    sheets.Append(sheet);
+
+                    workbookPart.Workbook.Save();
+                }
+
+                ToastMessage.ToastService.AppToast.Show("엑셀 파일을 저장했습니다.");
+            }
+            catch (Exception ex)
+            {
+                log.Error("ErrorExcelButton_Click 실패", ex);
+                ToastMessage.ToastService.AppToast.Show("엑셀 저장 중 문제가 발생했습니다.");
+            }
+        }
+
+        private ObservableCollection<ErrorData> BuildDefaultErrorRows()
+        {
+            return new ObservableCollection<ErrorData>
+            {
+                CreateDefaultErrorRow("유효", "N"),
+                CreateDefaultErrorRow("SEQ", "0"),
+                CreateDefaultErrorRow("에러코드", "0"),
+                CreateDefaultErrorRow("에러명", "0"),
+                CreateDefaultErrorRow("온수 Temp", "0"),
+                CreateDefaultErrorRow("냉수 Temp", "0"),
+                CreateDefaultErrorRow("ADC HOT", "0"),
+                CreateDefaultErrorRow("ADC COLD", "0"),
+                CreateDefaultErrorRow("초기급수 완료", "0"),
+
+                CreateDefaultErrorRow("StatusA Raw", "0x00"),
+                CreateDefaultErrorRow("StatusB Raw", "0x00"),
+
+                CreateDefaultErrorRow("A Heater", "OFF"),
+                CreateDefaultErrorRow("A Comp", "OFF"),
+                CreateDefaultErrorRow("A HotValve", "OFF"),
+                CreateDefaultErrorRow("A ColdSel", "OFF"),
+                CreateDefaultErrorRow("A Outlet", "OFF"),
+                CreateDefaultErrorRow("A PumpOut", "OFF"),
+                CreateDefaultErrorRow("A PumpDia", "OFF"),
+                CreateDefaultErrorRow("A Airvent", "OFF"),
+
+                CreateDefaultErrorRow("B Float", "OFF"),
+                CreateDefaultErrorRow("B BallTop", "OFF"),
+                CreateDefaultErrorRow("B WaterBuf", "OFF"),
+                CreateDefaultErrorRow("B Empty", "OFF"),
+                CreateDefaultErrorRow("B BufLow", "OFF"),
+                CreateDefaultErrorRow("B Reheat", "OFF"),
+                CreateDefaultErrorRow("B HotIng", "OFF"),
+                CreateDefaultErrorRow("B Disp", "OFF"),
+
+                CreateDefaultErrorRow("버퍼수위 부족", "0")
+            };
+        }
+
+        private ErrorData CreateDefaultErrorRow(string name, string value)
+        {
+            return new ErrorData
+            {
+                Name = name,
+                Value = value,
+                Value2 = value,
+                Value3 = value,
+                Value4 = value,
+                Value5 = value,
+                Value6 = value,
+                Value7 = value,
+                Value8 = value
+            };
+        }
+
+        private void SetDefaultErrorGrid()
+        {
+            ErrorGrid.ItemsSource = BuildDefaultErrorRows();
+        }
+
+        private void SetDummyErrorGrid()
+        {
+            var rows = new ObservableCollection<ErrorData>
+            {
+                new ErrorData
+                {
+                    Name = "유효",
+                    Value = "Y", Value2 = "Y", Value3 = "Y", Value4 = "N",
+                    Value5 = "Y", Value6 = "N", Value7 = "Y", Value8 = "N"
+                },
+                new ErrorData
+                {
+                    Name = "SEQ",
+                    Value = "1", Value2 = "2", Value3 = "3", Value4 = "4",
+                    Value5 = "5", Value6 = "6", Value7 = "7", Value8 = "8"
+                },
+                new ErrorData
+                {
+                    Name = "에러코드",
+                    Value = "0x01", Value2 = "0x02", Value3 = "0x03", Value4 = "0x04",
+                    Value5 = "0x05", Value6 = "0x06", Value7 = "0x07", Value8 = "0x08"
+                },
+                new ErrorData
+                {
+                    Name = "에러명",
+                    Value = "온수센서", Value2 = "냉수센서", Value3 = "버퍼수위", Value4 = "히터이상",
+                    Value5 = "배기팬", Value6 = "밸브이상", Value7 = "과전류", Value8 = "테스트"
+                },
+                new ErrorData
+                {
+                    Name = "온수 Temp",
+                    Value = "72", Value2 = "70", Value3 = "69", Value4 = "68",
+                    Value5 = "67", Value6 = "66", Value7 = "65", Value8 = "64"
+                },
+                new ErrorData
+                {
+                    Name = "냉수 Temp",
+                    Value = "14", Value2 = "15", Value3 = "16", Value4 = "17",
+                    Value5 = "18", Value6 = "19", Value7 = "20", Value8 = "21"
+                },
+                new ErrorData
+                {
+                    Name = "ADC HOT",
+                    Value = "410", Value2 = "412", Value3 = "414", Value4 = "416",
+                    Value5 = "418", Value6 = "420", Value7 = "422", Value8 = "424"
+                },
+                new ErrorData
+                {
+                    Name = "ADC COLD",
+                    Value = "210", Value2 = "212", Value3 = "214", Value4 = "216",
+                    Value5 = "218", Value6 = "220", Value7 = "222", Value8 = "224"
+                }
+            };
+
+            ErrorGrid.ItemsSource = rows;
+        }
+
+        private XDocument BuildErrorXmlFromGrid()
+        {
+            var src = ErrorGrid.ItemsSource as IEnumerable<ErrorData>;
+            if (src == null)
+                return null;
+
+            var rows = src.ToList();
+
+            XElement root = new XElement("ErrorData");
+
+            for (int slot = 1; slot <= 8; slot++)
+            {
+                XElement errorNode = new XElement($"error{slot}",
+                    new XElement("Valid", NormalizeZeroForSave(GetErrorSlotValue(FindErrorRowByName(rows, "유효"), slot))),
+                    new XElement("Seq", NormalizeZeroForSave(GetErrorSlotValue(FindErrorRowByName(rows, "SEQ"), slot))),
+                    new XElement("ErrorCode", NormalizeZeroForSave(GetErrorSlotValue(FindErrorRowByName(rows, "에러코드"), slot))),
+                    new XElement("ErrorName", NormalizeZeroForSave(GetErrorSlotValue(FindErrorRowByName(rows, "에러명"), slot))),
+                    new XElement("HotTemp", NormalizeZeroForSave(GetErrorSlotValue(FindErrorRowByName(rows, "온수 Temp"), slot))),
+                    new XElement("ColdTemp", NormalizeZeroForSave(GetErrorSlotValue(FindErrorRowByName(rows, "냉수 Temp"), slot))),
+                    new XElement("AdcHot", NormalizeZeroForSave(GetErrorSlotValue(FindErrorRowByName(rows, "ADC HOT"), slot))),
+                    new XElement("AdcCold", NormalizeZeroForSave(GetErrorSlotValue(FindErrorRowByName(rows, "ADC COLD"), slot))),
+                    new XElement("WaterInitDone", NormalizeZeroForSave(GetErrorSlotValue(FindErrorRowByName(rows, "초기급수 완료"), slot))),
+                    new XElement("StatusA", NormalizeZeroForSave(GetErrorSlotValue(FindErrorRowByName(rows, "StatusA Raw"), slot))),
+                    new XElement("StatusB", NormalizeZeroForSave(GetErrorSlotValue(FindErrorRowByName(rows, "StatusB Raw"), slot))),
+                    new XElement("BufferLow", NormalizeZeroForSave(GetErrorSlotValue(FindErrorRowByName(rows, "버퍼수위 부족"), slot)))
+                );
+
+                root.Add(errorNode);
+            }
+
+            return new XDocument(new XDeclaration("1.0", "utf-8", "yes"), root);
+        }
+
+        private string GetErrorCodeText(byte code)
+        {
+            List<string> names = new List<string>();
+
+            if ((code & 0x01) != 0) names.Add("COLD_ERR1");
+            if ((code & 0x02) != 0) names.Add("COLD_ERR2");
+            if ((code & 0x04) != 0) names.Add("HOT_ERR1");
+            if ((code & 0x08) != 0) names.Add("HOT_ERR2");
+            if ((code & 0x10) != 0) names.Add("HOT_ERR3");
+
+            if (names.Count == 0)
+                return "NONE";
+
+            return string.Join(",", names);
+        }
+
 
     }
 }

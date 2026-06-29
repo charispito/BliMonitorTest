@@ -1,10 +1,7 @@
-﻿using BliMonitorTest.data;
-using BliMonitorTest.util;
-using log4net;
-using Microsoft.Data.Sqlite;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Data;
 using System.IO;
 using System.IO.Ports;
 using System.Linq;
@@ -21,9 +18,13 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Xml.Linq;
-using Path = System.IO.Path;
+using BliMonitorTest.data;
+using BliMonitorTest.util;
 using BliMonitorTest.util.MonitoringDb;
 using BliMonitorTest.util.StoragePathUtil;
+using log4net;
+using Microsoft.Data.Sqlite;
+using Path = System.IO.Path;
 
 namespace BliMonitorTest.controls
 {
@@ -78,30 +79,31 @@ namespace BliMonitorTest.controls
         public string FName { get; set; }
         public bool Modify = false;
         public bool _run = false;
+
         public bool run {
             get { return _run; }
             set { 
                 _run = value;
                 if (value)
                 {
-                    Statebox.cont.Content = "운전중";
+                    Statebox.cont.Text = "운전중";
                     Statebox.cont.Background = new SolidColorBrush(Color.FromRgb(98, 255, 81));
                     this.Background = new SolidColorBrush(Color.FromRgb(98, 255, 81));
                 }
                 else
                 {
-                    Statebox.cont.Content = "대기중";
+                    Statebox.cont.Text = "대기중";
                     Statebox.cont.Background = new SolidColorBrush(Color.FromRgb(255, 255, 255));
                     this.Background = new SolidColorBrush(Color.FromRgb(255, 255, 255));
                 }
             }
         }
+
         public int number = 1;
         public float off_sum = 0;
         public int air_sum = 0;
         public SerialPort port;
         public OxyView chartView;
-        //public WPFChartView chartView;
         public StreamWriter streamWriter;
         public IList<KeyValuePair<double, int>> list1 = new ObservableCollection<KeyValuePair<double, int>>();
         public IList<KeyValuePair<double, int>> list2 = new ObservableCollection<KeyValuePair<double, int>>();
@@ -185,34 +187,203 @@ namespace BliMonitorTest.controls
             typeof(System.Windows.Controls.Primitives.ButtonBase).GetMethod("OnClick", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(Item8Check, new object[0]);            
         }
 
+        private bool CanOpenParameterWindow()
+        {
+            return ConnectState == 1;
+        }
+
         private void ParameterButton_Click(object sender, RoutedEventArgs e)
         {
-            if (port != null && port.IsOpen)
+            try
             {
-                parameterWindow = new ParameterWindow(port, this);
+                OneChannelWindow parent = Window.GetWindow(this) as OneChannelWindow;
+                bool isDummyMode = parent != null && parent.IsDummyMode;
+
+                if (!CanOpenParameterWindow())
+                {
+                    ToastMessage.ToastService.AppToast.Show("패킷 수신 상태가 아니어서 파라미터 창을 열 수 없습니다.");
+                    return;
+                }
+
+                if (parameterWindow != null)
+                {
+                    if (parameterWindow.IsVisible)
+                    {
+                        if (parameterWindow.WindowState == WindowState.Minimized)
+                            parameterWindow.WindowState = WindowState.Normal;
+
+                        parameterWindow.Activate();
+                        parameterWindow.Topmost = true;
+                        parameterWindow.Topmost = false;
+                        parameterWindow.Focus();
+                        return;
+                    }
+
+                    parameterWindow = null;
+                }
+
+                if (isDummyMode)
+                {
+                    parameterWindow = new ParameterWindow(null, this);
+                }
+                else
+                {
+                    parameterWindow = new ParameterWindow(port, this);
+                }
+
+                parameterWindow.Closed += (s, args) => { parameterWindow = null; };
                 parameterWindow.Show();
             }
-
+            catch (Exception ex)
+            {
+                log.Error("ParameterButton_Click 실패", ex);
+                ToastMessage.ToastService.AppToast.Show("파라미터 창을 여는 중 오류가 발생했습니다.");
+            }
         }
 
         private void initFile()
         {
-            streamWriter.WriteLine(
-                "날짜, 채널, 소스, ModelNo, SW, HeaterB, ColdB, LowWater, Floor, UVByte," +
-                "Sol3_1, Sol3_2, Sol3_3, AirVent, CV, Buttons, Pump, ColdSol, NormalSol, HotSol1," +
-                "Needle, PEL_B, Cmd, Payload, Checksum, End"
-            );
+            var headerTable = BuildReceiveExportTableForSinglePacketHeader();
+            if (headerTable.Columns.Count == 0)
+                return;
+
+            var headers = new List<string>();
+            foreach (DataColumn col in headerTable.Columns)
+                headers.Add(EscapeCsv(col.ColumnName));
+
+            streamWriter.WriteLine(string.Join(",", headers));
         }
 
-        public void WriteFile(BliResponse57Packet resp, int channelNo, int sourceType)
+        private static string EscapeCsv(string value)
         {
-            if (resp == null) return;
+            if (value == null)
+                return "";
 
+            if (value.Contains(",") || value.Contains("\"") || value.Contains("\n") || value.Contains("\r"))
+                return "\"" + value.Replace("\"", "\"\"") + "\"";
+
+            return value;
+        }
+
+        private DataTable BuildSingleReceiveRowTable(Duo8StatusPacket resp, int channelNo, int sourceType)
+        {
+            var dt = new DataTable();
+
+            dt.Columns.Add("created_at", typeof(string));
+            dt.Columns.Add("source_type", typeof(int));
+            dt.Columns.Add("channel_no", typeof(int));
+            dt.Columns.Add("model_code", typeof(int));
+            dt.Columns.Add("error_code", typeof(int));
+            dt.Columns.Add("water_init_done", typeof(int));
+            dt.Columns.Add("water_init_go", typeof(int));
+            dt.Columns.Add("empty_detect", typeof(int));
+            dt.Columns.Add("buffer_low", typeof(int));
+            dt.Columns.Add("reheat_running", typeof(int));
+            dt.Columns.Add("hot_ing", typeof(int));
+            dt.Columns.Add("heater_pwm", typeof(int));
+            dt.Columns.Add("night", typeof(int));
+            dt.Columns.Add("test_mode", typeof(int));
+            dt.Columns.Add("mode_selected", typeof(int));
+            dt.Columns.Add("qty_selected", typeof(int));
+            dt.Columns.Add("dispense_phase", typeof(int));
+            dt.Columns.Add("dispense_sub_phase", typeof(int));
+            dt.Columns.Add("hot_temp_raw", typeof(int));
+            dt.Columns.Add("cold_temp_raw", typeof(int));
+            dt.Columns.Add("float_low_stable", typeof(int));
+            dt.Columns.Add("ball_top_full_stable", typeof(int));
+            dt.Columns.Add("water_buf_full_stable", typeof(int));
+            dt.Columns.Add("heater_output", typeof(int));
+            dt.Columns.Add("compressor_output", typeof(int));
+            dt.Columns.Add("hot_valve_output", typeof(int));
+            dt.Columns.Add("cold_select_output", typeof(int));
+            dt.Columns.Add("outlet_valve_output", typeof(int));
+            dt.Columns.Add("button_info", typeof(int));
+            dt.Columns.Add("status_a", typeof(int));
+            dt.Columns.Add("status_b", typeof(int));
+
+            var row = dt.NewRow();
+            row["created_at"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+            row["source_type"] = sourceType;
+            row["channel_no"] = channelNo;
+            row["model_code"] = resp.ModelCode;
+            row["error_code"] = resp.ErrorCode;
+            row["water_init_done"] = resp.WaterInitDone;
+            row["water_init_go"] = resp.WaterInitGo;
+            row["empty_detect"] = resp.EmptyDetect;
+            row["buffer_low"] = resp.BufferLow;
+            row["reheat_running"] = resp.ReheatRunning;
+            row["hot_ing"] = resp.HotIng;
+            row["heater_pwm"] = resp.HeaterPwm;
+            row["night"] = resp.Night;
+            row["test_mode"] = resp.TestMode;
+            row["mode_selected"] = resp.ModeSelected;
+            row["qty_selected"] = resp.QtySelected;
+            row["dispense_phase"] = resp.DispensePhase;
+            row["dispense_sub_phase"] = resp.DispenseSubPhase;
+            row["hot_temp_raw"] = resp.HotTempRaw;
+            row["cold_temp_raw"] = resp.ColdTempRaw;
+            row["float_low_stable"] = resp.FloatLowStable;
+            row["ball_top_full_stable"] = resp.BallTopFullStable;
+            row["water_buf_full_stable"] = resp.WaterBufFullStable;
+            row["heater_output"] = resp.HeaterOutput;
+            row["compressor_output"] = resp.CompressorOutput;
+            row["hot_valve_output"] = resp.HotValveOutput;
+            row["cold_select_output"] = resp.ColdSelectOutput;
+            row["outlet_valve_output"] = resp.OutletValveOutput;
+            row["button_info"] = resp.ButtonInfo;
+            row["status_a"] = resp.StatusA;
+            row["status_b"] = resp.StatusB;
+
+            dt.Rows.Add(row);
+            return dt;
+        }
+
+        private DataTable BuildReceiveExportTableForSinglePacketHeader()
+        {
+            var dt = new DataTable();
+            dt.Columns.Add("created_at", typeof(string));
+            dt.Columns.Add("source_type", typeof(int));
+            dt.Columns.Add("channel_no", typeof(int));
+            dt.Columns.Add("model_code", typeof(int));
+            dt.Columns.Add("error_code", typeof(int));
+            dt.Columns.Add("water_init_done", typeof(int));
+            dt.Columns.Add("water_init_go", typeof(int));
+            dt.Columns.Add("empty_detect", typeof(int));
+            dt.Columns.Add("buffer_low", typeof(int));
+            dt.Columns.Add("reheat_running", typeof(int));
+            dt.Columns.Add("hot_ing", typeof(int));
+            dt.Columns.Add("heater_pwm", typeof(int));
+            dt.Columns.Add("night", typeof(int));
+            dt.Columns.Add("test_mode", typeof(int));
+            dt.Columns.Add("mode_selected", typeof(int));
+            dt.Columns.Add("qty_selected", typeof(int));
+            dt.Columns.Add("dispense_phase", typeof(int));
+            dt.Columns.Add("dispense_sub_phase", typeof(int));
+            dt.Columns.Add("hot_temp_raw", typeof(int));
+            dt.Columns.Add("cold_temp_raw", typeof(int));
+            dt.Columns.Add("float_low_stable", typeof(int));
+            dt.Columns.Add("ball_top_full_stable", typeof(int));
+            dt.Columns.Add("water_buf_full_stable", typeof(int));
+            dt.Columns.Add("heater_output", typeof(int));
+            dt.Columns.Add("compressor_output", typeof(int));
+            dt.Columns.Add("hot_valve_output", typeof(int));
+            dt.Columns.Add("cold_select_output", typeof(int));
+            dt.Columns.Add("outlet_valve_output", typeof(int));
+            dt.Columns.Add("button_info", typeof(int));
+            dt.Columns.Add("status_a", typeof(int));
+            dt.Columns.Add("status_b", typeof(int));
+
+            ReceiveDataExportFormatter.AddReceiveInterpretColumns(dt);
+            return ReceiveDataExportFormatter.BuildReceiveExportTable(dt);
+        }
+
+        private void EnsureWriterReady()
+        {
             if (streamWriter != null)
             {
                 if (Modify)
                 {
-                    streamWriter.Close();
+                    try { streamWriter.Close(); } catch { }
                     initPath();
                     Modify = false;
                 }
@@ -220,31 +391,74 @@ namespace BliMonitorTest.controls
                 {
                     initPath();
                 }
-
-                string dateStr = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-                string rawHex = BitConverter.ToString(resp.Raw ?? Array.Empty<byte>()).Replace("-", "");
-
-                // CSV 기록(TO-BE)
-                streamWriter.WriteLine(string.Join(",",
-                    dateStr, channelNo, sourceType,
-                    resp.ModelNo, resp.SwVer, resp.HeaterTempB, resp.ColdTempB,
-                    resp.LowWater, resp.FloorSensor, resp.UvLedByte,
-                    resp.Sol3Way1, resp.Sol3Way2, resp.Sol3Way3,
-                    resp.AirVentSol, resp.CvSol, resp.ButtonFlags,
-                    resp.Pump, resp.ColdSol, resp.NormalSol, resp.HotSol1,
-                    resp.NeedlePos, resp.PelVoltageB,
-                    resp.CmdByte, resp.PayloadSize, resp.Checksum, resp.EndPacket
-                ));
-                streamWriter.Flush();
-
-                // 2) SQLite 기록 : Queue 방식으로 비동기 처리
-                BliMonitorTest.util.MonitoringDb.MonitoringDbWriteService.Instance.Start(BliMonitorTest.util.StoragePathUtil.StoragePathUtil.GetDbPath());
-                BliMonitorTest.util.MonitoringDb.MonitoringDbWriteService.Instance.Enqueue(resp, channelNo, sourceType);
             }
             else
             {
                 initPath();
                 Modify = false;
+            }
+        }
+
+        private void WriteCsvLine(string line)
+        {
+            if (streamWriter == null || string.IsNullOrWhiteSpace(line))
+                return;
+
+            streamWriter.WriteLine(line);
+            streamWriter.Flush();
+        }
+
+        private void EnsureDbServiceStarted()
+        {
+            try
+            {
+                MonitoringDbWriteService.Instance.Start(StoragePathUtil.GetDbPath());
+            }
+            catch (Exception ex)
+            {
+                log.Warn("MonitoringDbWriteService Start 실패", ex);
+            }
+        }
+
+        public void WriteFile(Duo8StatusPacket resp, int channelNo, int sourceType)
+        {
+            if (resp == null) return;
+
+            try
+            {
+                EnsureWriterReady();
+
+                if (streamWriter == null)
+                    return;
+
+                var dt = BuildSingleReceiveRowTable(resp, channelNo, sourceType);
+                ReceiveDataExportFormatter.AddReceiveInterpretColumns(dt);
+                var exportTable = ReceiveDataExportFormatter.BuildReceiveExportTable(dt);
+
+                if (exportTable.Rows.Count > 0)
+                {
+                    var row = exportTable.Rows[0];
+                    var values = new List<string>();
+
+                    foreach (DataColumn col in exportTable.Columns)
+                        values.Add(EscapeCsv(Convert.ToString(row[col])));
+
+                    WriteCsvLine(string.Join(",", values));
+                }
+
+                try
+                {
+                    EnsureDbServiceStarted();
+                    MonitoringDbWriteService.Instance.Enqueue(resp, channelNo, sourceType);
+                }
+                catch (Exception ex)
+                {
+                    log.Warn("Duo8 상태패킷 DB 저장 실패", ex);
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Warn("WriteFile(Duo8StatusPacket) 실패", ex);
             }
         }
 
@@ -268,7 +482,7 @@ namespace BliMonitorTest.controls
             bool fileExists = File.Exists(_csvPath);
             long fileLen = fileExists ? new FileInfo(_csvPath).Length : 0;
 
-            streamWriter = new StreamWriter(_csvPath, append: true, Encoding.Default);
+            streamWriter = new StreamWriter(_csvPath, append: true, new UTF8Encoding(true));
 
             // 헤더는 비어있는 파일일 때만
             if (fileLen == 0)

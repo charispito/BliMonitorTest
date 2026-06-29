@@ -55,14 +55,16 @@ namespace BliMonitorTest
 
         private void MultiChannelButton_Click(object sender, RoutedEventArgs e)
         {
-            if (!_dbInitialized)
+            try
             {
-                ToastMessage.ToastService.AppToast.Show("DB 초기화 중입니다. 잠시만 기다려 주세요.");
-                return;
+                ToastMessage.ToastService.AppToast.Show("멀티 채널은 아직 지원되지 않습니다.");
             }
-
-            new MultiWindow1().Show();
-            this.Close();
+            catch (Exception ex)
+            {
+                log.Error("더블클릭 이벤트 에러 발생.", ex);
+                throw new NotImplementedException();
+            }            
         }
+
     }
 }

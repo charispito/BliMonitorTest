@@ -7,7 +7,6 @@
         Background="Transparent">
 
     <Window.Resources>
-        <!-- 가운데 정렬 텍스트 -->
         <Style x:Key="CenterCellTextBlock" TargetType="TextBlock">
             <Setter Property="HorizontalAlignment" Value="Center"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
@@ -18,14 +17,12 @@
             <Setter Property="Padding" Value="0"/>
         </Style>
 
-        <!-- 텍스트 + 툴팁 -->
         <DataTemplate x:Key="CenterCellTemplate">
             <TextBlock Style="{StaticResource CenterCellTextBlock}"
-               Text="{Binding}"
-               ToolTip="{Binding}"/>
+                       Text="{Binding}"
+                       ToolTip="{Binding}"/>
         </DataTemplate>
 
-        <!-- 헤더 중앙 정렬 -->
         <Style x:Key="CenterHeaderStyle" TargetType="DataGridColumnHeader">
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
@@ -34,7 +31,6 @@
             <Setter Property="Padding" Value="4,0,4,0"/>
         </Style>
 
-        <!-- 기본 DataGrid 보기 최적화 -->
         <Style x:Key="CenterGridStyle" TargetType="DataGrid" BasedOn="{StaticResource PrettyDataGridStyle}">
             <Setter Property="ColumnHeaderStyle" Value="{StaticResource CenterHeaderStyle}"/>
             <Setter Property="RowHeight" Value="28"/>
@@ -44,8 +40,6 @@
             <Setter Property="AlternationCount" Value="2"/>
             <Setter Property="EnableRowVirtualization" Value="True"/>
             <Setter Property="EnableColumnVirtualization" Value="True"/>
-
-            <!-- 셀: 중앙정렬 + 선택 하이라이트 -->
             <Setter Property="CellStyle">
                 <Setter.Value>
                     <Style TargetType="DataGridCell">
@@ -55,7 +49,10 @@
                         <Setter Property="Template">
                             <Setter.Value>
                                 <ControlTemplate TargetType="DataGridCell">
-                                    <Border x:Name="border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                                    <Border x:Name="border"
+                                            Background="{TemplateBinding Background}"
+                                            BorderBrush="{TemplateBinding BorderBrush}"
+                                            BorderThickness="{TemplateBinding BorderThickness}">
                                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
                                 </ControlTemplate>
@@ -66,7 +63,7 @@
             </Setter>
         </Style>
     </Window.Resources>
-    
+
     <Grid Background="{StaticResource AppBackgroundBrush}">
         <Grid Margin="16">
             <Grid.RowDefinitions>
@@ -77,200 +74,70 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <!-- 검색조건 카드 -->
             <Border Grid.Row="0" Style="{StaticResource CardBorderStyle}">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="1500"/>
+                        <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0">
-                        <TextBlock Text="검색 조건" Style="{StaticResource SectionTitleStyleTextBlock}" Margin="0,0,0,10"/>
+                        <TextBlock Text="검색 조건" Style="{StaticResource SectionTitleStyleTextBlock}" Margin="0,0,0,8"/>
 
-                        <!-- 기간 -->
-                        <WrapPanel HorizontalAlignment="Left" Width="1500" Margin="0,0,0,6">
-                            <Grid Margin="0,0,12,0" VerticalAlignment="Center">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="8"/>
-                                    <ColumnDefinition Width="140"/>
-                                    <ColumnDefinition Width="6"/>
-                                    <ColumnDefinition Width="60"/>
-                                    <ColumnDefinition Width="6"/>
-                                    <ColumnDefinition Width="60"/>
-                                    <ColumnDefinition Width="10"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="10"/>
-                                    <ColumnDefinition Width="140"/>
-                                    <ColumnDefinition Width="6"/>
-                                    <ColumnDefinition Width="60"/>
-                                    <ColumnDefinition Width="6"/>
-                                    <ColumnDefinition Width="60"/>
-                                </Grid.ColumnDefinitions>
+                        <!-- 1행 -->
+                        <WrapPanel Margin="0,0,0,6">
+                            <TextBlock Text="기간 :" Style="{StaticResource FieldLabelStyle}"/>
+                            <DatePicker x:Name="dpFrom" Width="135" Margin="8,0,6,0"/>
+                            <ComboBox x:Name="cbFromHour" Width="58" Margin="0,0,4,0" Style="{StaticResource PrettyComboBoxStyle}"/>
+                            <ComboBox x:Name="cbFromMinute" Width="58" Margin="0,0,10,0" Style="{StaticResource PrettyComboBoxStyle}"/>
 
-                                <TextBlock Grid.Column="0" Text="기간 :" Style="{StaticResource FieldLabelStyle}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                <DatePicker Grid.Column="2" x:Name="dpFrom" Width="140"/>
-                                <ComboBox Grid.Column="4" x:Name="cbFromHour" Width="60" Style="{StaticResource PrettyComboBoxStyle}"/>
-                                <ComboBox Grid.Column="6" x:Name="cbFromMinute" Width="60" Style="{StaticResource PrettyComboBoxStyle}"/>
-                                <TextBlock Grid.Column="8" Text="~" VerticalAlignment="Center"/>
-                                <DatePicker Grid.Column="10" x:Name="dpTo" Width="140"/>
-                                <ComboBox Grid.Column="12" x:Name="cbToHour" Width="60" Style="{StaticResource PrettyComboBoxStyle}"/>
-                                <ComboBox Grid.Column="14" x:Name="cbToMinute" Width="60" Style="{StaticResource PrettyComboBoxStyle}"/>
-                            </Grid>
-                        </WrapPanel>
+                            <TextBlock Text="~" VerticalAlignment="Center" Margin="0,0,10,0"/>
 
-                        <!-- 행1: 모델/SW/소스/채널 -->
-                        <WrapPanel HorizontalAlignment="Left" Width="1500" Margin="0,0,0,6">
-                            <TextBlock Text="모델 :" Style="{StaticResource FieldLabelStyle}"/>
-                            <ComboBox x:Name="cbModelCode" Width="120" Margin="8,0,16,0" Style="{StaticResource PrettyComboBoxStyle}" ToolTip="모델 번호(제품구분)">
-                                <ComboBoxItem Content="전체" Tag="{x:Null}" IsSelected="True"/>
-                                <!-- 모델코드표에 맞춰 추가 -->
-                                <ComboBoxItem Content="0x00" Tag="0"/>
-                                <ComboBoxItem Content="0x01" Tag="1"/>
-                                <ComboBoxItem Content="0x02" Tag="2"/>
-                            </ComboBox>
+                            <DatePicker x:Name="dpTo" Width="135" Margin="0,0,6,0"/>
+                            <ComboBox x:Name="cbToHour" Width="58" Margin="0,0,4,0" Style="{StaticResource PrettyComboBoxStyle}"/>
+                            <ComboBox x:Name="cbToMinute" Width="58" Margin="0,0,18,0" Style="{StaticResource PrettyComboBoxStyle}"/>
 
-                            <TextBlock Text="SW 버전 :" Style="{StaticResource FieldLabelStyle}"/>
-                            <ComboBox x:Name="cbSwVer" Width="120" Margin="8,0,16,0" Style="{StaticResource PrettyComboBoxStyle}">
-                                <ComboBoxItem Content="전체" Tag="{x:Null}" IsSelected="True"/>
-                                <ComboBoxItem Content="0x00" Tag="0"/>
-                                <ComboBoxItem Content="0x01" Tag="1"/>
-                                <ComboBoxItem Content="0x02" Tag="2"/>
-                            </ComboBox>
+                            <TextBlock Text="제품명 :" Style="{StaticResource FieldLabelStyle}"/>
+                            <ComboBox x:Name="cbModelName"
+                                      Width="180"
+                                      Margin="8,0,16,0"
+                                      Style="{StaticResource PrettyComboBoxStyle}"
+                                      DisplayMemberPath="Display"
+                                      SelectedValuePath="Value"/>
 
-                            <TextBlock Text="채널 :" Style="{StaticResource FieldLabelStyle}"/>
-                            <ComboBox x:Name="cbSourceType" Width="120" Margin="8,0,16,0" Style="{StaticResource PrettyComboBoxStyle}">
+                            <TextBlock Text="Source :" Style="{StaticResource FieldLabelStyle}"/>
+                            <ComboBox x:Name="cbSourceType" Width="110" Margin="8,0,16,0" Style="{StaticResource PrettyComboBoxStyle}">
                                 <ComboBoxItem Content="전체" Tag="0" IsSelected="True"/>
                                 <ComboBoxItem Content="단일" Tag="1"/>
                                 <ComboBoxItem Content="다채널" Tag="2"/>
                             </ComboBox>
 
                             <TextBlock Text="채널번호 :" Style="{StaticResource FieldLabelStyle}"/>
-                            <TextBox x:Name="tbChannelNo" Width="90" Margin="8,0,8,0" KeyDown="SearchBox_KeyDown" ToolTip="0=전체, 1~N"/>
+                            <TextBox x:Name="tbChannelNo" Width="80" Margin="8,0,0,0" KeyDown="SearchBox_KeyDown" ToolTip="비우면 전체"/>
                         </WrapPanel>
 
-                        <!-- 행2: 온도/전압 범위 -->
-                        <WrapPanel HorizontalAlignment="Left" Width="1500" Margin="0,0,0,6">
-                            <TextBlock Text="히터온도 ≥" Style="{StaticResource FieldLabelStyle}"/>
-                            <TextBox x:Name="tbHeaterMin" Width="90" Margin="8,0,8,0" KeyDown="SearchBox_KeyDown"/>
+                        <!-- 2행 -->
+                        <WrapPanel>
+                            <TextBlock Text="온수 Temp ≥" Style="{StaticResource FieldLabelStyle}"/>
+                            <TextBox x:Name="tbHeaterMin" Width="80" Margin="8,0,6,0" KeyDown="SearchBox_KeyDown"/>
                             <TextBlock Text="≤" Style="{StaticResource FieldLabelStyle}"/>
-                            <TextBox x:Name="tbHeaterMax" Width="90" Margin="8,0,16,0" KeyDown="SearchBox_KeyDown"/>
+                            <TextBox x:Name="tbHeaterMax" Width="80" Margin="8,0,16,0" KeyDown="SearchBox_KeyDown"/>
 
-                            <TextBlock Text="냉수온도 ≥" Style="{StaticResource FieldLabelStyle}"/>
-                            <TextBox x:Name="tbColdMin" Width="90" Margin="8,0,8,0" KeyDown="SearchBox_KeyDown"/>
+                            <TextBlock Text="냉수 Temp ≥" Style="{StaticResource FieldLabelStyle}"/>
+                            <TextBox x:Name="tbColdMin" Width="80" Margin="8,0,6,0" KeyDown="SearchBox_KeyDown"/>
                             <TextBlock Text="≤" Style="{StaticResource FieldLabelStyle}"/>
-                            <TextBox x:Name="tbColdMax" Width="90" Margin="8,0,16,0" KeyDown="SearchBox_KeyDown"/>
+                            <TextBox x:Name="tbColdMax" Width="80" Margin="8,0,16,0" KeyDown="SearchBox_KeyDown"/>
 
-                            <TextBlock Text="콤프레셔 :" Style="{StaticResource FieldLabelStyle}"/>
-                            <ComboBox x:Name="cbCompOn" Width="100" Margin="8,0,16,0" Style="{StaticResource PrettyComboBoxStyle}">
+                            <TextBlock Text="Compressor :" Style="{StaticResource FieldLabelStyle}"/>
+                            <ComboBox x:Name="cbCompOn" Width="100" Margin="8,0,0,0" Style="{StaticResource PrettyComboBoxStyle}">
                                 <ComboBoxItem Content="전체" Tag="{x:Null}" IsSelected="True"/>
                                 <ComboBoxItem Content="ON" Tag="1"/>
                                 <ComboBoxItem Content="OFF" Tag="0"/>
-                            </ComboBox>
-                        </WrapPanel>
-
-                        <!-- 행3: 센서/솔/펌프 ON/OFF -->
-                        <WrapPanel HorizontalAlignment="Left" Width="1500" Margin="0,0,0,6">
-                            <!-- 공통 3상태 콤보(전체/ON/OFF)를 재사용 -->
-                            <TextBlock Text="수위센서 :" Style="{StaticResource FieldLabelStyle}"/>
-                            <ComboBox x:Name="cbLowWaterSensor" Width="100" Margin="8,0,16,0" Style="{StaticResource PrettyComboBoxStyle}">
-                                <ComboBoxItem Content="전체" Tag="{x:Null}" IsSelected="True"/>
-                                <ComboBoxItem Content="ON" Tag="1"/>
-                                <ComboBoxItem Content="OFF" Tag="0"/>
-                            </ComboBox>
-
-                            <TextBlock Text="플로어 센서 :" Style="{StaticResource FieldLabelStyle}"/>
-                            <ComboBox x:Name="cbFloorSensor" Width="110" Margin="8,0,16,0" Style="{StaticResource PrettyComboBoxStyle}">
-                                <ComboBoxItem Content="전체" Tag="{x:Null}" IsSelected="True"/>
-                                <ComboBoxItem Content="ON" Tag="1"/>
-                                <ComboBoxItem Content="OFF" Tag="0"/>
-                            </ComboBox>
-
-                            <TextBlock Text="UV LED :" Style="{StaticResource FieldLabelStyle}"/>
-                            <ComboBox x:Name="cbUvLed" Width="100" Margin="8,0,16,0" Style="{StaticResource PrettyComboBoxStyle}">
-                                <ComboBoxItem Content="전체" Tag="{x:Null}" IsSelected="True"/>
-                                <ComboBoxItem Content="ON" Tag="1"/>
-                                <ComboBoxItem Content="OFF" Tag="0"/>
-                            </ComboBox>
-
-                            <TextBlock Text="3방 SOL 1 :" Style="{StaticResource FieldLabelStyle}"/>
-                            <ComboBox x:Name="cbTriSol1" Width="100" Margin="8,0,16,0" Style="{StaticResource PrettyComboBoxStyle}">
-                                <ComboBoxItem Content="전체" Tag="{x:Null}" IsSelected="True"/>
-                                <ComboBoxItem Content="ON" Tag="1"/>
-                                <ComboBoxItem Content="OFF" Tag="0"/>
-                            </ComboBox>
-
-                            <TextBlock Text="3방 SOL 2 :" Style="{StaticResource FieldLabelStyle}"/>
-                            <ComboBox x:Name="cbTriSol2" Width="100" Margin="8,0,16,0" Style="{StaticResource PrettyComboBoxStyle}">
-                                <ComboBoxItem Content="전체" Tag="{x:Null}" IsSelected="True"/>
-                                <ComboBoxItem Content="ON" Tag="1"/>
-                                <ComboBoxItem Content="OFF" Tag="0"/>
-                            </ComboBox>
-
-                            <TextBlock Text="3방 SOL 3 :" Style="{StaticResource FieldLabelStyle}"/>
-                            <ComboBox x:Name="cbTriSol3" Width="100" Margin="8,0,16,0" Style="{StaticResource PrettyComboBoxStyle}">
-                                <ComboBoxItem Content="전체" Tag="{x:Null}" IsSelected="True"/>
-                                <ComboBoxItem Content="ON" Tag="1"/>
-                                <ComboBoxItem Content="OFF" Tag="0"/>
-                            </ComboBox>
-                        </WrapPanel>
-
-                        <!-- 행4: 나머지 ON/OFF + Needle -->
-                        <WrapPanel HorizontalAlignment="Left" Width="1500">
-                            <TextBlock Text="Air Vent :" Style="{StaticResource FieldLabelStyle}"/>
-                            <ComboBox x:Name="cbAirVentSol" Width="100" Margin="8,0,16,0" Style="{StaticResource PrettyComboBoxStyle}">
-                                <ComboBoxItem Content="전체" Tag="{x:Null}" IsSelected="True"/>
-                                <ComboBoxItem Content="ON" Tag="1"/>
-                                <ComboBoxItem Content="OFF" Tag="0"/>
-                            </ComboBox>
-
-                            <TextBlock Text="C/V :" Style="{StaticResource FieldLabelStyle}"/>
-                            <ComboBox x:Name="cbCvSol" Width="100" Margin="8,0,16,0" Style="{StaticResource PrettyComboBoxStyle}">
-                                <ComboBoxItem Content="전체" Tag="{x:Null}" IsSelected="True"/>
-                                <ComboBoxItem Content="ON" Tag="1"/>
-                                <ComboBoxItem Content="OFF" Tag="0"/>
-                            </ComboBox>
-
-                            <TextBlock Text="PUMP :" Style="{StaticResource FieldLabelStyle}"/>
-                            <ComboBox x:Name="cbPumpOn" Width="100" Margin="8,0,16,0" Style="{StaticResource PrettyComboBoxStyle}">
-                                <ComboBoxItem Content="전체" Tag="{x:Null}" IsSelected="True"/>
-                                <ComboBoxItem Content="ON" Tag="1"/>
-                                <ComboBoxItem Content="OFF" Tag="0"/>
-                            </ComboBox>
-
-                            <TextBlock Text="Cold Sol :" Style="{StaticResource FieldLabelStyle}"/>
-                            <ComboBox x:Name="cbColdSol" Width="100" Margin="8,0,16,0" Style="{StaticResource PrettyComboBoxStyle}">
-                                <ComboBoxItem Content="전체" Tag="{x:Null}" IsSelected="True"/>
-                                <ComboBoxItem Content="ON" Tag="1"/>
-                                <ComboBoxItem Content="OFF" Tag="0"/>
-                            </ComboBox>
-
-                            <TextBlock Text="Normal Sol :" Style="{StaticResource FieldLabelStyle}"/>
-                            <ComboBox x:Name="cbNormalSol" Width="110" Margin="8,0,16,0" Style="{StaticResource PrettyComboBoxStyle}">
-                                <ComboBoxItem Content="전체" Tag="{x:Null}" IsSelected="True"/>
-                                <ComboBoxItem Content="ON" Tag="1"/>
-                                <ComboBoxItem Content="OFF" Tag="0"/>
-                            </ComboBox>
-
-                            <TextBlock Text="Hot Sol1 :" Style="{StaticResource FieldLabelStyle}"/>
-                            <ComboBox x:Name="cbHotSol1" Width="100" Margin="8,0,16,0" Style="{StaticResource PrettyComboBoxStyle}">
-                                <ComboBoxItem Content="전체" Tag="{x:Null}" IsSelected="True"/>
-                                <ComboBoxItem Content="ON" Tag="1"/>
-                                <ComboBoxItem Content="OFF" Tag="0"/>
-                            </ComboBox>
-
-                            <TextBlock Text="Needle 위치 :" Style="{StaticResource FieldLabelStyle}"/>
-                            <ComboBox x:Name="cbNeedleState" Width="130" Margin="8,0,0,0" Style="{StaticResource PrettyComboBoxStyle}">
-                                <ComboBoxItem Content="전체" Tag="{x:Null}" IsSelected="True"/>
-                                <ComboBoxItem Content="상승 상태(0)" Tag="0"/>
-                                <ComboBoxItem Content="동작중(1)" Tag="1"/>
-                                <ComboBoxItem Content="하강 상태(2)" Tag="2"/>
                             </ComboBox>
                         </WrapPanel>
                     </StackPanel>
 
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right" Orientation="Horizontal">
+                    <StackPanel Grid.Column="1" VerticalAlignment="Top" HorizontalAlignment="Right" Orientation="Horizontal" Margin="12,28,0,0">
                         <Button Content="조회" Width="90" Style="{StaticResource SoftButtonStyle}" Click="Search_Click"/>
                         <Button x:Name="btnExcel" Content="엑셀" Width="80" Margin="5,0,0,0" Style="{StaticResource SoftButtonStyle}" Click="ExcelDownload_Click"/>
                         <Button x:Name="btnCancelBusy" Content="취소" Width="80" Margin="5,0,0,0" Style="{StaticResource SoftButtonStyle}" Click="CancelBusy_Click" Visibility="Collapsed"/>
@@ -278,7 +145,6 @@
                 </Grid>
             </Border>
 
-            <!-- 결과/페이징은 기존 유지 -->
             <Border Grid.Row="2" Style="{StaticResource CardBorderStyle}">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -304,14 +170,14 @@
 
                     <Border Grid.Row="2" BorderBrush="{StaticResource SoftBorderBrush}" BorderThickness="1" CornerRadius="10" Background="White" SnapsToDevicePixels="True">
                         <DataGrid x:Name="grid"
-                              Style="{StaticResource CenterGridStyle}"
-                              AutoGenerateColumns="True"
-                              AutoGeneratedColumns="Grid_AutoGeneratedColumns"
-                              CanUserAddRows="False"
-                              IsReadOnly="True"
-                              HeadersVisibility="Column"
-                              ScrollViewer.VerticalScrollBarVisibility="Auto"
-                              ScrollViewer.HorizontalScrollBarVisibility="Auto"/>
+                                  Style="{StaticResource CenterGridStyle}"
+                                  AutoGenerateColumns="True"
+                                  AutoGeneratedColumns="Grid_AutoGeneratedColumns"
+                                  CanUserAddRows="False"
+                                  IsReadOnly="True"
+                                  HeadersVisibility="Column"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Auto"/>
                     </Border>
                 </Grid>
             </Border>
@@ -334,7 +200,6 @@
             </Border>
         </Grid>
 
-        <!-- Busy Overlay -->
         <Grid x:Name="BusyOverlay" Visibility="Collapsed" Background="#66000000" Panel.ZIndex="9999">
             <Border Width="360" Padding="18" Background="White" CornerRadius="14" HorizontalAlignment="Center" VerticalAlignment="Center">
                 <StackPanel>

@@ -74,6 +74,40 @@ namespace BliMonitorTest.data
                 Notify("Value5");
             }
         }
+
+        private string _Value6;
+        public string Value6
+        {
+            get { return _Value6; }
+            set
+            {
+                _Value6 = value;
+                Notify("Value6");
+            }
+        }
+
+        private string _Value7;
+        public string Value7
+        {
+            get { return _Value7; }
+            set
+            {
+                _Value7 = value;
+                Notify("Value7");
+            }
+        }
+
+        private string _Value8;
+        public string Value8
+        {
+            get { return _Value8; }
+            set
+            {
+                _Value8 = value;
+                Notify("Value8");
+            }
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
         protected void Notify(string propName)
         {

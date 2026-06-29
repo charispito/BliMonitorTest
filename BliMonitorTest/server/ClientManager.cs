@@ -265,7 +265,8 @@ namespace BliMonitorTest.util
                     {
                         byte[] command = null;
 
-                        command = Protocol.GetNewCommand(1);
+                        //command = Protocol.GetNewCommand(1);
+                        byte[] cmd = Protocol.GetStatusRequest();
 
                         if (data.client.Connected)
                         {
@@ -425,7 +426,7 @@ namespace BliMonitorTest.util
                         // 샘플 생성(TO-BE)
                         var sample = _dummyGen.Next();
 
-                        BliMonitorTest.dummy.DummyFramePatcher.PatchStatusResponse57(rsp, sample);
+                        BliMonitorTest.dummy.DummyValueGenerator.PatchStatusResponse37(rsp, sample);
 
                         dummyClient.channel?.Dispatcher.BeginInvoke(new Action(() =>
                         {

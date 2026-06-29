@@ -47,9 +47,7 @@ namespace BliMonitorTest.server
             Console.WriteLine(session.SocketSession.Client.RemoteEndPoint.ToString());
             Task result = Task.Delay(1000).ContinueWith(_ =>
             {
-                byte[] cmd = Protocol.GetNewCommand(1);
-                session.Send(cmd, 0, cmd.Length);
-                cmd = Protocol.GetCommand(1);
+                byte[] cmd = Protocol.GetStatusRequest();
                 session.Send(cmd, 0, cmd.Length);
                 Console.WriteLine("send");
             });

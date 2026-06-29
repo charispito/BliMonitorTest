@@ -1,22 +1,21 @@
-﻿using BliMonitorTest.data;
-using Microsoft.Data.Sqlite;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
+using BliMonitorTest.data;
+using Microsoft.Data.Sqlite;
 
 namespace BliMonitorTest.util.MonitoringDb
 {
     internal sealed class MonitoringDbWriteService : IDisposable
     {
-        // 싱글톤
         public static MonitoringDbWriteService Instance { get; } = new MonitoringDbWriteService();
 
-        // 상태 스트림 큐
-        private readonly BlockingCollection<InsertItem> _queue = new BlockingCollection<InsertItem>(boundedCapacity: 20000);
+        private readonly BlockingCollection<InsertItem> _queue =
+            new BlockingCollection<InsertItem>(boundedCapacity: 20000);
 
-        // 에러 이벤트 큐
-        private readonly BlockingCollection<ErrorEventItem> _errorQueue = new BlockingCollection<ErrorEventItem>(boundedCapacity: 5000);
+        private readonly BlockingCollection<ErrorHistoryItem> _errorQueue =
+            new BlockingCollection<ErrorHistoryItem>(boundedCapacity: 5000);
 
         private readonly object _startLock = new object();
 
@@ -27,15 +26,10 @@ namespace BliMonitorTest.util.MonitoringDb
         private CancellationTokenSource _cts;
         private Task _worker;
 
-        // 튜닝 포인트
-        private int _batchSize = 200;       // 한 번에 커밋할 레코드 수
-        private int _flushIntervalMs = 300; // batch가 덜 차도 일정 주기로 커밋
+        private int _batchSize = 200;
+        private int _flushIntervalMs = 300;
 
         private MonitoringDbWriteService() { }
-
-        // ---------------------------
-        // 외부 공개 API
-        // ---------------------------
 
         public void Start(string dbPath, int batchSize = 200, int flushIntervalMs = 300)
         {
@@ -77,35 +71,31 @@ namespace BliMonitorTest.util.MonitoringDb
             }
         }
 
-        public void Dispose() => Stop();
-
-        // 상태 데이터(기존 ReadData) 적재
-        public void Enqueue(BliResponse57Packet resp, int channelNo, int sourceType)
+        public void Dispose()
         {
-            if (resp == null) return;
+            Stop();
+        }
+
+        public void Enqueue(Duo8StatusPacket packet, int channelNo, int sourceType)
+        {
+            if (packet == null) return;
+
             if (_worker == null)
                 Start(_dbPath ?? BliMonitorTest.util.StoragePathUtil.StoragePathUtil.GetDbPath());
 
-            _queue.TryAdd(new InsertItem(resp, channelNo, sourceType));
+            _queue.TryAdd(new InsertItem(packet, channelNo, sourceType));
         }
 
-        // 에러 이벤트 적재(error_events 테이블)
-        public void EnqueueErrorEvent( int sourceType, int channelNo, DateTime createdAt, string snapshotId, string fileName, int errorSlot, string errorText, int? runMode, double? heaterTemp, double? heaterOffTime,
-            double? hotAirTemp, double? hotAirOnTime, int? runCount, double? exhaustTemp)
+        public void EnqueueErrorHistory(Duo8ErrorResponse response, int sourceType, int channelNo)
         {
+            if (response == null) return;
+
             if (_worker == null)
                 Start(_dbPath ?? BliMonitorTest.util.StoragePathUtil.StoragePathUtil.GetDbPath());
 
-            _errorQueue.TryAdd(new ErrorEventItem(
-                sourceType, channelNo, createdAt, snapshotId, fileName,
-                errorSlot, errorText, runMode, heaterTemp, heaterOffTime,
-                hotAirTemp, hotAirOnTime, runCount, exhaustTemp));
+            _errorQueue.TryAdd(new ErrorHistoryItem(response, sourceType, channelNo));
         }
 
-
-        // ---------------------------
-        // 내부 워커/플러시
-        // ---------------------------
         private void EnsureOpen()
         {
             if (_db != null && _db.State == System.Data.ConnectionState.Open)
@@ -124,7 +114,6 @@ namespace BliMonitorTest.util.MonitoringDb
                 cmd.ExecuteNonQuery();
             }
 
-            // 현재 커넥션으로만 보장
             MonitoringDb.EnsureDb(ref _db, _dbPath, ref _dbReady);
         }
 
@@ -133,37 +122,47 @@ namespace BliMonitorTest.util.MonitoringDb
             EnsureOpen();
 
             var stateBuffer = new System.Collections.Generic.List<InsertItem>(_batchSize);
-            var errorBuffer = new System.Collections.Generic.List<ErrorEventItem>(_batchSize);
+            var errorBuffer = new System.Collections.Generic.List<ErrorHistoryItem>(_batchSize);
             DateTime lastFlush = DateTime.UtcNow;
 
             while (!token.IsCancellationRequested)
             {
                 try
                 {
-                    // 상태 데이터: 타임아웃 대기
                     if (_queue.TryTake(out var item, millisecondsTimeout: _flushIntervalMs, cancellationToken: token))
                         stateBuffer.Add(item);
 
-                    // 에러 데이터: 가능한 많이 수집
                     while (_errorQueue.TryTake(out var ev))
                         errorBuffer.Add(ev);
 
                     bool timeToFlush = (DateTime.UtcNow - lastFlush).TotalMilliseconds >= _flushIntervalMs;
-                    if (stateBuffer.Count >= _batchSize || errorBuffer.Count >= _batchSize || timeToFlush)
+
+                    if (stateBuffer.Count >= _batchSize ||
+                        errorBuffer.Count >= _batchSize ||
+                        timeToFlush)
                     {
                         using (var tx = _db.BeginTransaction())
                         {
-                            // 상태 배치
                             foreach (var it in stateBuffer)
                             {
-                                MonitoringDb.InsertDb(ref _db, _dbPath, ref _dbReady, it.Resp, it.ChannelNo, it.SourceType);
+                                MonitoringDb.InsertDb(
+                                    ref _db,
+                                    _dbPath,
+                                    ref _dbReady,
+                                    it.SourceType,
+                                    it.ChannelNo,
+                                    it.Packet);
                             }
 
-                            // 에러 배치
                             foreach (var ev in errorBuffer)
                             {
-                                MonitoringDb.InsertErrorEvent(ref _db, _dbPath, ref _dbReady, ev.SourceType, ev.ChannelNo, ev.CreatedAt, ev.SnapshotId, ev.FileName, ev.ErrorSlot, 
-                                    ev.ErrorText, ev.RunMode, ev.HeaterTemp, ev.HeaterOffTime, ev.HotAirTemp, ev.HotAirOnTime, ev.RunCount, ev.ExhaustTemp);
+                                MonitoringDb.InsertErrorHistory(
+                                    ref _db,
+                                    _dbPath,
+                                    ref _dbReady,
+                                    ev.SourceType,
+                                    ev.ChannelNo,
+                                    ev.Response);
                             }
 
                             tx.Commit();
@@ -184,7 +183,6 @@ namespace BliMonitorTest.util.MonitoringDb
                 }
             }
 
-            // 종료 전 잔여 플러시
             try
             {
                 if (stateBuffer.Count > 0 || errorBuffer.Count > 0)
@@ -193,62 +191,60 @@ namespace BliMonitorTest.util.MonitoringDb
                     {
                         foreach (var it in stateBuffer)
                         {
-                            MonitoringDb.InsertDb(ref _db, _dbPath, ref _dbReady, it.Resp, it.ChannelNo, it.SourceType);
+                            MonitoringDb.InsertDb(
+                                ref _db,
+                                _dbPath,
+                                ref _dbReady,
+                                it.SourceType,
+                                it.ChannelNo,
+                                it.Packet);
                         }
 
                         foreach (var ev in errorBuffer)
                         {
-                            MonitoringDb.InsertErrorEvent(ref _db, _dbPath, ref _dbReady, ev.SourceType, ev.ChannelNo, ev.CreatedAt, ev.SnapshotId, ev.FileName,
-                                ev.ErrorSlot, ev.ErrorText, ev.RunMode, ev.HeaterTemp, ev.HeaterOffTime, ev.HotAirTemp, ev.HotAirOnTime, ev.RunCount, ev.ExhaustTemp);
+                            MonitoringDb.InsertErrorHistory(
+                                ref _db,
+                                _dbPath,
+                                ref _dbReady,
+                                ev.SourceType,
+                                ev.ChannelNo,
+                                ev.Response);
                         }
 
                         tx.Commit();
                     }
                 }
             }
-            catch { }
+            catch
+            {
+            }
         }
 
-        // ---------------------------
-        // 내부 버퍼 타입(외부 비공개)
-        // ---------------------------
         private readonly struct InsertItem
         {
-            public readonly BliResponse57Packet Resp;
+            public readonly Duo8StatusPacket Packet;
             public readonly int ChannelNo;
             public readonly int SourceType;
 
-            public InsertItem(BliResponse57Packet resp, int channelNo, int sourceType)
+            public InsertItem(Duo8StatusPacket packet, int channelNo, int sourceType)
             {
-                Resp = resp;
+                Packet = packet;
                 ChannelNo = channelNo;
                 SourceType = sourceType;
             }
         }
 
-        private readonly struct ErrorEventItem
+        private readonly struct ErrorHistoryItem
         {
-            public readonly int SourceType, ChannelNo;
-            public readonly DateTime CreatedAt;
-            public readonly string SnapshotId, FileName;
-            public readonly int ErrorSlot;
-            public readonly string ErrorText;
-            public readonly int? RunMode;
-            public readonly double? HeaterTemp, HeaterOffTime, HotAirTemp, HotAirOnTime;
-            public readonly int? RunCount;
-            public readonly double? ExhaustTemp;
+            public readonly Duo8ErrorResponse Response;
+            public readonly int SourceType;
+            public readonly int ChannelNo;
 
-            public ErrorEventItem(
-                int sourceType, int channelNo, DateTime createdAt, string snapshotId, string fileName,
-                int errorSlot, string errorText, int? runMode, double? heaterTemp, double? heaterOffTime,
-                double? hotAirTemp, double? hotAirOnTime, int? runCount, double? exhaustTemp)
+            public ErrorHistoryItem(Duo8ErrorResponse response, int sourceType, int channelNo)
             {
-                SourceType = sourceType; ChannelNo = channelNo;
-                CreatedAt = createdAt; SnapshotId = snapshotId; FileName = fileName;
-                ErrorSlot = errorSlot; ErrorText = errorText;
-                RunMode = runMode; HeaterTemp = heaterTemp; HeaterOffTime = heaterOffTime;
-                HotAirTemp = hotAirTemp; HotAirOnTime = hotAirOnTime;
-                RunCount = runCount; ExhaustTemp = exhaustTemp;
+                Response = response;
+                SourceType = sourceType;
+                ChannelNo = channelNo;
             }
         }
     }

@@ -1,35 +1,27 @@
-﻿using BliMonitorTest.util;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BliMonitorTest
 {
     public partial class OneChannelWindow
     {
-        // ===== NEW: RX framing buffer (공통) =====
         private readonly object _rxLock = new object();
         private readonly List<byte> _rxBuffer = new List<byte>(4096);
 
-        // SIZE sanity 범위 (너무 작거나 큰 값은 노이즈로 간주)
         private const int MIN_FRAME_LEN = 7;
         private const int MAX_FRAME_LEN = 200;
 
-        // 허용 CMD (프로토콜에 맞게 필요 시 추가)
         private static readonly HashSet<byte> _allowedCmd = new HashSet<byte>
         {
-            0x99, 0xB9, 0xA0, 0xAA
+            0xA0, 0xB9, 0xB6
         };
 
-        private void receiveData(byte[] data, int Length)
+        private void receiveData(byte[] data, int length)
         {
-            // Length가 "유효 길이(새로 읽힌 바이트 수)"라는 전제 그대로 유지
-            if (data == null || Length <= 0) return;
+            if (data == null || length <= 0) return;
 
-            byte[] chunk = new byte[Length];
-            Buffer.BlockCopy(data, 0, chunk, 0, Length);
+            byte[] chunk = new byte[length];
+            Buffer.BlockCopy(data, 0, chunk, 0, length);
 
             List<byte[]> frames;
 
@@ -39,53 +31,70 @@ namespace BliMonitorTest
                 frames = ExtractFramesFromBuffer(_rxBuffer);
             }
 
-            // 프레임 단위로 처리 (UI 업데이트는 CheckCommand 내부에서 Dispatcher 사용)
             foreach (var frame in frames)
             {
                 CheckCommand(frame);
             }
         }
 
-        private int getStxIndex(byte[] data)
+        private List<byte[]> ExtractFramesFromBuffer(List<byte> buf)
         {
-            for (int i = 0; i < data.Length; i++)
-            {
-                if (data[i] == 0xCC)
-                {
-                    if (i + 2 < data.Length)
-                    {
-                        if (data[i + 1] == 0x00)
-                        {
-                            if (data[i + 2] == 0x99 || data[i + 2] == 0xB9 || data[i + 2] == 0xA0 || data[i + 2] == 0xAA)
-                            {
-                                return i;
-                            }
-                        }
-                    }
-                }
-            }
-            return -1;
-        }
+            byte stx = 0x12;
+            byte ver = 0x01;
+            byte etx = 0x34;
 
-        private int getNewStxIndex(byte[] data)
-        {
-            for (int i = 0; i < data.Length; i++)
+            var frames = new List<byte[]>();
+
+            while (true)
             {
-                if (data[i] == 0x12)
+                int stxPos = buf.IndexOf(stx);
+                if (stxPos < 0)
                 {
-                    if (i + 2 < data.Length)
-                    {
-                        if (data[i + 1] == 0x01)
-                        {
-                            if (data[i + 2] == 0x99 || data[i + 2] == 0xB9 || data[i + 2] == 0xA0 || data[i + 2] == 0xAA)
-                            {
-                                return i;
-                            }
-                        }
-                    }
+                    buf.Clear();
+                    break;
                 }
+
+                if (stxPos > 0)
+                    buf.RemoveRange(0, stxPos);
+
+                if (buf.Count < 4)
+                    break;
+
+                if (buf[1] != ver)
+                {
+                    buf.RemoveAt(0);
+                    continue;
+                }
+
+                byte cmd = buf[2];
+                if (!_allowedCmd.Contains(cmd))
+                {
+                    buf.RemoveAt(0);
+                    continue;
+                }
+
+                int size = buf[3];
+                if (size < MIN_FRAME_LEN || size > MAX_FRAME_LEN)
+                {
+                    buf.RemoveAt(0);
+                    continue;
+                }
+
+                if (buf.Count < size)
+                    break;
+
+                if (buf[size - 1] != etx)
+                {
+                    buf.RemoveAt(0);
+                    continue;
+                }
+
+                byte[] frame = buf.GetRange(0, size).ToArray();
+                frames.Add(frame);
+                buf.RemoveRange(0, size);
             }
-            return -1;
+
+            return frames;
         }
     }
 }

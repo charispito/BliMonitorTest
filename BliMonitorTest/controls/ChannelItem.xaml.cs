@@ -102,13 +102,13 @@ namespace BliMonitorTest.controls
                 _run = value;
                 if (value)
                 {
-                    StateBox.cont.Content = "운전중";
+                    StateBox.cont.Text = "운전중";
                     this.Background = new SolidColorBrush(Color.FromRgb(98, 255, 81));
                     StateBox.cont.Background = new SolidColorBrush(Color.FromRgb(98, 255, 81));
                 }
                 else
                 {
-                    StateBox.cont.Content = "정지";
+                    StateBox.cont.Text = "정지";
                     this.Background = new SolidColorBrush(Color.FromRgb(255, 255, 255));
                     StateBox.cont.Background = new SolidColorBrush(Color.FromRgb(255, 255, 255));
                 }
@@ -127,21 +127,21 @@ namespace BliMonitorTest.controls
             NonResponse = 0;
             run = false;
             //ApplyNewVersion.IsChecked = false;
-            Item1.cont.Content = "";
-            Item2.cont.Content = "";
-            Item3.cont.Content = "";
-            Item4.cont.Content = "";
-            Item5.cont.Content = "";
-            Item6.cont.Content = "";
-            Item11.cont.Content = "";
-            Item12.cont.Content = "";
-            Item13.cont.Content = "";
-            Item14.cont.Content = "";
-            Item15.cont.Content = "";
-            Item16.cont.Content = "";
-            Item17.cont.Content = "";
-            Item18.cont.Content = "";
-            StateBox.cont.Content = "";
+            Item1.cont.Text = "";
+            Item2.cont.Text = "";
+            Item3.cont.Text = "";
+            Item4.cont.Text = "";
+            Item5.cont.Text = "";
+            Item6.cont.Text = "";
+            Item11.cont.Text = "";
+            Item12.cont.Text = "";
+            Item13.cont.Text = "";
+            Item14.cont.Text = "";
+            Item15.cont.Text = "";
+            Item16.cont.Text = "";
+            Item17.cont.Text = "";
+            Item18.cont.Text = "";
+            StateBox.cont.Text = "";
             TestTime = TimeSpan.Zero;
         }
 
@@ -151,7 +151,7 @@ namespace BliMonitorTest.controls
             set
             {
                 _Channel = value;
-                Dispatcher.Invoke(new Action(() => { ChannelView.cont.Content = value; }));
+                Dispatcher.Invoke(new Action(() => { ChannelView.cont.Text = value.ToString(); }));
             }
         }
 
@@ -198,8 +198,8 @@ namespace BliMonitorTest.controls
                 streamWriter.Flush();
 
                 // 2) SQLite 기록 : Queue 방식으로 비동기 처리
-                BliMonitorTest.util.MonitoringDb.MonitoringDbWriteService.Instance.Start(BliMonitorTest.util.StoragePathUtil.StoragePathUtil.GetDbPath());
-                BliMonitorTest.util.MonitoringDb.MonitoringDbWriteService.Instance.Enqueue(resp, channelNo, sourceType);
+                //BliMonitorTest.util.MonitoringDb.MonitoringDbWriteService.Instance.Start(BliMonitorTest.util.StoragePathUtil.StoragePathUtil.GetDbPath());
+                //BliMonitorTest.util.MonitoringDb.MonitoringDbWriteService.Instance.Enqueue(resp, channelNo, sourceType);
             }
             else
             {
@@ -419,24 +419,24 @@ namespace BliMonitorTest.controls
             byte compVolt = data[22];
 
             // 4) 중앙 좌측 UI 바인딩
-            Item1.cont.Content = $"{heaterTemp}ºC";                 // 히터 온도
-            Item2.cont.Content = $"{coldTemp}ºC";                   // 냉수 온도
-            Item3.cont.Content = waterLevelLow ? "ON" : "OFF";      // 수위센서
-            Item4.cont.Content = floorSensor ? "ON" : "OFF";        // 플로어 센서
-            Item5.cont.Content = uvLed ? "ON" : "OFF";              // UV LED
+            Item1.cont.Text = $"{heaterTemp}ºC";                 // 히터 온도
+            Item2.cont.Text = $"{coldTemp}ºC";                   // 냉수 온도
+            Item3.cont.Text = waterLevelLow ? "ON" : "OFF";      // 수위센서
+            Item4.cont.Text = floorSensor ? "ON" : "OFF";        // 플로어 센서
+            Item5.cont.Text = uvLed ? "ON" : "OFF";              // UV LED
 
             // 3방 SOL 요약(0번째 비트부터: 1,2,3)
-            Item6.cont.Content = $"{OnOff(triSol1)} / {OnOff(triSol2)} / {OnOff(triSol3)}";
+            Item6.cont.Text = $"{OnOff(triSol1)} / {OnOff(triSol2)} / {OnOff(triSol3)}";
 
-            Item11.cont.Content = airVentSol ? "ON" : "OFF";        // Air Vent Sol
-            Item12.cont.Content = cvSol ? "ON" : "OFF";             // C/V
-            Item13.cont.Content = pumpOn ? "ON" : "OFF";            // PUMP
-            Item14.cont.Content = coldSol ? "ON" : "OFF";           // Cold Sol
-            Item15.cont.Content = normalSol ? "ON" : "OFF";         // Normal Sol
-            Item16.cont.Content = hotSol1 ? "ON" : "OFF";           // Hot Sol
+            Item11.cont.Text = airVentSol ? "ON" : "OFF";        // Air Vent Sol
+            Item12.cont.Text = cvSol ? "ON" : "OFF";             // C/V
+            Item13.cont.Text = pumpOn ? "ON" : "OFF";            // PUMP
+            Item14.cont.Text = coldSol ? "ON" : "OFF";           // Cold Sol
+            Item15.cont.Text = normalSol ? "ON" : "OFF";         // Normal Sol
+            Item16.cont.Text = hotSol1 ? "ON" : "OFF";           // Hot Sol
 
-            Item17.cont.Content = $"{NeedleToText(needleState)}";
-            Item18.cont.Content = getModelName(modelCode);
+            Item17.cont.Text = $"{NeedleToText(needleState)}";
+            Item18.cont.Text = getModelName(modelCode);
 
             // 5-1) 수신 데이터 파일 기록
             var resp = ResponsePacket57.Parse(data);

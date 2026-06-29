@@ -1,164 +1,66 @@
-﻿using BliMonitorTest.util;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using log4net;
+﻿using System;
 
 namespace BliMonitorTest.data
 {
     public class Protocol
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(Protocol));
+        public const byte STX = 0x12;
+        public const byte ETX = 0x34;
+        public const byte VERSION = 0x01;
 
-        public static byte STX = 0x12;
-        public static byte ETX = 0x34;
-        public static byte CONTROL = 0xAA;
-        public static byte STATUS = 0xA0;
-        public static byte START = 0x02;
-        public static byte END = 0x04;
-        public static byte STATE = 0x00;
+        public const byte STATUS = 0xA0;
+        public const byte ERROR_READ = 0xB9;
+        public const byte ERROR_RESET = 0xB6;
 
-        public static byte[] GetParameter()
+        public static byte[] GetStatusRequest()
         {
-            byte[] command = new byte[7];
-
-            command[0] = STX;
-            command[1] = 0x01;
-
-            
-            command[2] = 0x99;
-            command[3] = 0x07;
-            command[4] = 0x00;
-            command[5] = (byte)(command[1] ^ command[2] ^ command[3] ^ command[4] ^ 0xFF);
-            command[6] = ETX;
-
-            return command;
+            return BuildCommand(STATUS, 0x00);
         }
 
         public static byte[] GetError()
         {
-            byte[] command = new byte[7];
-
-            command[0] = STX;
-            command[1] = 0x01;
-
-            command[2] = 0xB9;
-            command[3] = 0x07;
-            command[4] = 0x00;
-            command[5] = (byte)(command[1] ^ command[2] ^ command[3] ^ command[4] ^ 0xFF);
-            command[6] = ETX;
-
-            return command;
+            return BuildCommand(ERROR_READ, 0x00);
         }
 
         public static byte[] GetErrorReset()
         {
-            byte[] command = new byte[7];
-
-            command[0] = STX;
-            command[1] = 0x01;
-            command[6] = 0x34;
-
-            command[2] = 0xB6;
-            command[3] = 0x07;
-            command[4] = 0x00;
-            command[5] = (byte)(command[1] ^ command[2] ^ command[3] ^ command[4] ^ 0xFF);
-            command[6] = ETX;
-
-            return command;
+            return BuildCommand(ERROR_RESET, 0x00);
         }
 
+        // 구형 코드 호환용: 현재 제품에서는 파라미터 요청 미사용
+        public static byte[] GetParameter()
+        {
+            return BuildCommand(STATUS, 0x00);
+        }
 
-        public static byte[] GetCommand(int kind)
+        public static byte[] BuildCommand(byte cmd, byte option)
         {
             byte[] command = new byte[7];
             command[0] = STX;
-            command[1] = 0;
+            command[1] = VERSION;
+            command[2] = cmd;
             command[3] = 0x07;
-            switch (kind)
-            {
-                case 1: //state
-                    command[2] = STATUS;
-                    command[4] = 0x00;
-                    break;
-                case 2: //start
-                    command[2] = CONTROL;
-                    command[4] = START;
-                    break;
-                case 3: //end
-                    command[2] = CONTROL;
-                    command[4] = END;
-                    break;
-            }
-            command[5] = (byte)(command[1] ^ command[2] ^ command[3] ^ command[4] ^ 0xFF);
+            command[4] = option;
+            command[5] = CalcChecksum(command, 1, 4);
             command[6] = ETX;
-
             return command;
         }
 
-        public static byte[] GetNewCommand(int kind)
+        public static byte CalcChecksum(byte[] array, int start, int endInclusive)
         {
-            byte[] command = new byte[7];
-            command[0] = STX;
-            command[1] = 0x01;
-            command[3] = 0x07;
-            switch (kind)
+            byte res = 0x00;
+            for (int i = start; i <= endInclusive; i++)
             {
-                case 1: //state
-                    command[2] = STATUS;
-                    command[4] = 0x00;
-                    break;
-                case 2: //start
-                    command[2] = CONTROL;
-                    command[4] = START;
-                    break;
-                case 3: //end
-                    command[2] = CONTROL;
-                    command[4] = END;
-                    break;
+                res ^= array[i];
             }
-            command[5] = (byte)(command[1] ^ command[2] ^ command[3] ^ command[4] ^ 0xFF);
-            command[6] = ETX;
-
-            return command;
+            res ^= 0xFF;
+            return res;
         }
 
-        /*
-         * Get CheckSum
-         * ERROR DATA요청, PARAMETER요청, PARAMETER 설정 수신(Response)시 CheckSum계산용
-         */
-        public static byte GetCheckSum(byte[] array, int start, int end)
+        // 구형 코드 호환용
+        public static byte GetCheckSum(byte[] array, int start, int endInclusive)
         {
-            int res = 0;
-            for (int i = start; i < end; i++)
-            {
-                if (i == start)
-                {
-                    res = array[i] ^ array[i + 1];
-                }
-                else
-                {
-                    res = res ^ array[i + 1];
-                }
-            }
-
-            return (byte)res;
-        }
-
-        /*
-         * 미사용 함수
-         */
-        public static byte GetNewCheckSum(byte[] array, int start, int end)
-        {
-            int res = 0;
-            for (int i = start; i < end; i++)
-            {
-                res = array[i] ^ array[i + 1];
-            }
-            res = res ^ 0xFF;
-            return (byte)res;
+            return CalcChecksum(array, start, endInclusive);
         }
     }
 }

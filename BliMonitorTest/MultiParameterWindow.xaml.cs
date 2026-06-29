@@ -1,10 +1,4 @@
-﻿using BliMonitorTest.controls;
-using BliMonitorTest.data;
-using BliMonitorTest.setting;
-using BliMonitorTest.util;
-using BliMonitorTest.ToastMessage;
-using log4net;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -20,6 +14,13 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using BliMonitorTest.controls;
+using BliMonitorTest.data;
+using BliMonitorTest.setting;
+using BliMonitorTest.ToastMessage;
+using BliMonitorTest.util;
+using BliMonitorTest.util.MonitoringDb;
+using log4net;
 
 namespace BliMonitorTest
 {
@@ -599,7 +600,7 @@ namespace BliMonitorTest
             ErrorSaveButton.Click += ErrorSaveButton_Click;
             ErrorDeleteButton.Click += ErrorDeleteButton_Click;
             ErrorRefreshButton.Click += ErrorRefreshButton_Click;
-            OpenErrorDataQueryButton.Click += OpenErrorDataQueryButton_Click;
+            //OpenErrorDataQueryButton.Click += OpenErrorDataQueryButton_Click;
             
             // 검색 필터 이벤트 연결 (XAML의 x:Name 동일 가정)
             FileSearchBox.TextChanged += FileSearchBox_TextChanged;
@@ -928,7 +929,7 @@ namespace BliMonitorTest
 
             // 에러데이터 DB에 적재
             string fileOnly = System.IO.Path.GetFileNameWithoutExtension(full);
-            EnqueueErrorEventsFromGrid(fileNameForSnapshot: fileOnly, sourceType: BliMonitorTest.util.MonitoringDb.MonitoringDb.SOURCE_MULTI, channelNo: _channelNoForDb);
+            //EnqueueErrorEventsFromGrid(fileNameForSnapshot: fileOnly, sourceType: BliMonitorTest.util.MonitoringDb.MonitoringDb.SOURCE_MULTI, channelNo: _channelNoForDb);
 
             ToastMessage.ToastService.AppToast.Show("에러 데이터가 저장되었습니다.");
         }
@@ -1324,112 +1325,217 @@ namespace BliMonitorTest
             channelItem.client.GetStream().Flush();
         }
 
-        
+
 
         public void setError(byte[] data)
         {
-            //int motor01 = data[4];
-            //int motor02 = data[5];
-            int runmode0 = data[6] + 1;
-            int heaterTemp0 = data[7];
-            int heaterofftime0 = data[8];
-            int exhaustTemp0 = data[9];
-            int hotWindTemp0 = data[10];
-            int hotWindOnTime0 = data[11];
-            byte[] times1 = new byte[] { data[13], data[12] };
-            int intTimes1 = BitConverter.ToInt16(times1, 0);
+            Duo8ErrorResponse resp = Duo8PacketParser.ParseErrorResponse(data);
+            if (resp == null)
+                return;
 
-            // CC 00 B9 46
-            // 00 00 00 00 00 00 00 00 00 00 error0
-            // 00 40 01 17 03 19 00 00 00 00 error1
-            // 80 00 00 22 53 23 00 00 00 01 error2
-            // 00 02 01 80 49 2A 00 00 00 01 error3
-            // 00 02 01 7C 4A 2E 00 00 00 01 error4
-            // 00 00 00 00 00 00 00 00 00 00 error5
-            // 00 00 00 02 99 EF
-            Console.WriteLine("{0} {1} {2}", runmode0, heaterTemp0, heaterofftime0);
+            string GetValid(int idx) => resp.Records.Count > idx ? (resp.Records[idx].IsValid ? "Y" : "N") : "";
+            string GetSeq(int idx) => resp.Records.Count > idx ? resp.Records[idx].Sequence.ToString() : "";
+            string GetErrorCode(int idx) => resp.Records.Count > idx ? $"0x{resp.Records[idx].ErrorCode:X2}" : "";
+            string GetErrorName(int idx) => resp.Records.Count > idx ? Duo8ValueText.GetErrorText(resp.Records[idx].ErrorCode) : "";
+            string GetHotTemp(int idx) => resp.Records.Count > idx ? resp.Records[idx].HotTempRaw.ToString() : "";
+            string GetColdTemp(int idx) => resp.Records.Count > idx ? resp.Records[idx].ColdTempRaw.ToString() : "";
+            string GetAdcHot(int idx) => resp.Records.Count > idx ? resp.Records[idx].AdcHotRaw.ToString() : "";
+            string GetAdcCold(int idx) => resp.Records.Count > idx ? resp.Records[idx].AdcColdRaw.ToString() : "";
+            string GetWaterInitDone(int idx) => resp.Records.Count > idx ? Duo8ValueText.ToYesNo(resp.Records[idx].WaterInitDone) : "";
+            string GetStatusARaw(int idx) => resp.Records.Count > idx ? $"0x{resp.Records[idx].StatusA:X2}" : "";
+            string GetStatusBRaw(int idx) => resp.Records.Count > idx ? $"0x{resp.Records[idx].StatusB:X2}" : "";
+            string GetBufferLow(int idx) => resp.Records.Count > idx ? Duo8ValueText.ToYesNo(resp.Records[idx].BufferLow) : "";
 
-            int runmode1 = data[16] + 1;
-            int heaterTemp1 = data[17];
-            int heaterofftime1 = data[18];
-            int exhaustTemp1 = data[19];
-            int hotWindTemp1 = data[20];
-            int hotWindOnTime1 = data[21];
-            byte[] times2 = new byte[] { data[23], data[22] };
-            int intTimes2 = BitConverter.ToInt16(times2, 0);
+            string GetStatusABit(int idx, byte mask)
+                => resp.Records.Count > idx ? Duo8ValueText.GetBitState((resp.Records[idx].StatusA & mask) != 0) : "";
 
-
-            int runmode2 = data[26] + 1;
-            int heaterTemp2 = data[27];
-            int heaterofftime2 = data[28];
-            int exhaustTemp2 = data[29];
-            int hotWindTemp2 = data[30];
-            int hotWindOnTime2 = data[31];
-            byte[] times3 = new byte[] { data[33], data[32] };
-            int intTimes3 = BitConverter.ToInt16(times3, 0);
-
-
-            int runmode3 = data[36] + 1;
-            int heaterTemp3 = data[37];
-            int heaterofftime3 = data[38];
-            int exhaustTemp3 = data[39];
-            int hotWindTemp3 = data[40];
-            int hotWindOnTime3 = data[41];
-            byte[] times4 = new byte[] { data[43], data[42] };
-            int intTimes4 = BitConverter.ToInt16(times4, 0);
-
-            int runmode4 = data[46] + 1;
-            int heaterTemp4 = data[47];
-            int heaterofftime4 = data[48];
-            int exhaustTemp4 = data[49];
-            int hotWindTemp4 = data[50];
-            int hotWindOnTime4 = data[51];
-            byte[] times5 = new byte[] { data[53], data[52] };
-            int intTimes5 = BitConverter.ToInt16(times5, 0);
-
-            byte[] times = new byte[] { data[67], data[66] };
-            Console.WriteLine("First: {0} Second: {1}", data[66].ToString("X2"), data[67].ToString("X2"));
-            int timesInt = BitConverter.ToInt16(times, 0);
-
-
-            byte error0 = data[4];
-            byte error1 = data[5];
-            byte error2 = data[14];
-            byte error3 = data[15];
-            byte error4 = data[24];
-            byte error5 = data[25];
-            byte error6 = data[34];
-            byte error7 = data[35];
-            byte error8 = data[44];
-            byte error9 = data[45];
-            int hot_air_fan_duty = data[30];
-            int[] binary0 = Enumerable.Range(1, 8).Select(i => error0 / (1 << (8 - i)) % 2).ToArray();
-            int[] binary1 = Enumerable.Range(1, 8).Select(i => error1 / (1 << (8 - i)) % 2).ToArray();
-            int[] binary2 = Enumerable.Range(1, 8).Select(i => error2 / (1 << (8 - i)) % 2).ToArray();
-            int[] binary3 = Enumerable.Range(1, 8).Select(i => error3 / (1 << (8 - i)) % 2).ToArray();
-            int[] binary4 = Enumerable.Range(1, 8).Select(i => error4 / (1 << (8 - i)) % 2).ToArray();
-            int[] binary5 = Enumerable.Range(1, 8).Select(i => error5 / (1 << (8 - i)) % 2).ToArray();
-            int[] binary6 = Enumerable.Range(1, 8).Select(i => error6 / (1 << (8 - i)) % 2).ToArray();
-            int[] binary7 = Enumerable.Range(1, 8).Select(i => error7 / (1 << (8 - i)) % 2).ToArray();
-            int[] binary8 = Enumerable.Range(1, 8).Select(i => error8 / (1 << (8 - i)) % 2).ToArray();
-            int[] binary9 = Enumerable.Range(1, 8).Select(i => error9 / (1 << (8 - i)) % 2).ToArray();
+            string GetStatusBBit(int idx, byte mask)
+                => resp.Records.Count > idx ? Duo8ValueText.GetBitState((resp.Records[idx].StatusB & mask) != 0) : "";
 
             ObservableCollection<ErrorData> list = new ObservableCollection<ErrorData>();
-            list.Add(new ErrorData() { Name = "에러 내용", Value = GetErrorName(binary0, binary1), Value2 = GetErrorName(binary2, binary3), Value3 = GetErrorName(binary4, binary5), Value4 = GetErrorName(binary6, binary7), Value5 = GetErrorName(binary8, binary9) });
-            list.Add(new ErrorData() { Name = "운전 모드", Value = runmode0.ToString(), Value2 = runmode1.ToString(), Value3 = runmode2.ToString(), Value4 = runmode3.ToString(), Value5 = runmode4.ToString() });
-            list.Add(new ErrorData() { Name = "히터 온도", Value = heaterTemp0.ToString(), Value2 = heaterTemp1.ToString(), Value3 = heaterTemp2.ToString(), Value4 = heaterTemp3.ToString(), Value5 = heaterTemp4.ToString() });
-            list.Add(new ErrorData() { Name = "히터 오프 타임", Value = heaterofftime0.ToString(), Value2 = heaterofftime1.ToString(), Value3 = heaterofftime2.ToString(), Value4 = heaterofftime3.ToString(), Value5 = heaterofftime4.ToString() });
-            list.Add(new ErrorData() { Name = "배기 온도", Value = exhaustTemp0.ToString(), Value2 = exhaustTemp1.ToString(), Value3 = exhaustTemp2.ToString(), Value4 = exhaustTemp3.ToString(), Value5 = exhaustTemp4.ToString() });
-            list.Add(new ErrorData() { Name = "열풍 온도", Value = hotWindTemp0.ToString(), Value2 = hotWindTemp1.ToString(), Value3 = hotWindTemp2.ToString(), Value4 = hotWindTemp3.ToString(), Value5 = hotWindTemp4.ToString() });
-            list.Add(new ErrorData() { Name = "열풍 On Time", Value = hotWindOnTime0.ToString(), Value2 = hotWindOnTime1.ToString(), Value3 = hotWindOnTime2.ToString(), Value4 = hotWindOnTime3.ToString(), Value5 = hotWindOnTime4.ToString() });
-            list.Add(new ErrorData() { Name = "운전 횟수", Value = intTimes1.ToString(), Value2 = intTimes2.ToString(), Value3 = intTimes3.ToString(), Value4 = intTimes4.ToString(), Value5 = intTimes5.ToString() });
+
+            list.Add(new ErrorData()
+            {
+                Name = "유효",
+                Value = GetValid(0),
+                Value2 = GetValid(1),
+                Value3 = GetValid(2),
+                Value4 = GetValid(3),
+                Value5 = GetValid(4),
+                Value6 = GetValid(5),
+                Value7 = GetValid(6),
+                Value8 = GetValid(7)
+            });
+
+            list.Add(new ErrorData()
+            {
+                Name = "SEQ",
+                Value = GetSeq(0),
+                Value2 = GetSeq(1),
+                Value3 = GetSeq(2),
+                Value4 = GetSeq(3),
+                Value5 = GetSeq(4),
+                Value6 = GetSeq(5),
+                Value7 = GetSeq(6),
+                Value8 = GetSeq(7)
+            });
+
+            list.Add(new ErrorData()
+            {
+                Name = "에러코드",
+                Value = GetErrorCode(0),
+                Value2 = GetErrorCode(1),
+                Value3 = GetErrorCode(2),
+                Value4 = GetErrorCode(3),
+                Value5 = GetErrorCode(4),
+                Value6 = GetErrorCode(5),
+                Value7 = GetErrorCode(6),
+                Value8 = GetErrorCode(7)
+            });
+
+            list.Add(new ErrorData()
+            {
+                Name = "에러명",
+                Value = GetErrorName(0),
+                Value2 = GetErrorName(1),
+                Value3 = GetErrorName(2),
+                Value4 = GetErrorName(3),
+                Value5 = GetErrorName(4),
+                Value6 = GetErrorName(5),
+                Value7 = GetErrorName(6),
+                Value8 = GetErrorName(7)
+            });
+
+            list.Add(new ErrorData()
+            {
+                Name = "온수 Temp",
+                Value = GetHotTemp(0),
+                Value2 = GetHotTemp(1),
+                Value3 = GetHotTemp(2),
+                Value4 = GetHotTemp(3),
+                Value5 = GetHotTemp(4),
+                Value6 = GetHotTemp(5),
+                Value7 = GetHotTemp(6),
+                Value8 = GetHotTemp(7)
+            });
+
+            list.Add(new ErrorData()
+            {
+                Name = "냉수 Temp",
+                Value = GetColdTemp(0),
+                Value2 = GetColdTemp(1),
+                Value3 = GetColdTemp(2),
+                Value4 = GetColdTemp(3),
+                Value5 = GetColdTemp(4),
+                Value6 = GetColdTemp(5),
+                Value7 = GetColdTemp(6),
+                Value8 = GetColdTemp(7)
+            });
+
+            list.Add(new ErrorData()
+            {
+                Name = "ADC HOT",
+                Value = GetAdcHot(0),
+                Value2 = GetAdcHot(1),
+                Value3 = GetAdcHot(2),
+                Value4 = GetAdcHot(3),
+                Value5 = GetAdcHot(4),
+                Value6 = GetAdcHot(5),
+                Value7 = GetAdcHot(6),
+                Value8 = GetAdcHot(7)
+            });
+
+            list.Add(new ErrorData()
+            {
+                Name = "ADC COLD",
+                Value = GetAdcCold(0),
+                Value2 = GetAdcCold(1),
+                Value3 = GetAdcCold(2),
+                Value4 = GetAdcCold(3),
+                Value5 = GetAdcCold(4),
+                Value6 = GetAdcCold(5),
+                Value7 = GetAdcCold(6),
+                Value8 = GetAdcCold(7)
+            });
+
+            list.Add(new ErrorData()
+            {
+                Name = "초기급수 완료",
+                Value = GetWaterInitDone(0),
+                Value2 = GetWaterInitDone(1),
+                Value3 = GetWaterInitDone(2),
+                Value4 = GetWaterInitDone(3),
+                Value5 = GetWaterInitDone(4),
+                Value6 = GetWaterInitDone(5),
+                Value7 = GetWaterInitDone(6),
+                Value8 = GetWaterInitDone(7)
+            });
+
+            list.Add(new ErrorData()
+            {
+                Name = "StatusA Raw",
+                Value = GetStatusARaw(0),
+                Value2 = GetStatusARaw(1),
+                Value3 = GetStatusARaw(2),
+                Value4 = GetStatusARaw(3),
+                Value5 = GetStatusARaw(4),
+                Value6 = GetStatusARaw(5),
+                Value7 = GetStatusARaw(6),
+                Value8 = GetStatusARaw(7)
+            });
+
+            list.Add(new ErrorData()
+            {
+                Name = "StatusB Raw",
+                Value = GetStatusBRaw(0),
+                Value2 = GetStatusBRaw(1),
+                Value3 = GetStatusBRaw(2),
+                Value4 = GetStatusBRaw(3),
+                Value5 = GetStatusBRaw(4),
+                Value6 = GetStatusBRaw(5),
+                Value7 = GetStatusBRaw(6),
+                Value8 = GetStatusBRaw(7)
+            });
+
+            list.Add(new ErrorData() { Name = "A Heater", Value = GetStatusABit(0, 0x01), Value2 = GetStatusABit(1, 0x01), Value3 = GetStatusABit(2, 0x01), Value4 = GetStatusABit(3, 0x01), Value5 = GetStatusABit(4, 0x01), Value6 = GetStatusABit(5, 0x01), Value7 = GetStatusABit(6, 0x01), Value8 = GetStatusABit(7, 0x01) });
+            list.Add(new ErrorData() { Name = "A Compressor", Value = GetStatusABit(0, 0x02), Value2 = GetStatusABit(1, 0x02), Value3 = GetStatusABit(2, 0x02), Value4 = GetStatusABit(3, 0x02), Value5 = GetStatusABit(4, 0x02), Value6 = GetStatusABit(5, 0x02), Value7 = GetStatusABit(6, 0x02), Value8 = GetStatusABit(7, 0x02) });
+            list.Add(new ErrorData() { Name = "A HotValve", Value = GetStatusABit(0, 0x04), Value2 = GetStatusABit(1, 0x04), Value3 = GetStatusABit(2, 0x04), Value4 = GetStatusABit(3, 0x04), Value5 = GetStatusABit(4, 0x04), Value6 = GetStatusABit(5, 0x04), Value7 = GetStatusABit(6, 0x04), Value8 = GetStatusABit(7, 0x04) });
+            list.Add(new ErrorData() { Name = "A ColdSelect", Value = GetStatusABit(0, 0x08), Value2 = GetStatusABit(1, 0x08), Value3 = GetStatusABit(2, 0x08), Value4 = GetStatusABit(3, 0x08), Value5 = GetStatusABit(4, 0x08), Value6 = GetStatusABit(5, 0x08), Value7 = GetStatusABit(6, 0x08), Value8 = GetStatusABit(7, 0x08) });
+            list.Add(new ErrorData() { Name = "A OutletValve", Value = GetStatusABit(0, 0x10), Value2 = GetStatusABit(1, 0x10), Value3 = GetStatusABit(2, 0x10), Value4 = GetStatusABit(3, 0x10), Value5 = GetStatusABit(4, 0x10), Value6 = GetStatusABit(5, 0x10), Value7 = GetStatusABit(6, 0x10), Value8 = GetStatusABit(7, 0x10) });
+            list.Add(new ErrorData() { Name = "A PumpOutlet", Value = GetStatusABit(0, 0x20), Value2 = GetStatusABit(1, 0x20), Value3 = GetStatusABit(2, 0x20), Value4 = GetStatusABit(3, 0x20), Value5 = GetStatusABit(4, 0x20), Value6 = GetStatusABit(5, 0x20), Value7 = GetStatusABit(6, 0x20), Value8 = GetStatusABit(7, 0x20) });
+            list.Add(new ErrorData() { Name = "A PumpDiaphragm", Value = GetStatusABit(0, 0x40), Value2 = GetStatusABit(1, 0x40), Value3 = GetStatusABit(2, 0x40), Value4 = GetStatusABit(3, 0x40), Value5 = GetStatusABit(4, 0x40), Value6 = GetStatusABit(5, 0x40), Value7 = GetStatusABit(6, 0x40), Value8 = GetStatusABit(7, 0x40) });
+            list.Add(new ErrorData() { Name = "A PumpAirvent", Value = GetStatusABit(0, 0x80), Value2 = GetStatusABit(1, 0x80), Value3 = GetStatusABit(2, 0x80), Value4 = GetStatusABit(3, 0x80), Value5 = GetStatusABit(4, 0x80), Value6 = GetStatusABit(5, 0x80), Value7 = GetStatusABit(6, 0x80), Value8 = GetStatusABit(7, 0x80) });
+
+            list.Add(new ErrorData() { Name = "B FloatSensor", Value = GetStatusBBit(0, 0x01), Value2 = GetStatusBBit(1, 0x01), Value3 = GetStatusBBit(2, 0x01), Value4 = GetStatusBBit(3, 0x01), Value5 = GetStatusBBit(4, 0x01), Value6 = GetStatusBBit(5, 0x01), Value7 = GetStatusBBit(6, 0x01), Value8 = GetStatusBBit(7, 0x01) });
+            list.Add(new ErrorData() { Name = "B BallTop", Value = GetStatusBBit(0, 0x02), Value2 = GetStatusBBit(1, 0x02), Value3 = GetStatusBBit(2, 0x02), Value4 = GetStatusBBit(3, 0x02), Value5 = GetStatusBBit(4, 0x02), Value6 = GetStatusBBit(5, 0x02), Value7 = GetStatusBBit(6, 0x02), Value8 = GetStatusBBit(7, 0x02) });
+            list.Add(new ErrorData() { Name = "B WaterBuffer", Value = GetStatusBBit(0, 0x04), Value2 = GetStatusBBit(1, 0x04), Value3 = GetStatusBBit(2, 0x04), Value4 = GetStatusBBit(3, 0x04), Value5 = GetStatusBBit(4, 0x04), Value6 = GetStatusBBit(5, 0x04), Value7 = GetStatusBBit(6, 0x04), Value8 = GetStatusBBit(7, 0x04) });
+            list.Add(new ErrorData() { Name = "B EmptyDetect", Value = GetStatusBBit(0, 0x08), Value2 = GetStatusBBit(1, 0x08), Value3 = GetStatusBBit(2, 0x08), Value4 = GetStatusBBit(3, 0x08), Value5 = GetStatusBBit(4, 0x08), Value6 = GetStatusBBit(5, 0x08), Value7 = GetStatusBBit(6, 0x08), Value8 = GetStatusBBit(7, 0x08) });
+            list.Add(new ErrorData() { Name = "B BufferLow", Value = GetStatusBBit(0, 0x10), Value2 = GetStatusBBit(1, 0x10), Value3 = GetStatusBBit(2, 0x10), Value4 = GetStatusBBit(3, 0x10), Value5 = GetStatusBBit(4, 0x10), Value6 = GetStatusBBit(5, 0x10), Value7 = GetStatusBBit(6, 0x10), Value8 = GetStatusBBit(7, 0x10) });
+            list.Add(new ErrorData() { Name = "B Reheat Running", Value = GetStatusBBit(0, 0x20), Value2 = GetStatusBBit(1, 0x20), Value3 = GetStatusBBit(2, 0x20), Value4 = GetStatusBBit(3, 0x20), Value5 = GetStatusBBit(4, 0x20), Value6 = GetStatusBBit(5, 0x20), Value7 = GetStatusBBit(6, 0x20), Value8 = GetStatusBBit(7, 0x20) });
+            list.Add(new ErrorData() { Name = "B HotIng", Value = GetStatusBBit(0, 0x40), Value2 = GetStatusBBit(1, 0x40), Value3 = GetStatusBBit(2, 0x40), Value4 = GetStatusBBit(3, 0x40), Value5 = GetStatusBBit(4, 0x40), Value6 = GetStatusBBit(5, 0x40), Value7 = GetStatusBBit(6, 0x40), Value8 = GetStatusBBit(7, 0x40) });
+            list.Add(new ErrorData() { Name = "B Dispensing", Value = GetStatusBBit(0, 0x80), Value2 = GetStatusBBit(1, 0x80), Value3 = GetStatusBBit(2, 0x80), Value4 = GetStatusBBit(3, 0x80), Value5 = GetStatusBBit(4, 0x80), Value6 = GetStatusBBit(5, 0x80), Value7 = GetStatusBBit(6, 0x80), Value8 = GetStatusBBit(7, 0x80) });
+
+            list.Add(new ErrorData()
+            {
+                Name = "버퍼수위 부족",
+                Value = GetBufferLow(0),
+                Value2 = GetBufferLow(1),
+                Value3 = GetBufferLow(2),
+                Value4 = GetBufferLow(3),
+                Value5 = GetBufferLow(4),
+                Value6 = GetBufferLow(5),
+                Value7 = GetBufferLow(6),
+                Value8 = GetBufferLow(7)
+            });
+
             Dispatcher.BeginInvoke(new Action(() =>
             {
                 ErrorGrid.ItemsSource = list;
-                RunCount.Content = timesInt;
-
-                // 화면 셋팅 직후 자동 저장 트리거 : 실기구로 부터 에러데이터 수신 시점
                 AutoSaveErrorDataToFileDebounced();
+                _isReadingError = false;
+
+                if (ReadErrorButton != null)
+                    ReadErrorButton.IsEnabled = true;
             }));
         }
 
@@ -1595,7 +1701,7 @@ namespace BliMonitorTest
 
                 // 에러 스냅샷 DB 큐 적재
                 string fileOnly = System.IO.Path.GetFileNameWithoutExtension(full);
-                EnqueueErrorEventsFromGrid(fileNameForSnapshot: fileOnly, sourceType: BliMonitorTest.util.MonitoringDb.MonitoringDb.SOURCE_MULTI, channelNo: _channelNoForDb);
+                //EnqueueErrorEventsFromGrid(fileNameForSnapshot: fileOnly, sourceType: BliMonitorTest.util.MonitoringDb.MonitoringDb.SOURCE_MULTI, channelNo: _channelNoForDb);
 
                 log.Info($"AutoSaveErrorDataToFile: 자동 저장 완료 → {full}");
             }
@@ -1933,86 +2039,6 @@ namespace BliMonitorTest
             ApplyErrorFilter(tb?.Text);
         }
 
-        private void EnqueueErrorEventsFromGrid(string fileNameForSnapshot, int sourceType, int channelNo)
-        {
-            try
-            {
-                var src = ErrorGrid.ItemsSource as System.Collections.IEnumerable;
-                if (src == null) return;
-
-                // 5슬롯 버퍼(비-nullable)
-                string[] errorText = new string[5];
-                int[] runMode = new int[5];
-                double[] heaterTemp = new double[5];
-                double[] heaterOff = new double[5];
-                double[] hotAirTemp = new double[5];
-                double[] hotAirOn = new double[5];
-                int[] runCount = new int[5];
-                double[] exhaustTemp = new double[5];
-
-                foreach (var row in src)
-                {
-                    if (row is ErrorData ed)
-                    {
-                        switch (ed.Name)
-                        {
-                            case "에러 내용":
-                                errorText[0] = ed.Value; errorText[1] = ed.Value2; errorText[2] = ed.Value3; errorText[3] = ed.Value4; errorText[4] = ed.Value5;
-                                break;
-                            case "운전 모드":
-                                runMode[0] = TryInt0(ed.Value); runMode[1] = TryInt0(ed.Value2); runMode[2] = TryInt0(ed.Value3); runMode[3] = TryInt0(ed.Value4); runMode[4] = TryInt0(ed.Value5);
-                                break;
-                            case "히터 온도":
-                                heaterTemp[0] = TryDouble0(ed.Value); heaterTemp[1] = TryDouble0(ed.Value2); heaterTemp[2] = TryDouble0(ed.Value3); heaterTemp[3] = TryDouble0(ed.Value4); heaterTemp[4] = TryDouble0(ed.Value5);
-                                break;
-                            case "히터 오프 타임":
-                                heaterOff[0] = TryDouble0(ed.Value); heaterOff[1] = TryDouble0(ed.Value2); heaterOff[2] = TryDouble0(ed.Value3); heaterOff[3] = TryDouble0(ed.Value4); heaterOff[4] = TryDouble0(ed.Value5);
-                                break;
-                            case "배기 온도":
-                                exhaustTemp[0] = TryDouble0(ed.Value); exhaustTemp[1] = TryDouble0(ed.Value2); exhaustTemp[2] = TryDouble0(ed.Value3); exhaustTemp[3] = TryDouble0(ed.Value4); exhaustTemp[4] = TryDouble0(ed.Value5);
-                                break;
-                            case "열풍 온도":
-                                hotAirTemp[0] = TryDouble0(ed.Value); hotAirTemp[1] = TryDouble0(ed.Value2); hotAirTemp[2] = TryDouble0(ed.Value3); hotAirTemp[3] = TryDouble0(ed.Value4); hotAirTemp[4] = TryDouble0(ed.Value5);
-                                break;
-                            case "열풍 On Time":
-                                hotAirOn[0] = TryDouble0(ed.Value); hotAirOn[1] = TryDouble0(ed.Value2); hotAirOn[2] = TryDouble0(ed.Value3); hotAirOn[3] = TryDouble0(ed.Value4); hotAirOn[4] = TryDouble0(ed.Value5);
-                                break;
-                            case "운전 횟수":
-                                runCount[0] = TryInt0(ed.Value); runCount[1] = TryInt0(ed.Value2); runCount[2] = TryInt0(ed.Value3); runCount[3] = TryInt0(ed.Value4); runCount[4] = TryInt0(ed.Value5);
-                                break;
-                        }
-                    }
-                }
-
-                var now = DateTime.Now;
-                string snapshotId = now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "/" + Guid.NewGuid().ToString("N");
-
-                for (int slot = 0; slot < 5; slot++)
-                {
-                    BliMonitorTest.util.MonitoringDb.MonitoringDbWriteService.Instance.EnqueueErrorEvent(
-                        sourceType: sourceType,
-                        channelNo: channelNo,
-                        createdAt: now,
-                        snapshotId: snapshotId,
-                        fileName: fileNameForSnapshot,
-                        errorSlot: slot + 1,
-                        errorText: errorText[slot] ?? "",
-                        runMode: runMode[slot],
-                        heaterTemp: heaterTemp[slot],
-                        heaterOffTime: heaterOff[slot],
-                        hotAirTemp: hotAirTemp[slot],
-                        hotAirOnTime: hotAirOn[slot],
-                        runCount: runCount[slot],
-                        exhaustTemp: exhaustTemp[slot]
-                    );
-                }
-            }
-            catch (Exception ex)
-            {
-                log.Warn("EnqueueErrorEventsFromGrid 실패", ex);
-            }
-        }
-
         private static int TryInt0(string s)
         {
             if (int.TryParse((s ?? "").Trim(), out int v)) return v;
@@ -2030,6 +2056,7 @@ namespace BliMonitorTest
             return 0;
         }
 
+        /*
         private void OpenErrorDataQueryButton_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -2062,6 +2089,7 @@ namespace BliMonitorTest
                 ToastMessage.ToastService.AppToast.Show("에러데이터 조회 화면을 여는 중 문제가 발생했습니다.");
             }
         }
+        */
 
     }
 }

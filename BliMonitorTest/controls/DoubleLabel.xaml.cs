@@ -1,24 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace BliMonitorTest.controls
 {
-    /// <summary>
-    /// DoubleLabel.xaml에 대한 상호 작용 논리
-    /// </summary>
     public partial class DoubleLabel : UserControl
     {
         public DoubleLabel()
@@ -27,10 +13,11 @@ namespace BliMonitorTest.controls
         }
 
         [Category("Text"), Description("Set Text")]
-        public string Title {
+        public string Title
+        {
             get
             {
-                return this.label.Content.ToString();
+                return this.label.Content == null ? "" : this.label.Content.ToString();
             }
             set
             {
@@ -43,11 +30,11 @@ namespace BliMonitorTest.controls
         {
             get
             {
-                return this.cont.Content.ToString();
+                return this.cont.Text ?? "";
             }
             set
             {
-                this.cont.Content = value;
+                this.cont.Text = value ?? "";
             }
         }
 
@@ -108,11 +95,11 @@ namespace BliMonitorTest.controls
         {
             get
             {
-                return this.cont.BorderBrush;
+                return this.contBorder.BorderBrush;
             }
             set
             {
-                this.cont.BorderBrush = value;
+                this.contBorder.BorderBrush = value;
             }
         }
 
@@ -129,7 +116,7 @@ namespace BliMonitorTest.controls
             }
         }
 
-        [Category("ContentColor"), Description("Set Title Color")]
+        [Category("ContentColor"), Description("Set Content Color")]
         public string ContentColor
         {
             get
@@ -141,6 +128,7 @@ namespace BliMonitorTest.controls
                 this.cont.Foreground = new BrushConverter().ConvertFromString(value) as SolidColorBrush;
             }
         }
+
         [Category("TitleBackground"), Description("Set Title Background")]
         public string TitleBackground
         {

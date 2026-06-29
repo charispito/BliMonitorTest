@@ -4,13 +4,37 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d" 
-             d:DesignHeight="25" d:DesignWidth="210">
+             d:DesignHeight="30" d:DesignWidth="240">
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition MinWidth="90"/>
-            <ColumnDefinition MinWidth="95"/>
+            <ColumnDefinition MinWidth="120"/>
+            <ColumnDefinition MinWidth="110"/>
         </Grid.ColumnDefinitions>
-        <Label FontSize="13" Padding="0" VerticalContentAlignment="Center" FontWeight="Bold" HorizontalContentAlignment="Center" Foreground="Black" BorderBrush="#AAA" BorderThickness="1" x:Name="label" Background="#652822E8"/>
-        <Label HorizontalContentAlignment="Center" Padding="0" VerticalContentAlignment="Center" Background="#FFF" FontSize="13" Grid.Column="1" BorderBrush="#AAA" BorderThickness="0,1,1,1" x:Name="cont"/>
+
+        <Label FontSize="13"
+               Padding="4,0"
+               VerticalContentAlignment="Center"
+               FontWeight="Bold"
+               HorizontalContentAlignment="Center"
+               Foreground="Black"
+               BorderBrush="#AAA"
+               BorderThickness="1"
+               x:Name="label"
+               Background="#652822E8"/>
+
+        <Border x:Name="contBorder"
+                Grid.Column="1"
+                BorderBrush="#AAA"
+                BorderThickness="0,1,1,1"
+                Background="#FFF"
+                Padding="4,2">
+            <TextBlock x:Name="cont"
+               TextAlignment="Center"
+               TextWrapping="NoWrap"
+               TextTrimming="CharacterEllipsis"
+               VerticalAlignment="Center"
+               HorizontalAlignment="Center"
+               FontSize="12"/>
+        </Border>
     </Grid>
 </UserControl>
