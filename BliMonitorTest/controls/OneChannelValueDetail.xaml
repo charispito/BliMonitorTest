@@ -50,8 +50,8 @@
             <local:DoubleLabel Grid.Row="1" Grid.Column="2" Margin="5,3" x:Name="Item1"/>
             <local:DoubleLabel Grid.Row="2" Grid.Column="2" Margin="5,3" x:Name="Item2"/>
             <local:DoubleLabel Grid.Row="3" Grid.Column="2" Margin="5,3" x:Name="Item3"/>
-            <local:DoubleLabel Grid.Row="4" Grid.Column="2" Margin="5,3" x:Name="Item4"/>
-            <local:DoubleLabel Grid.Row="5" Grid.Column="2" Margin="5,3" x:Name="Item5"/>
+            <local:DoubleLabel Grid.Row="4" Grid.Column="2" Margin="5,3" x:Name="Item5"/>
+            <local:DoubleLabel Grid.Row="5" Grid.Column="2" Margin="5,3" x:Name="Item4"/>
             <local:DoubleLabel Grid.Row="6" Grid.Column="2" Margin="5,3" x:Name="Item6"/>
             <local:DoubleLabel Grid.Row="7" Grid.Column="2" Margin="5,3" x:Name="Item7"/>
             <local:DoubleLabel Grid.Row="8" Grid.Column="2" Margin="5,3" x:Name="Item8"/>
@@ -68,17 +68,17 @@
             <CheckBox x:Name="Item8Check" Grid.Row="4" Grid.Column="3" VerticalAlignment="Center"/>
 
             <!-- 가운데 정보 -->
-            <local:DoubleLabel Grid.Row="1" Grid.Column="4" Margin="5,3" x:Name="Item11"/>
-            <local:DoubleLabel Grid.Row="2" Grid.Column="4" Margin="5,3" x:Name="Item12"/>
-            <local:DoubleLabel Grid.Row="3" Grid.Column="4" Margin="5,3" x:Name="Item13"/>
-            <local:DoubleLabel Grid.Row="4" Grid.Column="4" Margin="5,3" x:Name="Item14"/>
-            <local:DoubleLabel Grid.Row="5" Grid.Column="4" Margin="5,3" x:Name="Item15"/>
-            <local:DoubleLabel Grid.Row="6" Grid.Column="4" Margin="5,3" x:Name="Item16"/>
-            <local:DoubleLabel Grid.Row="7" Grid.Column="4" Margin="5,3" x:Name="Item20"/>
-            <local:DoubleLabel Grid.Row="8" Grid.Column="4" Margin="5,3" x:Name="Item21"/>
-            <local:DoubleLabel Grid.Row="9" Grid.Column="4" Margin="5,3" x:Name="Item22"/>
-            <local:DoubleLabel Grid.Row="10" Grid.Column="4" Margin="5,3" x:Name="Item23"/>
-            <local:DoubleLabel Grid.Row="11" Grid.Column="4" Margin="5,3" x:Name="Item24"/>
+            <local:DoubleLabel Grid.Row="1" Grid.Column="4" Margin="5,3" x:Name="Item20"/>
+            <local:DoubleLabel Grid.Row="2" Grid.Column="4" Margin="5,3" x:Name="Item21"/>
+            <local:DoubleLabel Grid.Row="3" Grid.Column="4" Margin="5,3" x:Name="Item22"/>
+            <local:DoubleLabel Grid.Row="4" Grid.Column="4" Margin="5,3" x:Name="Item24"/>
+            <local:DoubleLabel Grid.Row="5" Grid.Column="4" Margin="5,3" x:Name="Item11"/>
+            <local:DoubleLabel Grid.Row="6" Grid.Column="4" Margin="5,3" x:Name="Item12"/>
+            <local:DoubleLabel Grid.Row="7" Grid.Column="4" Margin="5,3" x:Name="Item13"/>
+            <local:DoubleLabel Grid.Row="8" Grid.Column="4" Margin="5,3" x:Name="Item14"/>
+            <local:DoubleLabel Grid.Row="9" Grid.Column="4" Margin="5,3" x:Name="Item15"/>
+            <local:DoubleLabel Grid.Row="10" Grid.Column="4" Margin="5,3" x:Name="Item16"/>
+            <local:DoubleLabel Grid.Row="11" Grid.Column="4" Margin="5,3" x:Name="Item23"/>
             <local:DoubleLabel Grid.Row="12" Grid.Column="4" Margin="5,3" x:Name="Item25"/>
             <local:DoubleLabel Grid.Row="13" Grid.Column="4" Margin="5,3" x:Name="Item26"/>
 

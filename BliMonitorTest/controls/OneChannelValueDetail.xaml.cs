@@ -148,29 +148,53 @@ namespace BliMonitorTest.controls
             list7.Add(new KeyValuePair<double, int>(0, 0));
             list8.Add(new KeyValuePair<double, double>(0, 0));
             Item1.MouseLeftButtonDown += (s, e) => {
-                typeof(System.Windows.Controls.Primitives.ButtonBase).GetMethod("OnClick", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(Item1Check, new object[0]);
+                typeof(System.Windows.Controls.Primitives.ButtonBase)
+                    .GetMethod("OnClick", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                    .Invoke(Item1Check, new object[0]);
             };
+
             Item2.MouseLeftButtonDown += (s, e) => {
-                typeof(System.Windows.Controls.Primitives.ButtonBase).GetMethod("OnClick", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(Item2Check, new object[0]);
+                typeof(System.Windows.Controls.Primitives.ButtonBase)
+                    .GetMethod("OnClick", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                    .Invoke(Item2Check, new object[0]);
             };
+
             Item3.MouseLeftButtonDown += (s, e) => {
-                typeof(System.Windows.Controls.Primitives.ButtonBase).GetMethod("OnClick", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(Item3Check, new object[0]);
+                typeof(System.Windows.Controls.Primitives.ButtonBase)
+                    .GetMethod("OnClick", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                    .Invoke(Item3Check, new object[0]);
             };
-            Item4.MouseLeftButtonDown += (s, e) => {
-                typeof(System.Windows.Controls.Primitives.ButtonBase).GetMethod("OnClick", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(Item4Check, new object[0]);
+
+            Item5.MouseLeftButtonDown += (s, e) => {
+                typeof(System.Windows.Controls.Primitives.ButtonBase)
+                    .GetMethod("OnClick", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                    .Invoke(Item4Check, new object[0]);
             };
-            Item11.MouseLeftButtonDown += (s, e) => {
-                typeof(System.Windows.Controls.Primitives.ButtonBase).GetMethod("OnClick", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(Item5Check, new object[0]);
+
+            Item20.MouseLeftButtonDown += (s, e) => {
+                typeof(System.Windows.Controls.Primitives.ButtonBase)
+                    .GetMethod("OnClick", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                    .Invoke(Item5Check, new object[0]);
             };
-            Item12.MouseLeftButtonDown += (s, e) => {
-                typeof(System.Windows.Controls.Primitives.ButtonBase).GetMethod("OnClick", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(Item6Check, new object[0]);
+
+            Item21.MouseLeftButtonDown += (s, e) => {
+                typeof(System.Windows.Controls.Primitives.ButtonBase)
+                    .GetMethod("OnClick", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                    .Invoke(Item6Check, new object[0]);
             };
-            Item13.MouseLeftButtonDown += (s, e) => {
-                typeof(System.Windows.Controls.Primitives.ButtonBase).GetMethod("OnClick", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(Item7Check, new object[0]);
+
+            Item22.MouseLeftButtonDown += (s, e) => {
+                typeof(System.Windows.Controls.Primitives.ButtonBase)
+                    .GetMethod("OnClick", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                    .Invoke(Item7Check, new object[0]);
             };
-            Item14.MouseLeftButtonDown += (s, e) => {
-                typeof(System.Windows.Controls.Primitives.ButtonBase).GetMethod("OnClick", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(Item8Check, new object[0]);
+
+            Item24.MouseLeftButtonDown += (s, e) => {
+                typeof(System.Windows.Controls.Primitives.ButtonBase)
+                    .GetMethod("OnClick", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                    .Invoke(Item8Check, new object[0]);
             };
+
             Loaded += OneChannelValueDetail_Loaded;
         }
 
@@ -189,7 +213,11 @@ namespace BliMonitorTest.controls
 
         private bool CanOpenParameterWindow()
         {
-            return ConnectState == 1;
+            OneChannelWindow parent = Window.GetWindow(this) as OneChannelWindow;
+            if (parent == null)
+                return false;
+
+            return parent.CanOpenParameterPopup();
         }
 
         private void ParameterButton_Click(object sender, RoutedEventArgs e)

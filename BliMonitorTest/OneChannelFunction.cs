@@ -32,8 +32,14 @@ namespace BliMonitorTest
                         if (array.Length != 37)
                             return;
 
+                        var pkt = Duo8PacketParser.ParseStatus(array);
+                        if (pkt == null)
+                            return;
+
                         Dispatcher.BeginInvoke(new Action(() =>
                         {
+                            MarkValidStatusResponseReceived();
+
                             setView(array);
                         }));
                         break;
@@ -56,6 +62,30 @@ namespace BliMonitorTest
             {
                 Console.WriteLine(e.ToString());
             }
+        }
+
+        private void MarkValidStatusResponseReceived()
+        {
+            _lastResponseAt = DateTime.Now;
+            _hasValidStatusResponse = true;
+
+            if (_isConnecting)
+            {
+                _isConnecting = false;
+                _waitingFirstResponse = false;
+                StopConnectionWatchdog();
+
+                channel.ConnectState = 1;
+                ConnectButton.Content = "해제";
+
+                StartTimerSafe();
+
+                log.Info("정상 STATUS 응답 수신 - 연결 성공 처리");
+                return;
+            }
+
+            _waitingFirstResponse = false;
+            StopConnectionWatchdog();
         }
 
         private void setView(byte[] data)

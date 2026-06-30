@@ -45,6 +45,12 @@ namespace BliMonitorTest
         private bool _waitingFirstResponse = false;
         private readonly TimeSpan _connectionTimeout = TimeSpan.FromSeconds(5);
 
+        // RX buffer and lock for thread safety
+        private bool _isConnecting = false;
+        private readonly object _connectStateLock = new object();
+        private bool _hasValidStatusResponse = false;
+        private volatile bool _isWriting = false;
+
         public OneChannelWindow()
         {
             InitializeComponent();
@@ -55,6 +61,14 @@ namespace BliMonitorTest
 
             port = new SerialPort();
             port.BaudRate = 9600;
+            port.DataBits = 8;
+            port.StopBits = StopBits.One;
+            port.Parity = Parity.None;
+            port.Handshake = Handshake.None;
+            port.ReadTimeout = 500;
+            port.WriteTimeout = 500;
+            port.DtrEnable = false;
+            port.RtsEnable = false;
             port.DataReceived += Port_DataReceived;
 
             PortList.box.ItemsSource = SerialPort.GetPortNames();
@@ -73,7 +87,7 @@ namespace BliMonitorTest
 
             timer = new Timer();
             timer.Interval = 1000;
-            timer.Elapsed += Timer_Elapsed;
+            EnsureTimer();
             timer.Start();
 
             SaveCheck.Checked += SaveCheck_Checked;
@@ -156,9 +170,73 @@ namespace BliMonitorTest
             }
         }
 
+        private void SendStatusRequestSafe()
+        {
+            if (UseDummy)
+                return;
+
+            if (port == null || !port.IsOpen)
+                return;
+
+            if (_isWriting)
+                return;
+
+            _isWriting = true;
+
+            byte[] command = Protocol.GetStatusRequest();
+
+            // 상태정보 요청의 경우 응답이 없으면 연결을 끊어야 하므로, Write 작업이 UI 스레드를 막지 않도록 Task.Run을 사용합니다.
+            System.Threading.Tasks.Task.Run(() =>
+            {
+                try
+                {
+                    lock (port)
+                    {
+                        if (port != null && port.IsOpen)
+                        {
+                            port.Write(command, 0, command.Length);
+                        }
+                    }
+
+                    command.PrintHex(1);
+                }
+                catch (TimeoutException tex)
+                {
+                    log.Warn("상태요청 Write timeout", tex);
+
+                    Dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        ForceDisconnect("장비 송신 응답이 비정상적이어서 연결을 자동 해제했습니다.");
+                    }));
+                }
+                catch (InvalidOperationException ioex)
+                {
+                    log.Warn("상태요청 Write 실패 - 포트 상태 이상", ioex);
+
+                    Dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        ForceDisconnect("포트 상태가 비정상적이어서 연결을 자동 해제했습니다.");
+                    }));
+                }
+                catch (Exception ex)
+                {
+                    log.Warn("상태요청 Write 실패", ex);
+
+                    Dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        ForceDisconnect("장비 통신 중 송신 오류가 발생하여 연결을 자동 해제했습니다.");
+                    }));
+                }
+                finally
+                {
+                    _isWriting = false;
+                }
+            });
+        }
+
         private void DoPeriodicTickCore()
         {
-            if (channel.ConnectState != 1) return;
+            if (channel.ConnectState != 1 && !_isConnecting) return;
 
             try
             {
@@ -175,9 +253,7 @@ namespace BliMonitorTest
                         }
                         else
                         {
-                            byte[] command = Protocol.GetStatusRequest();
-                            port.Write(command, 0, command.Length);
-                            command.PrintHex(1);
+                            SendStatusRequestSafe();
                         }
                     }
                 }
@@ -233,10 +309,6 @@ namespace BliMonitorTest
 
                 Dispatcher.Invoke(() =>
                 {
-                    _lastResponseAt = DateTime.Now;
-                    _waitingFirstResponse = false;
-                    StopConnectionWatchdog();
-
                     ByteLogHelper.LogPacket(buf, "RX");
                     receiveData(buf, buf.Length);
                 });
@@ -247,38 +319,56 @@ namespace BliMonitorTest
             }
         }
 
+        private void ForceDisconnect(string toastMessage = null)
+        {
+            try
+            {
+                StopTimerSafe();
+                StopConnectionWatchdog();
+
+                try { port.DataReceived -= Port_DataReceived; } catch { }
+
+                if (channel.streamWriter != null)
+                {
+                    try { channel.streamWriter.Close(); } catch { }
+                    channel.streamWriter = null;
+                }
+
+                try
+                {
+                    if (port != null && port.IsOpen)
+                        port.Close();
+                }
+                catch { }
+
+                lock (_rxLock)
+                {
+                    _rxBuffer.Clear();
+                }
+
+                CloseParameterWindowIfOpen();
+
+                _isConnecting = false;
+                _hasValidStatusResponse = false;
+                channel.ConnectState = 0;
+                ConnectButton.Content = "연결";
+            }
+            catch (Exception ex)
+            {
+                log.Warn("ForceDisconnect 실패", ex);
+            }
+
+            if (!string.IsNullOrWhiteSpace(toastMessage))
+                ToastMessage.ToastService.AppToast.Show(toastMessage);
+        }
+
         private void ConnectButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                if (channel.ConnectState == 1)
+                if (channel.ConnectState == 1 || _isConnecting)
                 {
-                    StopTimerSafe();
-                    StopConnectionWatchdog();
-
-                    try { port.DataReceived -= Port_DataReceived; } catch { }
-
-                    if (channel.streamWriter != null)
-                    {
-                        try { channel.streamWriter.Close(); } catch { }
-                        channel.streamWriter = null;
-                    }
-
-                    if (port != null && port.IsOpen)
-                    {
-                        try { port.Close(); } catch { }
-                    }
-
-                    lock (_rxLock)
-                    {
-                        _rxBuffer.Clear();
-                    }
-
-                    // 연결이 끊어졌을 때 ParameterWindow가 열려있으면 강제로 닫기
-                    CloseParameterWindowIfOpen();
-
-                    channel.ConnectState = 0;
-                    ConnectButton.Content = "연결";
+                    ForceDisconnect();
                     return;
                 }
 
@@ -305,10 +395,12 @@ namespace BliMonitorTest
                     }
                 }
 
-                channel.ConnectState = 1;
+                _hasValidStatusResponse = false;
+                _isConnecting = true;
+                _waitingFirstResponse = true;
+                channel.ConnectState = 0;       // 아직 연결 성공 아님
                 ConnectButton.Content = "해제";
 
-                StartTimerSafe();
                 StartConnectionWatchdog();
                 DoPeriodicTickCore();
             }
@@ -325,10 +417,6 @@ namespace BliMonitorTest
 
             Dispatcher.Invoke(() =>
             {
-                _lastResponseAt = DateTime.Now;
-                _waitingFirstResponse = false;
-                StopConnectionWatchdog();
-
                 receiveData(buf, buf.Length);
             });
         }
@@ -425,7 +513,7 @@ namespace BliMonitorTest
                             int index = getIndex();
                             seriesList[10] = index;
                             Chart.ViewModel.setSeries(index, 0, colorList[index]);
-                            Chart.setLegend(index, "온수 Temp Raw");
+                            Chart.setLegend(index, "온수 Temp");
                         }
                         else
                         {
@@ -454,7 +542,7 @@ namespace BliMonitorTest
                             int index = getIndex();
                             seriesList[11] = index;
                             Chart.ViewModel.setSeries(index, 0, colorList[index]);
-                            Chart.setLegend(index, "냉수 Temp Raw");
+                            Chart.setLegend(index, "냉수 Temp");
                         }
                         else
                         {
@@ -702,29 +790,7 @@ namespace BliMonitorTest
                 {
                     try
                     {
-                        StopTimerSafe();
-                        StopConnectionWatchdog();
-
-                        try { port.DataReceived -= Port_DataReceived; } catch { }
-                        try
-                        {
-                            if (port != null && port.IsOpen)
-                                port.Close();
-                        }
-                        catch { }
-
-                        lock (_rxLock)
-                        {
-                            _rxBuffer.Clear();
-                        }
-
-                        // 연결이 끊어졌을 때 ParameterWindow가 열려있으면 강제로 닫기
-                        CloseParameterWindowIfOpen();
-
-                        channel.ConnectState = 0;
-                        ConnectButton.Content = "연결";
-
-                        ToastMessage.ToastService.AppToast.Show("장비 응답이 없어 연결을 자동 해제했습니다.");
+                        ForceDisconnect("정상 상태 패킷 응답이 없어 연결을 자동 해제했습니다.");
                     }
                     catch (Exception ex)
                     {
@@ -760,6 +826,12 @@ namespace BliMonitorTest
             }
         }
 
+        public bool CanOpenParameterPopup()
+        {
+            return channel != null && channel.ConnectState == 1 && _hasValidStatusResponse;
+        }
+
+
         private void EnsureTimer()
         {
             if (timer == null)
@@ -776,7 +848,7 @@ namespace BliMonitorTest
         private void StartTimerSafe()
         {
             EnsureTimer();
-            timer.Stop();
+            //timer.Stop();
             timer.Start();
         }
 
@@ -785,7 +857,7 @@ namespace BliMonitorTest
             if (timer != null)
             {
                 timer.Stop();
-                timer.Elapsed -= Timer_Elapsed;
+                //timer.Elapsed -= Timer_Elapsed;
             }
         }
 
