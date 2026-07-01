@@ -263,8 +263,8 @@ namespace BliMonitorTest
                 new StatusViewRow { Name = "초기급수 진행", Value = "" },
                 new StatusViewRow { Name = "물부족 감지", Value = "" },
                 new StatusViewRow { Name = "버퍼수위 부족", Value = "" },
-                new StatusViewRow { Name = "재가열 동작", Value = "" },
-                new StatusViewRow { Name = "가열 진행", Value = "" },
+                new StatusViewRow { Name = "PCB HW Version", Value = "" },
+                new StatusViewRow { Name = "PCB SW Version", Value = "" },
                 new StatusViewRow { Name = "히터 PWM", Value = "" },
                 new StatusViewRow { Name = "야간 상태", Value = "" },
                 new StatusViewRow { Name = "테스트 모드", Value = "" },
@@ -309,7 +309,7 @@ namespace BliMonitorTest
                 new StatusViewRow { Name = "B BufLow", Value = "" },
                 new StatusViewRow { Name = "B Reheat", Value = "" },
                 new StatusViewRow { Name = "B HotIng", Value = "" },
-                new StatusViewRow { Name = "B Disp", Value = "" },
+                new StatusViewRow { Name = "B Dispensing", Value = "" },
 
                 new StatusViewRow { Name = "ButtonInfo", Value = "" },
                 new StatusViewRow { Name = "Status A", Value = "" },
@@ -411,8 +411,8 @@ namespace BliMonitorTest
             statusList.Add(new StatusViewRow() { Name = "초기급수 진행", Value = Duo8ValueText.ToYesNo(pkt.WaterInitGo) });
             statusList.Add(new StatusViewRow() { Name = "물부족 감지", Value = Duo8ValueText.ToYesNo(pkt.EmptyDetect) });
             statusList.Add(new StatusViewRow() { Name = "버퍼수위 부족", Value = Duo8ValueText.ToYesNo(pkt.BufferLow) });
-            statusList.Add(new StatusViewRow() { Name = "재가열 동작", Value = Duo8ValueText.ToOnOff(pkt.ReheatRunning) });
-            statusList.Add(new StatusViewRow() { Name = "가열 진행", Value = Duo8ValueText.ToOnOff(pkt.HotIng) });
+            statusList.Add(new StatusViewRow() { Name = "PCB HW Version", Value = pkt.PcbHwVersion.ToString() });
+            statusList.Add(new StatusViewRow() { Name = "PCB SW Version", Value = pkt.PcbSwVersion.ToString() });
             statusList.Add(new StatusViewRow() { Name = "히터 PWM", Value = pkt.HeaterPwm.ToString() });
             statusList.Add(new StatusViewRow() { Name = "야간 상태", Value = Duo8ValueText.ToOnOff(pkt.Night) });
             statusList.Add(new StatusViewRow() { Name = "테스트 모드", Value = Duo8ValueText.ToOnOff(pkt.TestMode) });
@@ -2571,7 +2571,7 @@ namespace BliMonitorTest
                 CreateDefaultErrorRow("B BufLow", "OFF"),
                 CreateDefaultErrorRow("B Reheat", "OFF"),
                 CreateDefaultErrorRow("B HotIng", "OFF"),
-                CreateDefaultErrorRow("B Disp", "OFF"),
+                CreateDefaultErrorRow("B Dispensing", "OFF"),
 
                 CreateDefaultErrorRow("버퍼수위 부족", "0")
             };

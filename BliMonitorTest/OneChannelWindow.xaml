@@ -48,7 +48,7 @@
                                 </Grid.ColumnDefinitions>
 
                                 <CheckBox Content="바탕화면 저장" FontSize="16" VerticalContentAlignment="Center" HorizontalAlignment="Right" Margin="0,1,79,-2" x:Name="SaveCheck"/>
-                                <Label Grid.Column="5" Margin="0,0,20,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontSize="16" x:Name="VersionText"/>
+                                <Label Grid.Column="5" Margin="0,0,20,0" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" FontSize="16" x:Name="VersionText" Visibility="Hidden"/>
 
                                 <Border Grid.Row="1" Grid.Column="1" Padding="8" BorderThickness="1" BorderBrush="{StaticResource SoftBorderBrush}" CornerRadius="10" Background="#FBFDFF">
                                     <WrapPanel HorizontalAlignment="Center">

@@ -37,8 +37,8 @@ namespace BliMonitorTest.util
             new GridColumnSpec { ColumnName = "water_init_go_text", Header = "초기급수중", DisplayIndex = 12, Width = 110 },
             new GridColumnSpec { ColumnName = "empty_detect_text", Header = "물부족감지", DisplayIndex = 13, Width = 110 },
             new GridColumnSpec { ColumnName = "buffer_low_text", Header = "버퍼부족", DisplayIndex = 14, Width = 100 },
-            new GridColumnSpec { ColumnName = "reheat_running_text", Header = "재가열", DisplayIndex = 15, Width = 90 },
-            new GridColumnSpec { ColumnName = "hot_ing_text", Header = "가열중", DisplayIndex = 16, Width = 90 },
+            new GridColumnSpec { ColumnName = "pcb_hw_version_text", Header = "PCB HW Version", DisplayIndex = 15, Width = 90 },
+            new GridColumnSpec { ColumnName = "pcb_sw_version_text", Header = "PCB SW Version", DisplayIndex = 16, Width = 90 },
 
             new GridColumnSpec { ColumnName = "heater_output_text", Header = "히터출력", DisplayIndex = 17, Width = 90 },
             new GridColumnSpec { ColumnName = "compressor_output_text", Header = "컴프출력", DisplayIndex = 18, Width = 90 },
@@ -62,8 +62,8 @@ namespace BliMonitorTest.util
             AddColumnIfMissing(dt, "water_init_go_text");
             AddColumnIfMissing(dt, "empty_detect_text");
             AddColumnIfMissing(dt, "buffer_low_text");
-            AddColumnIfMissing(dt, "reheat_running_text");
-            AddColumnIfMissing(dt, "hot_ing_text");
+            AddColumnIfMissing(dt, "pcb_hw_version_text");
+            AddColumnIfMissing(dt, "pcb_sw_version_text");
             AddColumnIfMissing(dt, "heater_pwm_text");
             AddColumnIfMissing(dt, "night_text");
             AddColumnIfMissing(dt, "test_mode_text");
@@ -94,8 +94,8 @@ namespace BliMonitorTest.util
                 row["water_init_go_text"] = Duo8ValueText.ToRunText((byte)ToInt(row["water_init_go"]));
                 row["empty_detect_text"] = Duo8ValueText.ToYesNo((byte)ToInt(row["empty_detect"]));
                 row["buffer_low_text"] = Duo8ValueText.ToYesNo((byte)ToInt(row["buffer_low"]));
-                row["reheat_running_text"] = Duo8ValueText.ToRunText((byte)ToInt(row["reheat_running"]));
-                row["hot_ing_text"] = Duo8ValueText.ToRunText((byte)ToInt(row["hot_ing"]));
+                row["pcb_hw_version_text"] = Convert.ToString(ToInt(row["pcb_hw_version"]));
+                row["pcb_sw_version_text"] = Convert.ToString(ToInt(row["pcb_sw_version"]));
                 row["heater_pwm_text"] = Duo8ValueText.ToOnOff((byte)ToInt(row["heater_pwm"]));
                 row["night_text"] = Duo8ValueText.ToYesNo((byte)ToInt(row["night"]));
                 row["test_mode_text"] = Duo8ValueText.ToYesNo((byte)ToInt(row["test_mode"]));

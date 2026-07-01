@@ -50,8 +50,8 @@ namespace BliMonitorTest.util.MonitoringDb
                         water_init_go          INTEGER,
                         empty_detect           INTEGER,
                         buffer_low             INTEGER,
-                        reheat_running         INTEGER,
-                        hot_ing                INTEGER,
+                        pcb_hw_version         INTEGER,
+                        pcb_sw_version         INTEGER,
                         heater_pwm             INTEGER,
                         night                  INTEGER,
                         test_mode              INTEGER,
@@ -161,7 +161,7 @@ namespace BliMonitorTest.util.MonitoringDb
                         source_type, channel_no, created_at, created_at_ms,
                         start_packet, version, command, payload_size,
                         model_code, error_code, water_init_done, water_init_go,
-                        empty_detect, buffer_low, reheat_running, hot_ing,
+                        empty_detect, buffer_low, pcb_hw_version, pcb_sw_version,
                         heater_pwm, night, test_mode, mode_selected, qty_selected,
                         dispense_phase, dispense_sub_phase,
                         hot_temp_raw, cold_temp_raw,
@@ -174,7 +174,7 @@ namespace BliMonitorTest.util.MonitoringDb
                         $source_type, $channel_no, $created_at, $created_at_ms,
                         $start_packet, $version, $command, $payload_size,
                         $model_code, $error_code, $water_init_done, $water_init_go,
-                        $empty_detect, $buffer_low, $reheat_running, $hot_ing,
+                        $empty_detect, $buffer_low, $pcb_hw_version, $pcb_sw_version,
                         $heater_pwm, $night, $test_mode, $mode_selected, $qty_selected,
                         $dispense_phase, $dispense_sub_phase,
                         $hot_temp_raw, $cold_temp_raw,
@@ -202,8 +202,8 @@ namespace BliMonitorTest.util.MonitoringDb
                 cmd.Parameters.AddWithValue("$water_init_go", pkt.WaterInitGo);
                 cmd.Parameters.AddWithValue("$empty_detect", pkt.EmptyDetect);
                 cmd.Parameters.AddWithValue("$buffer_low", pkt.BufferLow);
-                cmd.Parameters.AddWithValue("$reheat_running", pkt.ReheatRunning);
-                cmd.Parameters.AddWithValue("$hot_ing", pkt.HotIng);
+                cmd.Parameters.AddWithValue("$pcb_hw_version", pkt.PcbHwVersion);
+                cmd.Parameters.AddWithValue("$pcb_sw_version", pkt.PcbSwVersion);
                 cmd.Parameters.AddWithValue("$heater_pwm", pkt.HeaterPwm);
                 cmd.Parameters.AddWithValue("$night", pkt.Night);
                 cmd.Parameters.AddWithValue("$test_mode", pkt.TestMode);

@@ -19,8 +19,10 @@ namespace BliMonitorTest.data
         public byte WaterInitGo { get; set; }
         public byte EmptyDetect { get; set; }
         public byte BufferLow { get; set; }
-        public byte ReheatRunning { get; set; }
-        public byte HotIng { get; set; }
+
+        public byte PcbHwVersion { get; set; }
+        public byte PcbSwVersion { get; set; }
+
         public byte HeaterPwm { get; set; }
         public byte Night { get; set; }
         public byte TestMode { get; set; }
@@ -46,6 +48,16 @@ namespace BliMonitorTest.data
         public byte StatusB { get; set; }
         public byte Checksum { get; set; }
         public byte EndPacket { get; set; }
+
+        public byte ReheatRunning
+        {
+            get { return (byte)(((StatusB & 0x20) != 0) ? 1 : 0); }
+        }
+
+        public byte HotIng
+        {
+            get { return (byte)(((StatusB & 0x40) != 0) ? 1 : 0); }
+        }
     }
 
     public sealed class Duo8ErrorRecord
@@ -106,8 +118,8 @@ namespace BliMonitorTest.data
                 WaterInitGo = buf[7],
                 EmptyDetect = buf[8],
                 BufferLow = buf[9],
-                ReheatRunning = buf[10],
-                HotIng = buf[11],
+                PcbHwVersion = buf[10],
+                PcbSwVersion = buf[11],
                 HeaterPwm = buf[12],
                 Night = buf[13],
                 TestMode = buf[14],

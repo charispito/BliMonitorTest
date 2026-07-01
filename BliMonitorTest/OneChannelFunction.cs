@@ -39,7 +39,6 @@ namespace BliMonitorTest
                         Dispatcher.BeginInvoke(new Action(() =>
                         {
                             MarkValidStatusResponseReceived();
-
                             setView(array);
                         }));
                         break;
@@ -134,8 +133,11 @@ namespace BliMonitorTest
             channel.Item4.cont.Text = Duo8ValueText.ToYesNo(pkt.WaterInitGo);
             channel.Item5.cont.Text = Duo8ValueText.ToYesNo(pkt.EmptyDetect);
             channel.Item6.cont.Text = Duo8ValueText.ToYesNo(pkt.BufferLow);
-            channel.Item7.cont.Text = Duo8ValueText.ToOnOff(pkt.ReheatRunning);
-            channel.Item8.cont.Text = Duo8ValueText.ToOnOff(pkt.HotIng);
+
+            // 변경됨: byte10/11 = PCB HW/SW Version
+            channel.Item7.cont.Text = pkt.PcbHwVersion.ToString();
+            channel.Item8.cont.Text = pkt.PcbSwVersion.ToString();
+
             channel.Item9.cont.Text = pkt.HeaterPwm.ToString();
             channel.Item10.cont.Text = Duo8ValueText.ToOnOff(pkt.Night);
             channel.Item17.cont.Text = Duo8ValueText.ToYesNo(pkt.FloatLowStable);
@@ -170,8 +172,8 @@ namespace BliMonitorTest
             channel.Item50.cont.Text = Duo8ValueText.GetBitState((statusB & 0x04) != 0);
             channel.Item51.cont.Text = Duo8ValueText.GetBitState((statusB & 0x08) != 0);
             channel.Item52.cont.Text = Duo8ValueText.GetBitState((statusB & 0x10) != 0);
-            channel.Item53.cont.Text = Duo8ValueText.GetBitState((statusB & 0x20) != 0);
-            channel.Item54.cont.Text = Duo8ValueText.GetBitState((statusB & 0x40) != 0);
+            channel.Item53.cont.Text = Duo8ValueText.GetBitState((statusB & 0x20) != 0); // Reheat
+            channel.Item54.cont.Text = Duo8ValueText.GetBitState((statusB & 0x40) != 0); // HotIng
             channel.Item55.cont.Text = Duo8ValueText.GetBitState((statusB & 0x80) != 0);
 
             channel.Statebox.cont.Text = errorText == "NONE"

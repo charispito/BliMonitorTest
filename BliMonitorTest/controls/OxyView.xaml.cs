@@ -39,10 +39,10 @@ namespace BliMonitorTest.controls
                 if (ViewModel != null)
                 {
                     if (ViewModel.PlotModel != null)
-                        ViewModel.PlotModel.InvalidatePlot(true);
+                        ViewModel.PlotModel.InvalidatePlot(false);
 
                     if (ViewModel.FullscreenPlotModel != null)
-                        ViewModel.FullscreenPlotModel.InvalidatePlot(true);
+                        ViewModel.FullscreenPlotModel.InvalidatePlot(false);
                 }
             }));
         }

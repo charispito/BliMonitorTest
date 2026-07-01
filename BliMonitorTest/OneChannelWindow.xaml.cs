@@ -446,8 +446,8 @@ namespace BliMonitorTest
             item.Item4.label.Content = "초기급수 진행";
             item.Item5.label.Content = "물부족 감지";
             item.Item6.label.Content = "버퍼수위 부족";
-            item.Item7.label.Content = "재가열 동작";
-            item.Item8.label.Content = "가열 진행";
+            item.Item7.label.Content = "PCB HW Version";
+            item.Item8.label.Content = "PCB SW Version";
             item.Item9.label.Content = "히터 PWM";
             item.Item10.label.Content = "야간 상태";
             item.Item17.label.Content = "Float Stable";
@@ -483,7 +483,7 @@ namespace BliMonitorTest
             item.Item52.label.Content = "B BufLow";
             item.Item53.label.Content = "B Reheat";
             item.Item54.label.Content = "B HotIng";
-            item.Item55.label.Content = "B Disp";
+            item.Item55.label.Content = "B Dispensing";
 
             item.Statebox.label.Content = "상태 / 에러";
             item.ChannelView.label.Content = "연결상태";

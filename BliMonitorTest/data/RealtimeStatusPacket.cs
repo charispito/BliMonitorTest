@@ -8,8 +8,10 @@
         public byte WaterInitGo { get; set; }
         public byte EmptyDetect { get; set; }
         public byte BufferLow { get; set; }
-        public byte ReheatRunning { get; set; }
-        public byte HotIng { get; set; }
+
+        public byte PcbHwVersion { get; set; }
+        public byte PcbSwVersion { get; set; }
+
         public byte HeaterPwm { get; set; }
         public byte Night { get; set; }
         public byte TestMode { get; set; }
@@ -35,5 +37,15 @@
 
         public byte StatusA { get; set; }
         public byte StatusB { get; set; }
+
+        public byte ReheatRunning
+        {
+            get { return (byte)(((StatusB & 0x20) != 0) ? 1 : 0); }
+        }
+
+        public byte HotIng
+        {
+            get { return (byte)(((StatusB & 0x40) != 0) ? 1 : 0); }
+        }
     }
 }

@@ -306,8 +306,8 @@ namespace BliMonitorTest.controls
             dt.Columns.Add("water_init_go", typeof(int));
             dt.Columns.Add("empty_detect", typeof(int));
             dt.Columns.Add("buffer_low", typeof(int));
-            dt.Columns.Add("reheat_running", typeof(int));
-            dt.Columns.Add("hot_ing", typeof(int));
+            dt.Columns.Add("pcb_hw_version", typeof(int));
+            dt.Columns.Add("pcb_sw_version", typeof(int));
             dt.Columns.Add("heater_pwm", typeof(int));
             dt.Columns.Add("night", typeof(int));
             dt.Columns.Add("test_mode", typeof(int));
@@ -339,8 +339,8 @@ namespace BliMonitorTest.controls
             row["water_init_go"] = resp.WaterInitGo;
             row["empty_detect"] = resp.EmptyDetect;
             row["buffer_low"] = resp.BufferLow;
-            row["reheat_running"] = resp.ReheatRunning;
-            row["hot_ing"] = resp.HotIng;
+            row["pcb_hw_version"] = resp.PcbHwVersion;
+            row["pcb_sw_version"] = resp.PcbSwVersion;
             row["heater_pwm"] = resp.HeaterPwm;
             row["night"] = resp.Night;
             row["test_mode"] = resp.TestMode;
@@ -378,8 +378,8 @@ namespace BliMonitorTest.controls
             dt.Columns.Add("water_init_go", typeof(int));
             dt.Columns.Add("empty_detect", typeof(int));
             dt.Columns.Add("buffer_low", typeof(int));
-            dt.Columns.Add("reheat_running", typeof(int));
-            dt.Columns.Add("hot_ing", typeof(int));
+            dt.Columns.Add("pcb_hw_version", typeof(int));
+            dt.Columns.Add("pcb_sw_version", typeof(int));
             dt.Columns.Add("heater_pwm", typeof(int));
             dt.Columns.Add("night", typeof(int));
             dt.Columns.Add("test_mode", typeof(int));
