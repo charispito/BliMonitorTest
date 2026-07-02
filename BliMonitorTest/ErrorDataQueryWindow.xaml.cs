@@ -204,6 +204,7 @@ namespace BliMonitorTest
             if (cbSourceType?.SelectedItem is ComboBoxItem srcItem && srcItem.Tag != null)
                 int.TryParse(srcItem.Tag.ToString(), out sourceType);
 
+            int? errorBatchId = TryParseNullableInt(tbErrorBatchId.Text);
             int? channelNo = TryParseNullableInt(tbChannelNo.Text);
             int? slotNo = TryParseNullableInt(tbErrorSlot.Text);
             int? errorCode = TryParseNullableInt(tbErrorCode.Text);
@@ -248,6 +249,7 @@ namespace BliMonitorTest
 
                         string where = BuildWhere(
                             sourceType,
+                            errorBatchId,
                             channelNo,
                             slotNo,
                             errorCode,
@@ -275,6 +277,7 @@ namespace BliMonitorTest
                                 fromMs,
                                 toMs,
                                 sourceType,
+                                errorBatchId,
                                 channelNo,
                                 slotNo,
                                 errorCode,
@@ -293,7 +296,7 @@ namespace BliMonitorTest
                                 adcColdMax
                             );
 
-                            log.Info(MonitoringDb.FormatSqlLog(cmdCount, "ERROR_HISTORY COUNT : "));
+                            log.Debug(MonitoringDb.FormatSqlLog(cmdCount, "ERROR_HISTORY COUNT : "));
                             totalCount = Convert.ToInt32(cmdCount.ExecuteScalar());
                         }
 
@@ -306,12 +309,12 @@ namespace BliMonitorTest
                         {
                             cmd.CommandText =
                                 "SELECT " +
-                                " id, created_at, source_type, channel_no, request_command, response_command, slot_no, " +
+                                " id, error_batch_id, created_at, source_type, channel_no, request_command, response_command, slot_no, " +
                                 " valid_mark, sequence_no, error_code, hot_temp_raw, cold_temp_raw, " +
                                 " adc_hot_raw, adc_cold_raw, water_init_done, status_a, status_b, buffer_low, record_crc " +
                                 "FROM error_history " +
                                 where +
-                                " ORDER BY id DESC " +
+                                " ORDER BY error_batch_id DESC, slot_no ASC " +
                                 " LIMIT @limit OFFSET @offset;";
 
                             BindParams(
@@ -319,6 +322,7 @@ namespace BliMonitorTest
                                 fromMs,
                                 toMs,
                                 sourceType,
+                                errorBatchId,
                                 channelNo,
                                 slotNo,
                                 errorCode,
@@ -340,7 +344,7 @@ namespace BliMonitorTest
                             cmd.Parameters.AddWithValue("@limit", pageSize);
                             cmd.Parameters.AddWithValue("@offset", offset);
 
-                            log.Info(MonitoringDb.FormatSqlLog(cmd, "ERROR_HISTORY LIST : "));
+                            log.Debug(MonitoringDb.FormatSqlLog(cmd, "ERROR_HISTORY LIST : "));
 
                             using (var reader = cmd.ExecuteReader())
                                 dt.Load(reader);
@@ -378,6 +382,7 @@ namespace BliMonitorTest
 
         private static string BuildWhere(
             int sourceType,
+            int? errorBatchId,
             int? channelNo,
             int? slotNo,
             int? errorCode,
@@ -398,6 +403,9 @@ namespace BliMonitorTest
             string where = "WHERE created_at_ms >= @fromMs AND created_at_ms < @toMs";
             where += " AND (@sourceType = 0 OR source_type = @sourceType)";
             where += " AND (@channelNo = 0 OR channel_no = @channelNo)";
+
+            if (errorBatchId.HasValue)
+                where += " AND error_batch_id = @errorBatchId";
 
             if (slotNo.HasValue)
                 where += " AND slot_no = @slotNo";
@@ -452,6 +460,7 @@ namespace BliMonitorTest
             long fromMs,
             long toMs,
             int sourceType,
+            int? errorBatchId,
             int? channelNo,
             int? slotNo,
             int? errorCode,
@@ -473,6 +482,9 @@ namespace BliMonitorTest
             cmd.Parameters.AddWithValue("@toMs", toMs);
             cmd.Parameters.AddWithValue("@sourceType", sourceType);
             cmd.Parameters.AddWithValue("@channelNo", channelNo ?? 0);
+
+            if (errorBatchId.HasValue)
+                cmd.Parameters.AddWithValue("@errorBatchId", errorBatchId.Value);
 
             if (slotNo.HasValue)
                 cmd.Parameters.AddWithValue("@slotNo", slotNo.Value);
@@ -587,6 +599,7 @@ namespace BliMonitorTest
             if (cbSourceType?.SelectedItem is ComboBoxItem srcItem && srcItem.Tag != null)
                 int.TryParse(srcItem.Tag.ToString(), out sourceType);
 
+            int? errorBatchId = TryParseNullableInt(tbErrorBatchId.Text);
             int? channelNo = TryParseNullableInt(tbChannelNo.Text);
             int? slotNo = TryParseNullableInt(tbErrorSlot.Text);
             int? errorCode = TryParseNullableInt(tbErrorCode.Text);
@@ -624,6 +637,7 @@ namespace BliMonitorTest
 
                     string where = BuildWhere(
                         sourceType,
+                        errorBatchId,
                         channelNo,
                         slotNo,
                         errorCode,
@@ -650,6 +664,7 @@ namespace BliMonitorTest
                             fromMs,
                             toMs,
                             sourceType,
+                            errorBatchId,
                             channelNo,
                             slotNo,
                             errorCode,
@@ -668,7 +683,7 @@ namespace BliMonitorTest
                             adcColdMax
                         );
 
-                        log.Info(MonitoringDb.FormatSqlLog(cmdCount, "ERROR_HISTORY EXCEL COUNT : "));
+                        log.Debug(MonitoringDb.FormatSqlLog(cmdCount, "ERROR_HISTORY EXCEL COUNT : "));
                         return Convert.ToInt64(cmdCount.ExecuteScalar());
                     }
                 }
@@ -696,6 +711,7 @@ namespace BliMonitorTest
                     fromMs,
                     toMs,
                     sourceType,
+                    errorBatchId,
                     channelNo,
                     slotNo,
                     errorCode,
@@ -735,6 +751,7 @@ namespace BliMonitorTest
                         fromMs,
                         toMs,
                         sourceType,
+                        errorBatchId,
                         channelNo,
                         slotNo,
                         errorCode,
@@ -773,6 +790,7 @@ namespace BliMonitorTest
             long fromMs,
             long toMs,
             int sourceType,
+            int? errorBatchId,
             int? channelNo,
             int? slotNo,
             int? errorCode,
@@ -830,6 +848,7 @@ namespace BliMonitorTest
                         fromMs,
                         toMs,
                         sourceType,
+                        errorBatchId,
                         channelNo,
                         slotNo,
                         errorCode,
@@ -931,6 +950,7 @@ namespace BliMonitorTest
             long fromMs,
             long toMs,
             int sourceType,
+            int? errorBatchId,
             int? channelNo,
             int? slotNo,
             int? errorCode,
@@ -952,6 +972,7 @@ namespace BliMonitorTest
         {
             string where = BuildWhere(
                 sourceType,
+                errorBatchId,
                 channelNo,
                 slotNo,
                 errorCode,
@@ -978,18 +999,19 @@ namespace BliMonitorTest
                 {
                     cmd.CommandText =
                         "SELECT " +
-                        " id, created_at, source_type, channel_no, request_command, response_command, slot_no, " +
+                        " id, error_batch_id, created_at, source_type, channel_no, request_command, response_command, slot_no, " +
                         " valid_mark, sequence_no, error_code, hot_temp_raw, cold_temp_raw, " +
                         " adc_hot_raw, adc_cold_raw, water_init_done, status_a, status_b, buffer_low, record_crc " +
                         "FROM error_history " +
                         where +
-                        " ORDER BY id DESC;";
+                        " ORDER BY error_batch_id DESC, slot_no ASC;";
 
                     BindParams(
                         cmd,
                         fromMs,
                         toMs,
                         sourceType,
+                        errorBatchId,
                         channelNo,
                         slotNo,
                         errorCode,
@@ -1008,7 +1030,7 @@ namespace BliMonitorTest
                         adcColdMax
                     );
 
-                    log.Info(MonitoringDb.FormatSqlLog(cmd, "ERROR_HISTORY EXPORT DATA : "));
+                    log.Debug(MonitoringDb.FormatSqlLog(cmd, "ERROR_HISTORY EXPORT DATA : "));
 
                     var dt = new DataTable();
                     using (var reader = cmd.ExecuteReader())
@@ -1166,8 +1188,10 @@ namespace BliMonitorTest
                 {
                     string header = col.Header.ToString();
 
-                    if (header == "생성시각")
-                        col.Width = 150;
+                    if (header == "관리번호")
+                        col.Width = 80;
+                    else if (header == "생성시각")
+                        col.Width = 160;
                     else if (header == "Source")
                         col.Width = 90;
                     else if (header == "채널번호")
@@ -1256,6 +1280,7 @@ namespace BliMonitorTest
 
         private static readonly List<GridColumnSpec> ErrorColumnSpecs = new List<GridColumnSpec>
         {
+            new GridColumnSpec { ColumnName = "error_batch_id", Header = "관리번호", DisplayIndex = 0, Width = 100 },
             new GridColumnSpec { ColumnName = "created_at", Header = "생성시각", DisplayIndex = 0, Width = 150 },
             new GridColumnSpec { ColumnName = "source_type_text", Header = "Source", DisplayIndex = 1, Width = 90 },
             new GridColumnSpec { ColumnName = "channel_no", Header = "채널번호", DisplayIndex = 2, Width = 80 , Visible = false},
