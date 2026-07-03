@@ -129,6 +129,7 @@ namespace BliMonitorTest.dummy
     public sealed class DummyValueGenerator
     {
         private readonly DateTime _t0 = DateTime.UtcNow;
+        private int _statusSeq = 0;
         private int _errorSeq = 0;
 
         private const byte MODEL_CODE_DEWO8 = 0x06;
@@ -152,6 +153,7 @@ namespace BliMonitorTest.dummy
         private const byte DISP_SUB_PREFLOW = 1;
         private const byte DISP_SUB_RUNNING = 2;
 
+        private const byte ERROR_NONE = 0x00;
         private const byte ERROR_COLD_ERR1 = 0x01;
         private const byte ERROR_COLD_ERR2 = 0x02;
         private const byte ERROR_HOT_ERR1 = 0x04;
@@ -176,35 +178,73 @@ namespace BliMonitorTest.dummy
         private const byte STATUSB_HOT_ING = 0x40;
         private const byte STATUSB_DISPENSING = 0x80;
 
+        private sealed class RealLikeRow
+        {
+            public ushort HotRaw;
+            public ushort ColdRaw;
+            public byte HeaterOn;
+            public byte ReheatRunning;
+            public byte HotIng;
+        }
+
+        // 실데이터 샘플 기반: STOP / IDLE / NONE 상태에서 히터가 간헐 동작하는 패턴
+        private readonly RealLikeRow[] _statusRows = new[]
+        {
+            new RealLikeRow { HotRaw = 913, ColdRaw = 49, HeaterOn = 0, ReheatRunning = 0, HotIng = 0 },
+            new RealLikeRow { HotRaw = 902, ColdRaw = 43, HeaterOn = 0, ReheatRunning = 0, HotIng = 0 },
+            new RealLikeRow { HotRaw = 898, ColdRaw = 39, HeaterOn = 1, ReheatRunning = 1, HotIng = 1 },
+            new RealLikeRow { HotRaw = 898, ColdRaw = 39, HeaterOn = 1, ReheatRunning = 1, HotIng = 1 },
+            new RealLikeRow { HotRaw = 909, ColdRaw = 46, HeaterOn = 0, ReheatRunning = 0, HotIng = 0 },
+            new RealLikeRow { HotRaw = 910, ColdRaw = 48, HeaterOn = 0, ReheatRunning = 0, HotIng = 0 },
+            new RealLikeRow { HotRaw = 898, ColdRaw = 39, HeaterOn = 1, ReheatRunning = 1, HotIng = 1 },
+            new RealLikeRow { HotRaw = 910, ColdRaw = 49, HeaterOn = 0, ReheatRunning = 0, HotIng = 0 },
+            new RealLikeRow { HotRaw = 910, ColdRaw = 49, HeaterOn = 1, ReheatRunning = 1, HotIng = 1 },
+            new RealLikeRow { HotRaw = 898, ColdRaw = 47, HeaterOn = 0, ReheatRunning = 0, HotIng = 0 },
+            new RealLikeRow { HotRaw = 898, ColdRaw = 47, HeaterOn = 0, ReheatRunning = 0, HotIng = 0 },
+            new RealLikeRow { HotRaw = 910, ColdRaw = 56, HeaterOn = 0, ReheatRunning = 0, HotIng = 0 },
+            new RealLikeRow { HotRaw = 897, ColdRaw = 47, HeaterOn = 0, ReheatRunning = 0, HotIng = 0 },
+            new RealLikeRow { HotRaw = 897, ColdRaw = 47, HeaterOn = 0, ReheatRunning = 0, HotIng = 0 },
+            new RealLikeRow { HotRaw = 910, ColdRaw = 56, HeaterOn = 0, ReheatRunning = 0, HotIng = 0 },
+            new RealLikeRow { HotRaw = 897, ColdRaw = 47, HeaterOn = 0, ReheatRunning = 0, HotIng = 0 },
+            new RealLikeRow { HotRaw = 907, ColdRaw = 49, HeaterOn = 0, ReheatRunning = 0, HotIng = 0 },
+            new RealLikeRow { HotRaw = 896, ColdRaw = 41, HeaterOn = 1, ReheatRunning = 1, HotIng = 1 },
+            new RealLikeRow { HotRaw = 909, ColdRaw = 49, HeaterOn = 0, ReheatRunning = 0, HotIng = 0 },
+            new RealLikeRow { HotRaw = 909, ColdRaw = 50, HeaterOn = 0, ReheatRunning = 0, HotIng = 0 },
+            new RealLikeRow { HotRaw = 896, ColdRaw = 42, HeaterOn = 0, ReheatRunning = 0, HotIng = 0 },
+            new RealLikeRow { HotRaw = 901, ColdRaw = 45, HeaterOn = 1, ReheatRunning = 1, HotIng = 1 },
+        };
+
         public DummySample Next()
         {
-            double t = (DateTime.UtcNow - _t0).TotalSeconds;
-            int phase = ((int)(t / 10.0)) % 6;
+            var row = _statusRows[_statusSeq % _statusRows.Length];
+            _statusSeq++;
 
-            byte errorCode = 0;
+            byte errorCode = ERROR_NONE;
             byte waterInitDone = 1;
             byte waterInitGo = 0;
             byte emptyDetect = 0;
             byte bufferLow = 0;
-            byte reheatRunning = 0;
-            byte hotIng = 0;
-            byte heaterPwm = 0;
-            byte night = (byte)((Math.Sin(t / 30.0) > 0.65) ? 1 : 0);
+
+            byte reheatRunning = To01(row.ReheatRunning);
+            byte hotIng = To01(row.HotIng);
+            byte heaterPwm = To01(row.HeaterOn);
+            byte night = 0;
             byte testMode = 0;
 
+            // 실데이터 샘플 기준
             byte modeSelected = MODE_NONE;
             byte qtySelected = QTY_NONE;
             byte dispensePhase = DISP_PHASE_STOP;
             byte dispenseSubPhase = DISP_SUB_IDLE;
 
-            ushort hotTempRaw = 890;
-            ushort coldTempRaw = 65;
+            ushort hotTempRaw = row.HotRaw;
+            ushort coldTempRaw = row.ColdRaw;
 
             byte floatLowStable = 0;
             byte ballTopFullStable = 0;
             byte waterBufFullStable = 1;
 
-            byte heaterOutput = 0;
+            byte heaterOutput = To01(row.HeaterOn);
             byte compressorOutput = 0;
             byte hotValveOutput = 0;
             byte coldSelectOutput = 0;
@@ -218,89 +258,6 @@ namespace BliMonitorTest.dummy
             byte normalSelected = 0;
             byte coolSelected = 0;
             byte coldSelected = 0;
-
-            switch (phase)
-            {
-                case 0:
-                    // idle / ready
-                    break;
-
-                case 1:
-                    // cold 150mL dispense running
-                    modeSelected = MODE_COLD;
-                    qtySelected = QTY_150ML;
-                    dispensePhase = DISP_PHASE_QTY;
-                    dispenseSubPhase = DISP_SUB_RUNNING;
-                    coldTempRaw = 43;
-                    hotTempRaw = 875;
-
-                    coldSelected = 1;
-                    coldSelectOutput = 1;
-                    outletValveOutput = 1;
-                    pumpOutletOutput = 1;
-                    pumpAirventOutput = 1;
-                    compressorOutput = 1;
-                    break;
-
-                case 2:
-                    // normal 1000mL dispense running
-                    modeSelected = MODE_NORMAL;
-                    qtySelected = QTY_1000ML;
-                    dispensePhase = DISP_PHASE_QTY;
-                    dispenseSubPhase = DISP_SUB_RUNNING;
-                    coldTempRaw = 72;
-                    hotTempRaw = 880;
-
-                    normalSelected = 1;
-                    outletValveOutput = 1;
-                    pumpOutletOutput = 1;
-                    pumpAirventOutput = 1;
-                    break;
-
-                case 3:
-                    // hot reheat running
-                    modeSelected = MODE_HOT;
-                    qtySelected = QTY_NONE;
-                    dispensePhase = DISP_PHASE_STOP;
-                    dispenseSubPhase = DISP_SUB_IDLE;
-                    hotTempRaw = 905;
-                    coldTempRaw = 68;
-
-                    hotSelected = 1;
-                    reheatRunning = 1;
-                    hotIng = 1;
-                    heaterPwm = 1;
-                    heaterOutput = 1;
-                    break;
-
-                case 4:
-                    // warm dispense running
-                    modeSelected = MODE_WARM;
-                    qtySelected = QTY_150ML;
-                    dispensePhase = DISP_PHASE_QTY;
-                    dispenseSubPhase = DISP_SUB_RUNNING;
-                    hotTempRaw = 780;
-                    coldTempRaw = 78;
-
-                    warmSelected = 1;
-                    hotValveOutput = 1;
-                    outletValveOutput = 1;
-                    pumpOutletOutput = 1;
-                    pumpAirventOutput = 1;
-                    break;
-
-                default:
-                    // buffer low / init warning style state
-                    modeSelected = MODE_NONE;
-                    qtySelected = QTY_NONE;
-                    dispensePhase = DISP_PHASE_STOP;
-                    dispenseSubPhase = DISP_SUB_IDLE;
-                    bufferLow = 1;
-                    waterBufFullStable = 0;
-                    hotTempRaw = 860;
-                    coldTempRaw = 90;
-                    break;
-            }
 
             byte statusA = BuildStatusA(
                 hotIng,
@@ -381,12 +338,13 @@ namespace BliMonitorTest.dummy
             tx[2] = 0xB9;
             tx[3] = 134;
 
-            // 실제 MCU는 invalid record면 0xFF fill
             for (int i = 4; i <= 131; i++)
                 tx[i] = 0xFF;
 
-            // 8건 중 앞 5건만 valid, 뒤 3건은 invalid로 두어
-            // 실제 flash 상태 비슷하게 만듦
+            // 에러 이력도 동일하게 raw/10 기준 온도 사용
+            // hot/cold는 실제 온도 raw
+            // adcHot/adcCold는 현재 시스템에서 별도 의미가 없으면
+            // 우선 동일 raw 값 또는 근사 raw 값을 넣어서 화면/로그 일관성 유지
             for (int i = 0; i < 5; i++)
             {
                 int baseIdx = 4 + (i * 16);
@@ -399,63 +357,63 @@ namespace BliMonitorTest.dummy
                 byte waterInitDone = 1;
                 byte statusA;
                 byte statusB;
-                byte bufferLow;
+                byte bufferLow = 0;
 
                 switch (i)
                 {
                     case 0:
+                        // 냉수 이상 1
                         errorCode = ERROR_COLD_ERR1;
-                        hot = 880;
-                        cold = 1135;
-                        adcHot = 540;
-                        adcCold = 10;
+                        hot = 907;   // 90.7°C
+                        cold = 56;   // 5.6°C
+                        adcHot = 907;
+                        adcCold = 56;
                         statusA = STATUSA_COMP_ACTIVE;
-                        statusB = (byte)(STATUSB_BALL_TOP_SENSOR | STATUSB_WATER_BUF_SENSOR);
-                        bufferLow = 0;
+                        statusB = STATUSB_WATER_BUF_SENSOR;
                         break;
 
                     case 1:
+                        // 냉수 이상 2
                         errorCode = ERROR_COLD_ERR2;
-                        hot = 860;
-                        cold = 220;
-                        adcHot = 520;
-                        adcCold = 380;
+                        hot = 901;   // 90.1°C
+                        cold = 45;   // 4.5°C
+                        adcHot = 901;
+                        adcCold = 45;
                         statusA = STATUSA_COMP_ACTIVE;
-                        statusB = (byte)(STATUSB_BALL_TOP_SENSOR | STATUSB_BUFFER_LOW);
-                        bufferLow = 1;
+                        statusB = STATUSB_WATER_BUF_SENSOR;
                         break;
 
                     case 2:
+                        // 온수 이상 1
                         errorCode = ERROR_HOT_ERR1;
-                        hot = 1241;
-                        cold = 65;
-                        adcHot = 990;
-                        adcCold = 420;
+                        hot = 913;   // 91.3°C
+                        cold = 49;   // 4.9°C
+                        adcHot = 913;
+                        adcCold = 49;
                         statusA = STATUSA_HEATER_ACTIVE;
-                        statusB = (byte)(STATUSB_WATER_BUF_SENSOR | STATUSB_HOT_ING);
-                        bufferLow = 0;
+                        statusB = (byte)(STATUSB_WATER_BUF_SENSOR | STATUSB_REHEAT_RUNNING | STATUSB_HOT_ING);
                         break;
 
                     case 3:
+                        // 온수 이상 2
                         errorCode = ERROR_HOT_ERR2;
-                        hot = 965;
-                        cold = 60;
-                        adcHot = 310;
-                        adcCold = 430;
+                        hot = 898;   // 89.8°C
+                        cold = 39;   // 3.9°C
+                        adcHot = 898;
+                        adcCold = 39;
                         statusA = STATUSA_HEATER_ACTIVE;
-                        statusB = (byte)(STATUSB_WATER_BUF_SENSOR | STATUSB_HOT_ING);
-                        bufferLow = 0;
+                        statusB = (byte)(STATUSB_WATER_BUF_SENSOR | STATUSB_REHEAT_RUNNING | STATUSB_HOT_ING);
                         break;
 
                     default:
+                        // 온수 이상 3
                         errorCode = ERROR_HOT_ERR3;
-                        hot = 500;
-                        cold = 70;
-                        adcHot = 700;
-                        adcCold = 410;
-                        statusA = (byte)(STATUSA_HEATER_ACTIVE | STATUSA_HOT_VALVE);
-                        statusB = (byte)(STATUSB_WATER_BUF_SENSOR | STATUSB_HOT_ING);
-                        bufferLow = 0;
+                        hot = 896;   // 89.6°C
+                        cold = 42;   // 4.2°C
+                        adcHot = 896;
+                        adcCold = 42;
+                        statusA = STATUSA_HEATER_ACTIVE;
+                        statusB = (byte)(STATUSB_WATER_BUF_SENSOR | STATUSB_REHEAT_RUNNING | STATUSB_HOT_ING);
                         break;
                 }
 

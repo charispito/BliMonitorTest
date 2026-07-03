@@ -1821,18 +1821,6 @@ namespace BliMonitorTest
 
                 EnforceErrorDataRetention(dir);
 
-                /* 아래 함수로 대체
-                string baseName = "ErrorData_" + DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                string full = System.IO.Path.Combine(dir, baseName + ".config");
-
-                int suffix = 1;
-                while (File.Exists(full))
-                {
-                    full = System.IO.Path.Combine(dir, $"{baseName}_click{suffix:00}.config");
-                    suffix++;
-                }
-                */
-
                 string full = BuildUniqueErrorFilePath(dir);
                 doc.Save(full);
 

@@ -103,8 +103,8 @@ namespace BliMonitorTest.util
                 row["qty_selected_text"] = Duo8ValueText.GetQtyText((byte)ToInt(row["qty_selected"]));
                 row["dispense_phase_text"] = Duo8ValueText.GetDispensePhaseText((byte)ToInt(row["dispense_phase"]));
                 row["dispense_sub_phase_text"] = Duo8ValueText.GetDispenseSubPhaseText((byte)ToInt(row["dispense_sub_phase"]));
-                row["hot_temp_text"] = Duo8ValueText.FormatTempX10((ushort)ToInt(row["hot_temp_raw"]));
-                row["cold_temp_text"] = Duo8ValueText.FormatTempX10((ushort)ToInt(row["cold_temp_raw"]));
+                row["hot_temp_text"] = Duo8ValueText.FormatRawUShort((ushort)ToInt(row["hot_temp_raw"]));
+                row["cold_temp_text"] = Duo8ValueText.FormatRawUShort((ushort)ToInt(row["cold_temp_raw"]));
                 row["float_low_stable_text"] = Duo8ValueText.ToActiveInactive((byte)ToInt(row["float_low_stable"]));
                 row["ball_top_full_stable_text"] = Duo8ValueText.ToActiveInactive((byte)ToInt(row["ball_top_full_stable"]));
                 row["water_buf_full_stable_text"] = Duo8ValueText.ToActiveInactive((byte)ToInt(row["water_buf_full_stable"]));

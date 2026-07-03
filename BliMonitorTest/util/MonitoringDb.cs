@@ -87,6 +87,7 @@ namespace BliMonitorTest.util.MonitoringDb
 
                     CREATE TABLE IF NOT EXISTS error_history (
                         id                     INTEGER PRIMARY KEY AUTOINCREMENT,
+                        error_batch_id         INTEGER NOT NULL,
                         source_type            INTEGER NOT NULL,
                         channel_no             INTEGER NOT NULL,
                         created_at             TEXT    NOT NULL,
@@ -109,6 +110,9 @@ namespace BliMonitorTest.util.MonitoringDb
                         buffer_low             INTEGER,
                         record_crc             INTEGER
                     );
+
+                    CREATE INDEX IF NOT EXISTS idx_error_history_batch
+                      ON error_history(error_batch_id);
 
                     CREATE INDEX IF NOT EXISTS idx_error_history_time
                       ON error_history(created_at_ms);
@@ -254,6 +258,8 @@ namespace BliMonitorTest.util.MonitoringDb
             long createdAtMs = new DateTimeOffset(now).ToUnixTimeMilliseconds();
             string createdAt = now.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
 
+            long errorBatchId = GetNextErrorBatchId(db);
+
             for (int i = 0; i < resp.Records.Count; i++)
             {
                 var r = resp.Records[i];
@@ -262,6 +268,7 @@ namespace BliMonitorTest.util.MonitoringDb
                 {
                     cmd.CommandText = @"
                         INSERT INTO error_history (
+                            error_batch_id,
                             source_type, channel_no, created_at, created_at_ms,
                             request_command, response_command, slot_no,
                             valid_mark, sequence_no, error_code,
@@ -270,6 +277,7 @@ namespace BliMonitorTest.util.MonitoringDb
                             water_init_done, status_a, status_b,
                             buffer_low, record_crc
                         ) VALUES (
+                            $error_batch_id,
                             $source_type, $channel_no, $created_at, $created_at_ms,
                             $request_command, $response_command, $slot_no,
                             $valid_mark, $sequence_no, $error_code,
@@ -280,6 +288,7 @@ namespace BliMonitorTest.util.MonitoringDb
                         );
                     ";
 
+                    cmd.Parameters.AddWithValue("$error_batch_id", errorBatchId);
                     cmd.Parameters.AddWithValue("$source_type", sourceType);
                     cmd.Parameters.AddWithValue("$channel_no", channelNo);
                     cmd.Parameters.AddWithValue("$created_at", createdAt);
@@ -312,6 +321,23 @@ namespace BliMonitorTest.util.MonitoringDb
                         log.Error(FormatSqlLog(cmd, "INSERT error_history"));
                     }
                 }
+            }
+        }
+
+        private static long GetNextErrorBatchId(SqliteConnection db)
+        {
+            using (var cmd = db.CreateCommand())
+            {
+                cmd.CommandText = @"
+                    SELECT IFNULL(MAX(error_batch_id), 0) + 1
+                    FROM error_history;
+                ";
+
+                object result = cmd.ExecuteScalar();
+                if (result == null || result == DBNull.Value)
+                    return 1;
+
+                return Convert.ToInt64(result, CultureInfo.InvariantCulture);
             }
         }
 

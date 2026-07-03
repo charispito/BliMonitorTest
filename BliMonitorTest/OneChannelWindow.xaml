@@ -14,8 +14,8 @@
 
     <Grid Background="{StaticResource AppBackgroundBrush}">
         <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-            <Grid Margin="18">
-                <Border Style="{StaticResource CardBorderStyle}" Padding="18">
+            <Grid Margin="12">
+                <Border Style="{StaticResource CardBorderStyle}" Padding="12">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="14"/>
@@ -36,7 +36,7 @@
                         </Grid.ColumnDefinitions>
 
                         <!-- 상단 -->
-                        <Border Grid.Column="1" Grid.ColumnSpan="3" Grid.Row="1" Style="{StaticResource CardBorderStyle}" Padding="8" Margin="0,0,0,10">
+                        <Border Grid.Column="1" Grid.ColumnSpan="3" Grid.Row="1" Style="{StaticResource CardBorderStyle}" Padding="8" Margin="0,0,0,0">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition/>
@@ -78,8 +78,8 @@
                         </Border>
 
                         <!-- 차트 -->
-                        <Border Grid.Column="1" Grid.ColumnSpan="3" Grid.Row="5" Style="{StaticResource CardBorderStyle}">
-                            <controls:OxyView x:Name="Chart"/>
+                        <Border Grid.Column="1" Grid.ColumnSpan="3" Grid.Row="4" Style="{StaticResource CardBorderStyle}" Margin="0,10,0,10" Grid.RowSpan="3">
+                            <controls:OxyView x:Name="Chart" Margin="0,0,0,-5"/>
                         </Border>
                     </Grid>
                 </Border>

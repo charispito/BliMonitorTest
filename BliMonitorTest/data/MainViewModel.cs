@@ -221,6 +221,7 @@ namespace BliMonitorTest.data
             };
             model.Axes.Add(axis2);
 
+            /*
             var axis3 = new LinearAxis
             {
                 Key = "third",
@@ -238,6 +239,7 @@ namespace BliMonitorTest.data
                 Position = AxisPosition.Left
             };
             model.Axes.Add(axis3);
+            */
 
             // X축(time)
             var xAxis = new LinearAxis
