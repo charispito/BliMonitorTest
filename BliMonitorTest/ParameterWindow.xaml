@@ -6,8 +6,8 @@
         xmlns:local="clr-namespace:BliMonitorTest"
         mc:Ignorable="d"
         Title="BLI 모니터링 프로그램 - 파라미터 설정"
-        Height="1260"
-        Width="1775"
+        Height="1235"
+        Width="1735"
         SizeToContent="Manual"
         Background="Transparent">
 
@@ -37,8 +37,20 @@
                         <Setter Property="BorderBrush" Value="{StaticResource SoftBorderBrush}"/>
                         <Setter Property="BorderThickness" Value="0.5"/>
                         <Setter Property="Padding" Value="6,4"/>
-                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="Background" Value="White"/>
+                        <Setter Property="Foreground" Value="#374151"/>
                         <Setter Property="VerticalContentAlignment" Value="Center"/>
+
+                        <Style.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="#EAF4FF"/>
+                                <Setter Property="Foreground" Value="#1D4ED8"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="False">
+                                <Setter Property="Background" Value="White"/>
+                                <Setter Property="Foreground" Value="#374151"/>
+                            </Trigger>
+                        </Style.Triggers>
                     </Style>
                 </Setter.Value>
             </Setter>
@@ -47,12 +59,18 @@
                 <Setter.Value>
                     <Style TargetType="DataGridRow">
                         <Setter Property="MinHeight" Value="28"/>
-                        <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource Self}, Path=Background}"/>
+                        <Setter Property="Background" Value="White"/>
+                        <Setter Property="Foreground" Value="#374151"/>
                         <Setter Property="BorderThickness" Value="0"/>
+
                         <Style.Triggers>
                             <Trigger Property="IsSelected" Value="True">
                                 <Setter Property="Background" Value="#EAF4FF"/>
-                                <Setter Property="Foreground" Value="#111827"/>
+                                <Setter Property="Foreground" Value="#1D4ED8"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="False">
+                                <Setter Property="Background" Value="White"/>
+                                <Setter Property="Foreground" Value="#374151"/>
                             </Trigger>
                         </Style.Triggers>
                     </Style>
@@ -75,6 +93,47 @@
             </Setter>
         </Style>
 
+        <Style x:Key="ErrorGridNameCellStyle" TargetType="DataGridCell">
+            <Setter Property="BorderBrush" Value="{StaticResource SoftBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="0.5"/>
+            <Setter Property="Padding" Value="4,2"/>
+            <Setter Property="Background" Value="#F3F4F6"/>
+            <Setter Property="Foreground" Value="#374151"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#EAF4FF"/>
+                    <Setter Property="Foreground" Value="#1D4ED8"/>
+                </Trigger>
+                <Trigger Property="IsSelected" Value="False">
+                    <Setter Property="Background" Value="#F3F4F6"/>
+                    <Setter Property="Foreground" Value="#374151"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="ErrorGridValueCellStyle" TargetType="DataGridCell">
+            <Setter Property="BorderBrush" Value="{StaticResource SoftBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="0.5"/>
+            <Setter Property="Padding" Value="4,2"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="#374151"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#EAF4FF"/>
+                    <Setter Property="Foreground" Value="#1D4ED8"/>
+                </Trigger>
+                <Trigger Property="IsSelected" Value="False">
+                    <Setter Property="Background" Value="White"/>
+                    <Setter Property="Foreground" Value="#374151"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
     </Window.Resources>
 
     <!-- ✅ 바깥 배경 -->
@@ -87,10 +146,10 @@
         <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Grid.ColumnSpan="3">
 
             <!-- 바깥 여백 -->
-            <Grid Margin="18" ShowGridLines="False">
+            <Grid Margin="12" ShowGridLines="False">
 
                 <!-- ✅ 전체 프레임 카드 -->
-                <Border Style="{StaticResource CardBorderStyle}" Padding="18">
+                <Border Style="{StaticResource CardBorderStyle}" Padding="12">
                     <Grid ShowGridLines="False">
 
                         <!-- ===== 원본 Grid 구조 유지 ===== -->
@@ -179,24 +238,24 @@
 
                                     <DataGrid.Columns>
                                         <!-- Error1 -->
-                                        <DataGridTextColumn IsReadOnly="True" Width="1.25*" Binding="{Binding Name}">
+                                        <DataGridTextColumn IsReadOnly="True" Width="1.25*" Binding="{Binding Name}" CellStyle="{StaticResource ErrorGridNameCellStyle}">
                                             <DataGridTextColumn.ElementStyle>
                                                 <Style TargetType="{x:Type TextBlock}">
                                                     <Setter Property="TextAlignment" Value="Center"/>
-                                                    <Setter Property="Background" Value="#CCC"/>
                                                     <Setter Property="FontSize" Value="12"/>
+                                                    <Setter Property="Foreground" Value="#4B5563"/>
                                                     <Setter Property="HorizontalAlignment" Value="Center"/>
                                                     <Setter Property="VerticalAlignment" Value="Center"/>
                                                     <Setter Property="Padding" Value="0"/>
                                                 </Style>
                                             </DataGridTextColumn.ElementStyle>
                                         </DataGridTextColumn>
-                                        <DataGridTextColumn IsReadOnly="False" Width="*" Binding="{Binding Value}">
+                                        <DataGridTextColumn IsReadOnly="False" Width="*" Binding="{Binding Value}" CellStyle="{StaticResource ErrorGridValueCellStyle}">
                                             <DataGridTextColumn.ElementStyle>
                                                 <Style TargetType="{x:Type TextBlock}">
                                                     <Setter Property="TextAlignment" Value="Center"/>
-                                                    <Setter Property="Background" Value="White"/>
                                                     <Setter Property="FontSize" Value="12"/>
+                                                    <Setter Property="Foreground" Value="#4B5563"/>
                                                     <Setter Property="HorizontalAlignment" Value="Center"/>
                                                     <Setter Property="VerticalAlignment" Value="Center"/>
                                                     <Setter Property="Padding" Value="0"/>
@@ -205,24 +264,24 @@
                                         </DataGridTextColumn>
 
                                         <!-- Error2 -->
-                                        <DataGridTextColumn IsReadOnly="True" Width="1.25*" Binding="{Binding Name}">
+                                        <DataGridTextColumn IsReadOnly="True" Width="1.25*" Binding="{Binding Name}" CellStyle="{StaticResource ErrorGridNameCellStyle}">
                                             <DataGridTextColumn.ElementStyle>
                                                 <Style TargetType="{x:Type TextBlock}">
                                                     <Setter Property="TextAlignment" Value="Center"/>
-                                                    <Setter Property="Background" Value="#CCC"/>
                                                     <Setter Property="FontSize" Value="12"/>
+                                                    <Setter Property="Foreground" Value="#4B5563"/>
                                                     <Setter Property="HorizontalAlignment" Value="Center"/>
                                                     <Setter Property="VerticalAlignment" Value="Center"/>
                                                     <Setter Property="Padding" Value="0"/>
                                                 </Style>
                                             </DataGridTextColumn.ElementStyle>
                                         </DataGridTextColumn>
-                                        <DataGridTextColumn IsReadOnly="False" Width="*" Binding="{Binding Value2}">
+                                        <DataGridTextColumn IsReadOnly="False" Width="*" Binding="{Binding Value2}" CellStyle="{StaticResource ErrorGridValueCellStyle}">
                                             <DataGridTextColumn.ElementStyle>
                                                 <Style TargetType="{x:Type TextBlock}">
                                                     <Setter Property="TextAlignment" Value="Center"/>
-                                                    <Setter Property="Background" Value="White"/>
                                                     <Setter Property="FontSize" Value="12"/>
+                                                    <Setter Property="Foreground" Value="#4B5563"/>
                                                     <Setter Property="HorizontalAlignment" Value="Center"/>
                                                     <Setter Property="VerticalAlignment" Value="Center"/>
                                                     <Setter Property="Padding" Value="0"/>
@@ -231,24 +290,24 @@
                                         </DataGridTextColumn>
 
                                         <!-- Error3 -->
-                                        <DataGridTextColumn IsReadOnly="True" Width="1.25*" Binding="{Binding Name}">
+                                        <DataGridTextColumn IsReadOnly="True" Width="1.25*" Binding="{Binding Name}" CellStyle="{StaticResource ErrorGridNameCellStyle}">
                                             <DataGridTextColumn.ElementStyle>
                                                 <Style TargetType="{x:Type TextBlock}">
                                                     <Setter Property="TextAlignment" Value="Center"/>
-                                                    <Setter Property="Background" Value="#CCC"/>
                                                     <Setter Property="FontSize" Value="12"/>
+                                                    <Setter Property="Foreground" Value="#4B5563"/>
                                                     <Setter Property="HorizontalAlignment" Value="Center"/>
                                                     <Setter Property="VerticalAlignment" Value="Center"/>
                                                     <Setter Property="Padding" Value="0"/>
                                                 </Style>
                                             </DataGridTextColumn.ElementStyle>
                                         </DataGridTextColumn>
-                                        <DataGridTextColumn IsReadOnly="False" Width="*" Binding="{Binding Value3}">
+                                        <DataGridTextColumn IsReadOnly="False" Width="*" Binding="{Binding Value3}" CellStyle="{StaticResource ErrorGridValueCellStyle}">
                                             <DataGridTextColumn.ElementStyle>
                                                 <Style TargetType="{x:Type TextBlock}">
                                                     <Setter Property="TextAlignment" Value="Center"/>
-                                                    <Setter Property="Background" Value="White"/>
                                                     <Setter Property="FontSize" Value="12"/>
+                                                    <Setter Property="Foreground" Value="#4B5563"/>
                                                     <Setter Property="HorizontalAlignment" Value="Center"/>
                                                     <Setter Property="VerticalAlignment" Value="Center"/>
                                                     <Setter Property="Padding" Value="0"/>
@@ -257,24 +316,24 @@
                                         </DataGridTextColumn>
 
                                         <!-- Error4 -->
-                                        <DataGridTextColumn IsReadOnly="True" Width="1.25*" Binding="{Binding Name}">
+                                        <DataGridTextColumn IsReadOnly="True" Width="1.25*" Binding="{Binding Name}" CellStyle="{StaticResource ErrorGridNameCellStyle}">
                                             <DataGridTextColumn.ElementStyle>
                                                 <Style TargetType="{x:Type TextBlock}">
                                                     <Setter Property="TextAlignment" Value="Center"/>
-                                                    <Setter Property="Background" Value="#CCC"/>
                                                     <Setter Property="FontSize" Value="12"/>
+                                                    <Setter Property="Foreground" Value="#4B5563"/>
                                                     <Setter Property="HorizontalAlignment" Value="Center"/>
                                                     <Setter Property="VerticalAlignment" Value="Center"/>
                                                     <Setter Property="Padding" Value="0"/>
                                                 </Style>
                                             </DataGridTextColumn.ElementStyle>
                                         </DataGridTextColumn>
-                                        <DataGridTextColumn IsReadOnly="False" Width="*" Binding="{Binding Value4}">
+                                        <DataGridTextColumn IsReadOnly="False" Width="*" Binding="{Binding Value4}" CellStyle="{StaticResource ErrorGridValueCellStyle}">
                                             <DataGridTextColumn.ElementStyle>
                                                 <Style TargetType="{x:Type TextBlock}">
                                                     <Setter Property="TextAlignment" Value="Center"/>
-                                                    <Setter Property="Background" Value="White"/>
                                                     <Setter Property="FontSize" Value="12"/>
+                                                    <Setter Property="Foreground" Value="#4B5563"/>
                                                     <Setter Property="HorizontalAlignment" Value="Center"/>
                                                     <Setter Property="VerticalAlignment" Value="Center"/>
                                                     <Setter Property="Padding" Value="0"/>
@@ -283,24 +342,24 @@
                                         </DataGridTextColumn>
 
                                         <!-- Error5 -->
-                                        <DataGridTextColumn IsReadOnly="True" Width="1.25*" Binding="{Binding Name}">
+                                        <DataGridTextColumn IsReadOnly="True" Width="1.25*" Binding="{Binding Name}" CellStyle="{StaticResource ErrorGridNameCellStyle}">
                                             <DataGridTextColumn.ElementStyle>
                                                 <Style TargetType="{x:Type TextBlock}">
                                                     <Setter Property="TextAlignment" Value="Center"/>
-                                                    <Setter Property="Background" Value="#CCC"/>
                                                     <Setter Property="FontSize" Value="12"/>
+                                                    <Setter Property="Foreground" Value="#4B5563"/>
                                                     <Setter Property="HorizontalAlignment" Value="Center"/>
                                                     <Setter Property="VerticalAlignment" Value="Center"/>
                                                     <Setter Property="Padding" Value="0"/>
                                                 </Style>
                                             </DataGridTextColumn.ElementStyle>
                                         </DataGridTextColumn>
-                                        <DataGridTextColumn IsReadOnly="False" Width="*" Binding="{Binding Value5}">
+                                        <DataGridTextColumn IsReadOnly="False" Width="*" Binding="{Binding Value5}" CellStyle="{StaticResource ErrorGridValueCellStyle}">
                                             <DataGridTextColumn.ElementStyle>
                                                 <Style TargetType="{x:Type TextBlock}">
                                                     <Setter Property="TextAlignment" Value="Center"/>
-                                                    <Setter Property="Background" Value="White"/>
                                                     <Setter Property="FontSize" Value="12"/>
+                                                    <Setter Property="Foreground" Value="#4B5563"/>
                                                     <Setter Property="HorizontalAlignment" Value="Center"/>
                                                     <Setter Property="VerticalAlignment" Value="Center"/>
                                                     <Setter Property="Padding" Value="0"/>
@@ -309,24 +368,24 @@
                                         </DataGridTextColumn>
 
                                         <!-- Error6 -->
-                                        <DataGridTextColumn IsReadOnly="True" Width="1.25*" Binding="{Binding Name}">
+                                        <DataGridTextColumn IsReadOnly="True" Width="1.25*" Binding="{Binding Name}" CellStyle="{StaticResource ErrorGridNameCellStyle}">
                                             <DataGridTextColumn.ElementStyle>
                                                 <Style TargetType="{x:Type TextBlock}">
                                                     <Setter Property="TextAlignment" Value="Center"/>
-                                                    <Setter Property="Background" Value="#CCC"/>
                                                     <Setter Property="FontSize" Value="12"/>
+                                                    <Setter Property="Foreground" Value="#4B5563"/>
                                                     <Setter Property="HorizontalAlignment" Value="Center"/>
                                                     <Setter Property="VerticalAlignment" Value="Center"/>
                                                     <Setter Property="Padding" Value="0"/>
                                                 </Style>
                                             </DataGridTextColumn.ElementStyle>
                                         </DataGridTextColumn>
-                                        <DataGridTextColumn IsReadOnly="False" Width="*" Binding="{Binding Value6}">
+                                        <DataGridTextColumn IsReadOnly="False" Width="*" Binding="{Binding Value6}" CellStyle="{StaticResource ErrorGridValueCellStyle}">
                                             <DataGridTextColumn.ElementStyle>
                                                 <Style TargetType="{x:Type TextBlock}">
                                                     <Setter Property="TextAlignment" Value="Center"/>
-                                                    <Setter Property="Background" Value="White"/>
                                                     <Setter Property="FontSize" Value="12"/>
+                                                    <Setter Property="Foreground" Value="#4B5563"/>
                                                     <Setter Property="HorizontalAlignment" Value="Center"/>
                                                     <Setter Property="VerticalAlignment" Value="Center"/>
                                                     <Setter Property="Padding" Value="0"/>
@@ -335,24 +394,24 @@
                                         </DataGridTextColumn>
 
                                         <!-- Error7 -->
-                                        <DataGridTextColumn IsReadOnly="True" Width="1.25*" Binding="{Binding Name}">
+                                        <DataGridTextColumn IsReadOnly="True" Width="1.25*" Binding="{Binding Name}" CellStyle="{StaticResource ErrorGridNameCellStyle}">
                                             <DataGridTextColumn.ElementStyle>
                                                 <Style TargetType="{x:Type TextBlock}">
                                                     <Setter Property="TextAlignment" Value="Center"/>
-                                                    <Setter Property="Background" Value="#CCC"/>
                                                     <Setter Property="FontSize" Value="12"/>
+                                                    <Setter Property="Foreground" Value="#4B5563"/>
                                                     <Setter Property="HorizontalAlignment" Value="Center"/>
                                                     <Setter Property="VerticalAlignment" Value="Center"/>
                                                     <Setter Property="Padding" Value="0"/>
                                                 </Style>
                                             </DataGridTextColumn.ElementStyle>
                                         </DataGridTextColumn>
-                                        <DataGridTextColumn IsReadOnly="False" Width="*" Binding="{Binding Value7}">
+                                        <DataGridTextColumn IsReadOnly="False" Width="*" Binding="{Binding Value7}" CellStyle="{StaticResource ErrorGridValueCellStyle}">
                                             <DataGridTextColumn.ElementStyle>
                                                 <Style TargetType="{x:Type TextBlock}">
                                                     <Setter Property="TextAlignment" Value="Center"/>
-                                                    <Setter Property="Background" Value="White"/>
                                                     <Setter Property="FontSize" Value="12"/>
+                                                    <Setter Property="Foreground" Value="#4B5563"/>
                                                     <Setter Property="HorizontalAlignment" Value="Center"/>
                                                     <Setter Property="VerticalAlignment" Value="Center"/>
                                                     <Setter Property="Padding" Value="0"/>
@@ -361,24 +420,24 @@
                                         </DataGridTextColumn>
 
                                         <!-- Error8 -->
-                                        <DataGridTextColumn IsReadOnly="True" Width="1.25*" Binding="{Binding Name}">
+                                        <DataGridTextColumn IsReadOnly="True" Width="1.25*" Binding="{Binding Name}" CellStyle="{StaticResource ErrorGridNameCellStyle}">
                                             <DataGridTextColumn.ElementStyle>
                                                 <Style TargetType="{x:Type TextBlock}">
                                                     <Setter Property="TextAlignment" Value="Center"/>
-                                                    <Setter Property="Background" Value="#CCC"/>
                                                     <Setter Property="FontSize" Value="12"/>
+                                                    <Setter Property="Foreground" Value="#4B5563"/>
                                                     <Setter Property="HorizontalAlignment" Value="Center"/>
                                                     <Setter Property="VerticalAlignment" Value="Center"/>
                                                     <Setter Property="Padding" Value="0"/>
                                                 </Style>
                                             </DataGridTextColumn.ElementStyle>
                                         </DataGridTextColumn>
-                                        <DataGridTextColumn IsReadOnly="False" Width="*" Binding="{Binding Value8}">
+                                        <DataGridTextColumn IsReadOnly="False" Width="*" Binding="{Binding Value8}" CellStyle="{StaticResource ErrorGridValueCellStyle}">
                                             <DataGridTextColumn.ElementStyle>
                                                 <Style TargetType="{x:Type TextBlock}">
                                                     <Setter Property="TextAlignment" Value="Center"/>
-                                                    <Setter Property="Background" Value="White"/>
                                                     <Setter Property="FontSize" Value="12"/>
+                                                    <Setter Property="Foreground" Value="#4B5563"/>
                                                     <Setter Property="HorizontalAlignment" Value="Center"/>
                                                     <Setter Property="VerticalAlignment" Value="Center"/>
                                                     <Setter Property="Padding" Value="0"/>
@@ -417,7 +476,7 @@
                                     </Style>
                                     <!-- 입력칸 스타일: SoftTextBoxStyle 기반 -->
                                     <Style x:Key="FormTextBox" TargetType="TextBox" BasedOn="{StaticResource SoftTextBoxStyle}">
-                                        <Setter Property="Height" Value="42"/>
+                                        <Setter Property="Height" Value="30"/>
                                         <Setter Property="FontSize" Value="13"/>
                                         <Setter Property="VerticalContentAlignment" Value="Center"/>
                                     </Style>
@@ -467,7 +526,7 @@
                                 <!-- 리스트(에러): 고정 높이 + 내부 스크롤 -->
                                 <ListBox Grid.Row="3"
                                          x:Name="ErrorFileList"
-                                         Height="205"
+                                         Height="255"
                                          Style="{StaticResource SoftListBoxStyle}"
                                          SelectionMode="Extended"
                                          ScrollViewer.VerticalScrollBarVisibility="Auto"
