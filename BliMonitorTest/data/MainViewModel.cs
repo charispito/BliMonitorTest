@@ -188,7 +188,7 @@ namespace BliMonitorTest.data
             {
                 Key = "first",
                 Minimum = 0,
-                Maximum = 200,
+                Maximum = 1200,
                 IsPanEnabled = false,
                 IsZoomEnabled = false,
                 MinorGridlineThickness = 0,
@@ -198,7 +198,7 @@ namespace BliMonitorTest.data
                 MinorTickSize = 0,
                 MajorTickSize = 0,
                 TextColor = OxyColor.FromRgb(255, 0, 0),
-                MajorStep = 20,
+                MajorStep = 100,
                 AxisDistance = 10,
                 Position = AxisPosition.Left
             };
@@ -208,10 +208,10 @@ namespace BliMonitorTest.data
             {
                 Key = "second",
                 Minimum = 0,
-                Maximum = 100,
+                Maximum = 5,
                 IsPanEnabled = false,
                 IsZoomEnabled = false,
-                MajorStep = 10,
+                MajorStep = 1,
                 AxisDistance = 42,
                 MinorGridlineThickness = 0,
                 TextColor = OxyColor.FromRgb(0, 0, 255),
@@ -225,7 +225,7 @@ namespace BliMonitorTest.data
             {
                 Key = "third",
                 Minimum = 0,
-                Maximum = 2.0,
+                Maximum = 300,
                 TextColor = OxyColor.FromRgb(255, 0, 255),
                 IsPanEnabled = false,
                 IsZoomEnabled = false,
@@ -234,7 +234,7 @@ namespace BliMonitorTest.data
                 LabelFormatter = v => string.Format("{0:0.#}", v),
                 MajorTickSize = 0,
                 MinorTickSize = 0,
-                MajorStep = 0.2,
+                MajorStep = 50,
                 Position = AxisPosition.Left
             };
             model.Axes.Add(axis3);
@@ -266,7 +266,6 @@ namespace BliMonitorTest.data
             series[index].Points.Clear();
             series[index].Color = color;
 
-            // 원본 코드: X축은 Axes[3], Y축은 axeIndex
             if (model.Axes.Count > 3)
                 series[index].XAxisKey = model.Axes[3].Key;
 
@@ -274,6 +273,18 @@ namespace BliMonitorTest.data
 
             series[index].Selectable = false;
             series[index].MinimumSegmentLength = 0.01;
+
+            // 추가: 디지털 축은 시각적으로 좀 더 구분되게
+            if (axeIndex == 1)
+            {
+                series[index].StrokeThickness = 2.2;
+                series[index].LineStyle = LineStyle.Solid;
+            }
+            else
+            {
+                series[index].StrokeThickness = 1.8;
+                series[index].LineStyle = LineStyle.Solid;
+            }
         }
 
         private static void PanXAxisInternal(PlotModel model, LinearAxis xAxis, double time)

@@ -181,7 +181,7 @@
                     <ColumnDefinition/>
                 </Grid.ColumnDefinitions>
                 <Label Content="(A)" Foreground="Magenta" FontSize="11" Padding="3,5"/>
-                <Label Content="(%/T)" Grid.Column="1" Foreground="Blue" FontSize="11" Padding="3,5"/>
+                <Label Content="(상태)" Grid.Column="1" Foreground="Blue" FontSize="11" Padding="3,5"/>
                 <Label Content="(ºC)" Grid.Column="2" Foreground="Red" FontSize="11" Padding="3,5"/>
             </Grid>
 
