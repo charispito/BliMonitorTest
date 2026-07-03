@@ -133,7 +133,6 @@ namespace BliMonitorTest.controls
             }
         }
 
-
         private void ClearPlotModel(BliMonitorTest.data.MainViewModel vm)
         {
             if (vm == null)

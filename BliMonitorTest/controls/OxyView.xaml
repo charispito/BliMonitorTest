@@ -78,7 +78,7 @@
                           Grid.RowSpan="1"
                           BorderThickness="0"
                           Padding="0,0,2,0"
-                          Margin="0,0,0,2"/>
+                          Margin="0,0,0,8"/>
 
             <!-- 하단 범례 + 버튼 영역 -->
             <Grid Margin="20,0,20,0" VerticalAlignment="Center">
@@ -187,7 +187,6 @@
                 <Label Content="(상태)" Grid.Column="1" Foreground="Blue" FontSize="11" Padding="2,2"/>
                 <Label Content="(ºC)" Grid.Column="2" Foreground="Red" FontSize="11" Padding="2,2"/>
             </Grid>
-
         </Grid>
     </Border>
 </UserControl>

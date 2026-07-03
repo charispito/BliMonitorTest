@@ -188,7 +188,7 @@ namespace BliMonitorTest.data
             {
                 Key = "first",
                 Minimum = 0,
-                Maximum = 1200,
+                Maximum = 1100,
                 IsPanEnabled = false,
                 IsZoomEnabled = false,
                 MinorGridlineThickness = 0,
