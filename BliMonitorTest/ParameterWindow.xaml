@@ -134,6 +134,19 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
+
+        <Style x:Key="CenterColumnHeaderStyle" TargetType="{x:Type DataGridColumnHeader}">
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="TextBlock.TextAlignment" Value="Center"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="#374151"/>
+            <Setter Property="Background" Value="#F3F4F6"/>
+            <Setter Property="BorderBrush" Value="{StaticResource SoftBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="0.5"/>
+            <Setter Property="Padding" Value="6,4"/>
+        </Style>
     </Window.Resources>
 
     <!-- ✅ 바깥 배경 -->
@@ -500,8 +513,8 @@
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
 
-                                <!-- 파일(에러) 제목 -->
-                                <Label Grid.Row="0" Content="파일(에러)" Style="{StaticResource SectionTitleStyleLabel}"/>
+                                <!-- 파일 (에러) 제목 -->
+                                <Label Grid.Row="0" Content="파일 (에러)" Style="{StaticResource SectionTitleStyleLabel}"/>
 
                                 <!-- 파일이름(에러): 1행 2열 -->
                                 <Grid Grid.Row="1" Style="{StaticResource FormRowGrid}">
@@ -561,8 +574,8 @@
                                 <!-- 구분선 -->
                                 <Border Grid.Row="5" Height="1" Background="#E5E7EB" Margin="0,30,0,5"/>
 
-                                <!-- 파일(파라미터) 제목 -->
-                                <Label Grid.Row="6" Content="파일(파라미터)" Style="{StaticResource SectionTitleStyleLabel}"/>
+                                <!-- 파일 (수신 파라미터) 제목 -->
+                                <Label Grid.Row="6" Content="파일 (수신 파라미터)" Style="{StaticResource SectionTitleStyleLabel}"/>
 
                                 <!-- 파일이름(파라미터): 1행 2열 -->
                                 <Grid Grid.Row="7" Style="{StaticResource FormRowGrid}" >
@@ -623,7 +636,7 @@
                         <Label Grid.Row="3"
                                Grid.Column="1"
                                Grid.ColumnSpan="3"
-                               Content="상태정보 / Parameter"
+                               Content="PARAMETER 정보"
                                Style="{StaticResource SectionTitleStyleLabel}"
                                Margin="5,0,0,10"/>
 
@@ -652,7 +665,7 @@
 
                                 <!-- 좌측 타이틀 -->
                                 <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal">
-                                    <TextBlock Text="수신 파라미터 / 상태" FontSize="16" FontWeight="Bold" VerticalAlignment="Center"/>
+                                    <TextBlock Text="수신 PARAMETER" FontSize="16" FontWeight="Bold" VerticalAlignment="Center"/>
                                     <TextBlock Text="  (MCU READ 결과)" FontSize="12" Foreground="#6B7280" VerticalAlignment="Center"/>
                                 </StackPanel>
 
@@ -663,19 +676,33 @@
 
                                 <!-- 우측 타이틀 -->
                                 <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal">
-                                    <TextBlock Text="편집 파라미터" FontSize="16" FontWeight="Bold" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                    <TextBlock Text="설정 PARAMETER" FontSize="16" FontWeight="Bold" VerticalAlignment="Center" Margin="10,0,0,0"/>
                                     <TextBlock Text="  (설정값 셋팅)" FontSize="12" Foreground="#6B7280" VerticalAlignment="Center"/>
                                 </StackPanel>
 
                                 <!-- 좌측 수신 그리드 -->
-                                <DataGrid x:Name="ReceivedParamGrid" Grid.Row="2" Grid.Column="0" Style="{StaticResource GridStyle}" AutoGenerateColumns="False" VerticalAlignment="Top"
-                                        HeadersVisibility="Column" CanUserAddRows="False" CanUserDeleteRows="False" CanUserResizeRows="False" IsReadOnly="True" Height="502" Margin="0,0,8,0" SelectionChanged="ReceivedParamGrid_SelectionChanged">
+                                <DataGrid x:Name="ReceivedParamGrid"
+          Grid.Row="2"
+          Grid.Column="0"
+          Style="{StaticResource GridStyle}"
+          AutoGenerateColumns="False"
+          VerticalAlignment="Top"
+          HeadersVisibility="Column"
+          ColumnHeaderStyle="{StaticResource CenterColumnHeaderStyle}"
+          CanUserAddRows="False"
+          CanUserDeleteRows="False"
+          CanUserResizeRows="False"
+          IsReadOnly="True"
+          Height="502"
+          Margin="0,0,8,0"
+          SelectionChanged="ReceivedParamGrid_SelectionChanged">
                                     <DataGrid.Columns>
                                         <DataGridTextColumn Header="항목1" Width="1.7*" Binding="{Binding Name1}">
                                             <DataGridTextColumn.ElementStyle>
                                                 <Style TargetType="{x:Type TextBlock}">
                                                     <Setter Property="TextAlignment" Value="Center"/>
-                                                    <Setter Property="Padding" Value="6,0,0,0"/>
+                                                    <Setter Property="HorizontalAlignment" Value="Center"/>
+                                                    <Setter Property="VerticalAlignment" Value="Center"/>
                                                     <Setter Property="Background" Value="#F3F4F6"/>
                                                     <Setter Property="FontWeight" Value="SemiBold"/>
                                                     <Setter Property="FontSize" Value="13"/>
@@ -687,6 +714,8 @@
                                             <DataGridTextColumn.ElementStyle>
                                                 <Style TargetType="{x:Type TextBlock}">
                                                     <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="HorizontalAlignment" Value="Center"/>
+                                                    <Setter Property="VerticalAlignment" Value="Center"/>
                                                     <Setter Property="Background" Value="White"/>
                                                     <Setter Property="FontSize" Value="13"/>
                                                 </Style>
@@ -697,7 +726,8 @@
                                             <DataGridTextColumn.ElementStyle>
                                                 <Style TargetType="{x:Type TextBlock}">
                                                     <Setter Property="TextAlignment" Value="Center"/>
-                                                    <Setter Property="Padding" Value="6,0,0,0"/>
+                                                    <Setter Property="HorizontalAlignment" Value="Center"/>
+                                                    <Setter Property="VerticalAlignment" Value="Center"/>
                                                     <Setter Property="Background" Value="#F3F4F6"/>
                                                     <Setter Property="FontWeight" Value="SemiBold"/>
                                                     <Setter Property="FontSize" Value="13"/>
@@ -709,6 +739,8 @@
                                             <DataGridTextColumn.ElementStyle>
                                                 <Style TargetType="{x:Type TextBlock}">
                                                     <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="HorizontalAlignment" Value="Center"/>
+                                                    <Setter Property="VerticalAlignment" Value="Center"/>
                                                     <Setter Property="Background" Value="White"/>
                                                     <Setter Property="FontSize" Value="13"/>
                                                 </Style>
@@ -724,14 +756,27 @@
                                 </StackPanel>
 
                                 <!-- 우측 편집 그리드 -->
-                                <DataGrid x:Name="EditableParamGrid" Grid.Row="2" Grid.Column="2" Style="{StaticResource GridStyle}" AutoGenerateColumns="False" VerticalAlignment="top"
-                                    HeadersVisibility="Column" CanUserAddRows="False" CanUserDeleteRows="False" CanUserResizeRows="False" IsReadOnly="False" Height="502" Margin="8,0,0,0">
+                                <DataGrid x:Name="EditableParamGrid"
+          Grid.Row="2"
+          Grid.Column="2"
+          Style="{StaticResource GridStyle}"
+          AutoGenerateColumns="False"
+          VerticalAlignment="Top"
+          HeadersVisibility="Column"
+          ColumnHeaderStyle="{StaticResource CenterColumnHeaderStyle}"
+          CanUserAddRows="False"
+          CanUserDeleteRows="False"
+          CanUserResizeRows="False"
+          IsReadOnly="False"
+          Height="502"
+          Margin="8,0,0,0">
                                     <DataGrid.Columns>
                                         <DataGridTextColumn Header="항목1" Width="1.7*" Binding="{Binding Name1}" IsReadOnly="True">
                                             <DataGridTextColumn.ElementStyle>
                                                 <Style TargetType="{x:Type TextBlock}">
                                                     <Setter Property="TextAlignment" Value="Center"/>
-                                                    <Setter Property="Padding" Value="6,0,0,0"/>
+                                                    <Setter Property="HorizontalAlignment" Value="Center"/>
+                                                    <Setter Property="VerticalAlignment" Value="Center"/>
                                                     <Setter Property="Background" Value="#F3F4F6"/>
                                                     <Setter Property="FontWeight" Value="SemiBold"/>
                                                     <Setter Property="FontSize" Value="13"/>
@@ -743,6 +788,8 @@
                                             <DataGridTextColumn.ElementStyle>
                                                 <Style TargetType="{x:Type TextBlock}">
                                                     <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="HorizontalAlignment" Value="Center"/>
+                                                    <Setter Property="VerticalAlignment" Value="Center"/>
                                                     <Setter Property="Background" Value="White"/>
                                                     <Setter Property="FontSize" Value="13"/>
                                                 </Style>
@@ -753,7 +800,8 @@
                                             <DataGridTextColumn.ElementStyle>
                                                 <Style TargetType="{x:Type TextBlock}">
                                                     <Setter Property="TextAlignment" Value="Center"/>
-                                                    <Setter Property="Padding" Value="6,0,0,0"/>
+                                                    <Setter Property="HorizontalAlignment" Value="Center"/>
+                                                    <Setter Property="VerticalAlignment" Value="Center"/>
                                                     <Setter Property="Background" Value="#F3F4F6"/>
                                                     <Setter Property="FontWeight" Value="SemiBold"/>
                                                     <Setter Property="FontSize" Value="13"/>
@@ -765,6 +813,8 @@
                                             <DataGridTextColumn.ElementStyle>
                                                 <Style TargetType="{x:Type TextBlock}">
                                                     <Setter Property="TextAlignment" Value="Center"/>
+                                                    <Setter Property="HorizontalAlignment" Value="Center"/>
+                                                    <Setter Property="VerticalAlignment" Value="Center"/>
                                                     <Setter Property="Background" Value="White"/>
                                                     <Setter Property="FontSize" Value="13"/>
                                                 </Style>

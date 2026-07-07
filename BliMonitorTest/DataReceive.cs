@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using BliMonitorTest.data;
 
 namespace BliMonitorTest
 {
@@ -13,7 +14,11 @@ namespace BliMonitorTest
 
         private static readonly HashSet<byte> _allowedCmd = new HashSet<byte>
         {
-            0xA0, 0xB9, 0xB6
+            Protocol.STATUS,
+            Protocol.ERROR_READ,
+            Protocol.ERROR_RESET,
+            Protocol.PARAMETER_READ,
+            Protocol.PARAMETER_WRITE
         };
 
         private void receiveData(byte[] data, int length)
@@ -67,6 +72,8 @@ namespace BliMonitorTest
                 }
 
                 byte cmd = buf[2];
+                System.Diagnostics.Debug.WriteLine($"RX CMD=0x{cmd:X2}, size={buf[3]}, allowed={_allowedCmd.Contains(cmd)}");
+
                 if (!_allowedCmd.Contains(cmd))
                 {
                     buf.RemoveAt(0);

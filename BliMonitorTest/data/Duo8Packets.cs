@@ -49,15 +49,8 @@ namespace BliMonitorTest.data
         public byte Checksum { get; set; }
         public byte EndPacket { get; set; }
 
-        public byte ReheatRunning
-        {
-            get { return (byte)(((StatusB & 0x20) != 0) ? 1 : 0); }
-        }
-
-        public byte HotIng
-        {
-            get { return (byte)(((StatusB & 0x40) != 0) ? 1 : 0); }
-        }
+        public byte ReheatRunning => (byte)(((StatusB & 0x20) != 0) ? 1 : 0);
+        public byte HotIng => (byte)(((StatusB & 0x40) != 0) ? 1 : 0);
     }
 
     public sealed class Duo8ErrorRecord
@@ -75,10 +68,7 @@ namespace BliMonitorTest.data
         public byte BufferLow { get; set; }
         public byte Crc { get; set; }
 
-        public bool IsValid
-        {
-            get { return ValidMark == 0xA5; }
-        }
+        public bool IsValid => ValidMark == 0xA5;
     }
 
     public sealed class Duo8ErrorResponse
@@ -89,6 +79,31 @@ namespace BliMonitorTest.data
         public byte Command { get; set; }
         public byte Size { get; set; }
         public List<Duo8ErrorRecord> Records { get; set; } = new List<Duo8ErrorRecord>();
+        public byte Checksum { get; set; }
+        public byte EndPacket { get; set; }
+    }
+
+    public sealed class Duo8ParameterPacket
+    {
+        public byte[] Raw { get; set; }
+        public byte StartPacket { get; set; }
+        public byte Version { get; set; }
+        public byte Command { get; set; }
+        public byte Size { get; set; }
+        public List<ushort> Values { get; set; } = new List<ushort>();
+        public byte Checksum { get; set; }
+        public byte EndPacket { get; set; }
+    }
+
+    public sealed class Duo8ParameterWriteAck
+    {
+        public byte[] Raw { get; set; }
+        public byte StartPacket { get; set; }
+        public byte Version { get; set; }
+        public byte Command { get; set; }
+        public byte Size { get; set; }
+        public byte Result { get; set; }
+        public byte Reserved { get; set; }
         public byte Checksum { get; set; }
         public byte EndPacket { get; set; }
     }
@@ -192,6 +207,58 @@ namespace BliMonitorTest.data
             return result;
         }
 
+        public static Duo8ParameterPacket ParseParameterResponse(byte[] buf)
+        {
+            if (buf == null || buf.Length != 74) return null;
+            if (buf[0] != 0x12 || buf[1] != 0x01 || buf[2] != 0xC1 || buf[73] != 0x34) return null;
+            if (buf[3] != 74) return null;
+
+            byte checksum = CalcXorChecksum(buf, 1, 71);
+            if (checksum != buf[72]) return null;
+
+            var result = new Duo8ParameterPacket
+            {
+                Raw = buf,
+                StartPacket = buf[0],
+                Version = buf[1],
+                Command = buf[2],
+                Size = buf[3],
+                Checksum = buf[72],
+                EndPacket = buf[73]
+            };
+
+            for (int i = 4; i <= 71; i += 2)
+            {
+                ushort v = (ushort)(buf[i] | (buf[i + 1] << 8));
+                result.Values.Add(v);
+            }
+
+            return result;
+        }
+
+        public static Duo8ParameterWriteAck ParseParameterWriteAck(byte[] buf)
+        {
+            if (buf == null || buf.Length != 8) return null;
+            if (buf[0] != 0x12 || buf[1] != 0x01 || buf[2] != 0xC2 || buf[7] != 0x34) return null;
+            if (buf[3] != 8) return null;
+
+            byte checksum = CalcXorChecksum(buf, 1, 5);
+            if (checksum != buf[6]) return null;
+
+            return new Duo8ParameterWriteAck
+            {
+                Raw = buf,
+                StartPacket = buf[0],
+                Version = buf[1],
+                Command = buf[2],
+                Size = buf[3],
+                Result = buf[4],
+                Reserved = buf[5],
+                Checksum = buf[6],
+                EndPacket = buf[7]
+            };
+        }
+
         private static byte CalcXorChecksum(byte[] buf, int start, int endInclusive)
         {
             byte value = 0x00;
@@ -201,6 +268,7 @@ namespace BliMonitorTest.data
             return value;
         }
     }
+
 
     public static class Duo8ValueText
     {
@@ -242,7 +310,6 @@ namespace BliMonitorTest.data
             if (errorCode == 0x00) return "NONE";
 
             List<string> list = new List<string>();
-
             if ((errorCode & 0x01) != 0) list.Add("COLD_ERR1");
             if ((errorCode & 0x02) != 0) list.Add("COLD_ERR2");
             if ((errorCode & 0x04) != 0) list.Add("HOT_ERR1");
@@ -301,16 +368,6 @@ namespace BliMonitorTest.data
             }
         }
 
-        public static string ToYesNo(byte value)
-        {
-            return value != 0 ? "YES" : "NO";
-        }
-
-        public static string ToOnOff(byte value)
-        {
-            return value != 0 ? "ON" : "OFF";
-        }
-
         public static string ToDoneText(byte value)
         {
             return value != 0 ? "완료" : "미완료";
@@ -324,16 +381,6 @@ namespace BliMonitorTest.data
         public static string ToActiveInactive(byte value)
         {
             return value != 0 ? "활성" : "비활성";
-        }
-
-        public static string GetBitState(bool state)
-        {
-            return state ? "ON" : "OFF";
-        }
-
-        public static string FormatTempX10(ushort value)
-        {
-            return (value / 10.0).ToString("0.0", CultureInfo.InvariantCulture) + "°C";
         }
 
         public static string FormatRawUShort(ushort value)
@@ -388,6 +435,15 @@ namespace BliMonitorTest.data
             if ((value & 0x80) != 0) list.Add("출수 진행");
 
             return list.Count == 0 ? "-" : string.Join(", ", list);
+        }
+
+        public static string ToYesNo(byte value) => value != 0 ? "YES" : "NO";
+        public static string ToOnOff(byte value) => value != 0 ? "ON" : "OFF";
+        public static string GetBitState(bool state) => state ? "ON" : "OFF";
+
+        public static string FormatTempX10(ushort value)
+        {
+            return (value / 10.0).ToString("0.0", CultureInfo.InvariantCulture) + "°C";
         }
     }
 }

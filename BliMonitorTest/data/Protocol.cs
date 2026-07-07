@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace BliMonitorTest.data
 {
@@ -11,6 +12,8 @@ namespace BliMonitorTest.data
         public const byte STATUS = 0xA0;
         public const byte ERROR_READ = 0xB9;
         public const byte ERROR_RESET = 0xB6;
+        public const byte PARAMETER_READ = 0xC1;
+        public const byte PARAMETER_WRITE = 0xC2;
 
         public static byte[] GetStatusRequest()
         {
@@ -27,10 +30,42 @@ namespace BliMonitorTest.data
             return BuildCommand(ERROR_RESET, 0x00);
         }
 
-        // 구형 코드 호환용: 현재 제품에서는 파라미터 요청 미사용
-        public static byte[] GetParameter()
+        public static byte[] GetParameterReadRequest()
         {
-            return BuildCommand(STATUS, 0x00);
+            return BuildCommand(PARAMETER_READ, 0x00);
+        }
+
+        public static byte[] GetParameterWriteRequest(List<ushort> values)
+        {
+            if (values == null || values.Count != 34)
+                throw new ArgumentException("PARAMETER WRITE requires 34 ushort values.");
+
+            byte[] command = new byte[74];
+            command[0] = STX;
+            command[1] = VERSION;
+            command[2] = PARAMETER_WRITE;
+            command[3] = 74;
+
+            int index = 4;
+            for (int i = 0; i < values.Count; i++)
+            {
+                ushort v = values[i];
+                command[index++] = (byte)(v & 0xFF);
+                command[index++] = (byte)((v >> 8) & 0xFF);
+            }
+
+            command[72] = CalcChecksum(command, 1, 71);
+            command[73] = ETX;
+
+            System.Diagnostics.Debug.WriteLine("=============== PARAMETER WRITE PACKET ===============");
+            for (int i = 0; i < values.Count; i++)
+            {
+                System.Diagnostics.Debug.WriteLine($"values[{i}] = {values[i]} (0x{values[i]:X4})");
+            }
+            System.Diagnostics.Debug.WriteLine("command = " + BitConverter.ToString(command));
+            System.Diagnostics.Debug.WriteLine("======================================================");
+
+            return command;
         }
 
         public static byte[] BuildCommand(byte cmd, byte option)
@@ -57,7 +92,6 @@ namespace BliMonitorTest.data
             return res;
         }
 
-        // 구형 코드 호환용
         public static byte GetCheckSum(byte[] array, int start, int endInclusive)
         {
             return CalcChecksum(array, start, endInclusive);

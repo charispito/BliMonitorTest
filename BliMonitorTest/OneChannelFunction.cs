@@ -19,6 +19,8 @@ namespace BliMonitorTest
 
         private void CheckCommand(byte[] array)
         {
+            System.Diagnostics.Debug.WriteLine($"CheckCommand len={array?.Length}, cmd=0x{array?[2]:X2}");
+
             if (array == null || array.Length < 7)
                 return;
 
@@ -53,7 +55,28 @@ namespace BliMonitorTest
                         }
                         break;
 
+                    case 0xC1:
+                        if (array.Length != 74)
+                            return;
+
+                        if (channel.ParameterMode && channel.parameterWindow != null)
+                        {
+                            channel.parameterWindow.setParameterResponse(array);
+                        }
+                        break;
+
+                    case 0xC2:
+                        if (array.Length != 8)
+                            return;
+
+                        if (channel.ParameterMode && channel.parameterWindow != null)
+                        {
+                            channel.parameterWindow.setParameterWriteAck(array);
+                        }
+                        break;
+
                     case 0xB6:
+                    default:
                         break;
                 }
             }
@@ -221,9 +244,6 @@ namespace BliMonitorTest
 
             if (channel.Item8Check.IsChecked == true && seriesList.ContainsKey(17))
                 channel.chartView.ViewModel.AddData(seriesList[17], new DataPoint(totalMinute, pkt.OutletValveOutput != 0 ? 1 : 0));
-
-            if (channel != null && channel.parameterWindow != null)
-                channel.parameterWindow.setStatus(data);
 
             channel.chartView.ViewModel.panXAxis(totalMinute);
         }

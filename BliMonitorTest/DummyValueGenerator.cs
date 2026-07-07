@@ -582,5 +582,58 @@ namespace BliMonitorTest.dummy
         {
             return (byte)(v != 0 ? 1 : 0);
         }
+
+        public byte[] BuildDummyParameterResponse74()
+        {
+            ushort[] vals = new ushort[]
+            {
+                850, 880, 820,          // hot_target_reheat_x10, hot_target_normal_x10, hot_target_eco_x10
+                80, 40, 120, 60, 140, 80, // cold_target_th/tl_a/b/c
+                30, 35, 40, 45,         // disp_delay_*
+                150, 900,               // disp_time_cold_150/1000
+                160, 920,               // disp_time_cool_150/1000
+                170, 940,               // disp_time_normal_150/1000
+                180, 960,               // disp_time_hot_150/1000
+                190, 980,               // disp_time_warm_150/1000
+                155, 905,               // disp_time_reuse_cold_150/1000
+                165, 925,               // disp_time_reuse_cool_150/1000
+                175, 945,               // disp_time_reuse_normal_150/1000
+                185, 965,               // disp_time_reuse_hot_150/1000
+                195, 985,               // disp_time_reuse_warm_150/1000
+                300                     // auto_refill_delay_10ms
+            };
+
+            byte[] tx = new byte[74];
+            tx[0] = 0x12;
+            tx[1] = 0x01;
+            tx[2] = 0xC1;
+            tx[3] = 74;
+
+            int idx = 4;
+            for (int i = 0; i < vals.Length; i++)
+            {
+                tx[idx++] = (byte)(vals[i] & 0xFF);
+                tx[idx++] = (byte)((vals[i] >> 8) & 0xFF);
+            }
+
+            tx[72] = CalcChecksumRange(tx, 1, 71);
+            tx[73] = 0x34;
+            return tx;
+        }
+
+        public byte[] BuildDummyParameterWriteAck(byte result)
+        {
+            byte[] tx = new byte[8];
+            tx[0] = 0x12;
+            tx[1] = 0x01;
+            tx[2] = 0xC2;
+            tx[3] = 0x08;
+            tx[4] = result;
+            tx[5] = 0x00;
+            tx[6] = CalcChecksumRange(tx, 1, 5);
+            tx[7] = 0x34;
+            return tx;
+        }
+
     }
 }

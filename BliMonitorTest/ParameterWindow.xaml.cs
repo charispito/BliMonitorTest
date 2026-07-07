@@ -221,7 +221,7 @@ namespace BliMonitorTest
             
             // 신규 제품에서는 파라미터 제어 기능 제외
             if (ReadParamButton != null) ReadParamButton.IsEnabled = true;
-            if (WriteParamButton != null) WriteParamButton.IsEnabled = false;
+            if (WriteParamButton != null) WriteParamButton.IsEnabled = true;
             if (CopyToEditButton != null) CopyToEditButton.IsEnabled = true;
 
             // 에러그리드 초기값 셋팅
@@ -241,8 +241,8 @@ namespace BliMonitorTest
         {
             try
             {
-                _receivedRows = BuildEmptyDuo8RowSet();
-                _editableRows = BuildEmptyDuo8RowSet();
+                _receivedRows = BuildEmptyParameterRowSet();
+                _editableRows = BuildEmptyParameterRowSet();
 
                 ReceivedParamGrid.ItemsSource = ToTwoColumnRows(_receivedRows);
                 EditableParamGrid.ItemsSource = ToTwoColumnRows(_editableRows);
@@ -253,68 +253,18 @@ namespace BliMonitorTest
             }
         }
 
-        private ObservableCollection<StatusViewRow> BuildEmptyDuo8RowSet()
+        private ObservableCollection<StatusViewRow> BuildEmptyParameterRowSet()
         {
-            return new ObservableCollection<StatusViewRow>
+            var rows = new ObservableCollection<StatusViewRow>();
+            foreach (var name in _parameterNames)
             {
-                new StatusViewRow { Name = "제품코드", Value = "" },
-                new StatusViewRow { Name = "에러코드", Value = "" },
-                new StatusViewRow { Name = "초기급수 완료", Value = "" },
-                new StatusViewRow { Name = "초기급수 진행", Value = "" },
-                new StatusViewRow { Name = "물부족 감지", Value = "" },
-                new StatusViewRow { Name = "버퍼수위 부족", Value = "" },
-                new StatusViewRow { Name = "PCB HW Version", Value = "" },
-                new StatusViewRow { Name = "PCB SW Version", Value = "" },
-                new StatusViewRow { Name = "히터 PWM", Value = "" },
-                new StatusViewRow { Name = "야간 상태", Value = "" },
-                new StatusViewRow { Name = "테스트 모드", Value = "" },
-                new StatusViewRow { Name = "선택 모드", Value = "" },
-                new StatusViewRow { Name = "선택 용량", Value = "" },
-                new StatusViewRow { Name = "출수 단계", Value = "" },
-                new StatusViewRow { Name = "출수 세부단계", Value = "" },
-                new StatusViewRow { Name = "온수 Temp Raw", Value = "" },
-                new StatusViewRow { Name = "냉수 Temp Raw", Value = "" },
-                new StatusViewRow { Name = "Float Stable", Value = "" },
-                new StatusViewRow { Name = "BallTop Stable", Value = "" },
-                new StatusViewRow { Name = "WaterBuf Stable", Value = "" },
-                new StatusViewRow { Name = "히터 출력", Value = "" },
-                new StatusViewRow { Name = "컴프 출력", Value = "" },
-                new StatusViewRow { Name = "온수 밸브", Value = "" },
-                new StatusViewRow { Name = "냉수 선택 밸브", Value = "" },
-                new StatusViewRow { Name = "출수 밸브", Value = "" },
-
-                new StatusViewRow { Name = "Button HOT 선택", Value = "" },
-                new StatusViewRow { Name = "Button WARM 선택", Value = "" },
-                new StatusViewRow { Name = "Button NORMAL 선택", Value = "" },
-                new StatusViewRow { Name = "Button COOL 선택", Value = "" },
-                new StatusViewRow { Name = "Button COLD 선택", Value = "" },
-                new StatusViewRow { Name = "Button REHEAT", Value = "" },
-                new StatusViewRow { Name = "Button 150mL", Value = "" },
-                new StatusViewRow { Name = "Button 1000mL", Value = "" },
-                new StatusViewRow { Name = "Button OUTLET", Value = "" },
-
-                new StatusViewRow { Name = "A Heater", Value = "" },
-                new StatusViewRow { Name = "A Comp", Value = "" },
-                new StatusViewRow { Name = "A HotValve", Value = "" },
-                new StatusViewRow { Name = "A ColdSel", Value = "" },
-                new StatusViewRow { Name = "A Outlet", Value = "" },
-                new StatusViewRow { Name = "A PumpOut", Value = "" },
-                new StatusViewRow { Name = "A PumpDia", Value = "" },
-                new StatusViewRow { Name = "A Airvent", Value = "" },
-
-                new StatusViewRow { Name = "B Float", Value = "" },
-                new StatusViewRow { Name = "B BallTop", Value = "" },
-                new StatusViewRow { Name = "B WaterBuf", Value = "" },
-                new StatusViewRow { Name = "B Empty", Value = "" },
-                new StatusViewRow { Name = "B BufLow", Value = "" },
-                new StatusViewRow { Name = "B Reheat", Value = "" },
-                new StatusViewRow { Name = "B HotIng", Value = "" },
-                new StatusViewRow { Name = "B Dispensing", Value = "" },
-
-                new StatusViewRow { Name = "ButtonInfo", Value = "" },
-                new StatusViewRow { Name = "Status A", Value = "" },
-                new StatusViewRow { Name = "Status B", Value = "" }
-            };
+                rows.Add(new StatusViewRow
+                {
+                    Name = GetParameterDisplayName(name),
+                    Value = ""
+                });
+            }
+            return rows;
         }
 
         private void CopyToEditButton_Click(object sender, RoutedEventArgs e)
@@ -338,10 +288,15 @@ namespace BliMonitorTest
                     });
                 }
 
+                var twoCol = ToTwoColumnRows(_editableRows);
+
                 EditableParamGrid.ItemsSource = null;
-                EditableParamGrid.ItemsSource = ToTwoColumnRows(_editableRows);
+                EditableParamGrid.ItemsSource = twoCol;
 
                 RightSet = true;
+
+                DebugDumpEditableState("COPY TO EDIT - AFTER COPY");
+
                 ToastMessage.ToastService.AppToast.Show("좌측 수신 데이터를 우측 편집 영역으로 복사했습니다.");
             }
             catch (Exception ex)
@@ -355,8 +310,8 @@ namespace BliMonitorTest
         {
             try
             {
-                _receivedRows = BuildEmptyDuo8RowSet();
-                _editableRows = BuildEmptyDuo8RowSet();
+                _receivedRows = BuildEmptyParameterRowSet();
+                _editableRows = BuildEmptyParameterRowSet();
 
                 if (ReceivedParamGrid != null)
                     ReceivedParamGrid.ItemsSource = ToTwoColumnRows(_receivedRows);
@@ -377,13 +332,6 @@ namespace BliMonitorTest
                 return;
 
             _lastStatusPacket = pkt;
-
-            DateTime now = DateTime.Now;
-            if ((now - _lastStatusUiUpdateAt) < _statusUiRefreshInterval)
-                return;
-
-            _lastStatusUiUpdateAt = now;
-            RefreshStatusUi(pkt);
         }
 
         public void SetStatusUiRefreshIntervalSeconds(int seconds)
@@ -392,82 +340,6 @@ namespace BliMonitorTest
                 seconds = 1;
 
             _statusUiRefreshInterval = TimeSpan.FromSeconds(seconds);
-        }
-
-        private void RefreshStatusUi(Duo8StatusPacket pkt)
-        {
-            if (pkt == null)
-                return;
-
-            ushort buttonInfo = pkt.ButtonInfo;
-            byte statusA = pkt.StatusA;
-            byte statusB = pkt.StatusB;
-
-            var statusList = new ObservableCollection<BliMonitorTest.data.StatusViewRow>();
-
-            statusList.Add(new StatusViewRow() { Name = "제품코드", Value = Duo8ValueText.GetModelName(pkt.ModelCode) + $" (0x{pkt.ModelCode:X2})" });
-            statusList.Add(new StatusViewRow() { Name = "에러코드", Value = $"0x{pkt.ErrorCode:X2} / {Duo8ValueText.GetErrorText(pkt.ErrorCode)}" });
-            statusList.Add(new StatusViewRow() { Name = "초기급수 완료", Value = Duo8ValueText.ToYesNo(pkt.WaterInitDone) });
-            statusList.Add(new StatusViewRow() { Name = "초기급수 진행", Value = Duo8ValueText.ToYesNo(pkt.WaterInitGo) });
-            statusList.Add(new StatusViewRow() { Name = "물부족 감지", Value = Duo8ValueText.ToYesNo(pkt.EmptyDetect) });
-            statusList.Add(new StatusViewRow() { Name = "버퍼수위 부족", Value = Duo8ValueText.ToYesNo(pkt.BufferLow) });
-            statusList.Add(new StatusViewRow() { Name = "PCB HW Version", Value = pkt.PcbHwVersion.ToString() });
-            statusList.Add(new StatusViewRow() { Name = "PCB SW Version", Value = pkt.PcbSwVersion.ToString() });
-            statusList.Add(new StatusViewRow() { Name = "히터 PWM", Value = pkt.HeaterPwm.ToString() });
-            statusList.Add(new StatusViewRow() { Name = "야간 상태", Value = Duo8ValueText.ToOnOff(pkt.Night) });
-            statusList.Add(new StatusViewRow() { Name = "테스트 모드", Value = Duo8ValueText.ToOnOff(pkt.TestMode) });
-            statusList.Add(new StatusViewRow() { Name = "선택 모드", Value = Duo8ValueText.GetModeText(pkt.ModeSelected) });
-            statusList.Add(new StatusViewRow() { Name = "선택 용량", Value = Duo8ValueText.GetQtyText(pkt.QtySelected) });
-            statusList.Add(new StatusViewRow() { Name = "출수 단계", Value = Duo8ValueText.GetDispensePhaseText(pkt.DispensePhase) });
-            statusList.Add(new StatusViewRow() { Name = "출수 세부단계", Value = Duo8ValueText.GetDispenseSubPhaseText(pkt.DispenseSubPhase) });
-            statusList.Add(new StatusViewRow() { Name = "온수 Temp Raw", Value = pkt.HotTempRaw.ToString() });
-            statusList.Add(new StatusViewRow() { Name = "냉수 Temp Raw", Value = pkt.ColdTempRaw.ToString() });
-            statusList.Add(new StatusViewRow() { Name = "Float Stable", Value = Duo8ValueText.ToYesNo(pkt.FloatLowStable) });
-            statusList.Add(new StatusViewRow() { Name = "BallTop Stable", Value = Duo8ValueText.ToYesNo(pkt.BallTopFullStable) });
-            statusList.Add(new StatusViewRow() { Name = "WaterBuf Stable", Value = Duo8ValueText.ToYesNo(pkt.WaterBufFullStable) });
-            statusList.Add(new StatusViewRow() { Name = "히터 출력", Value = Duo8ValueText.ToOnOff(pkt.HeaterOutput) });
-            statusList.Add(new StatusViewRow() { Name = "컴프 출력", Value = Duo8ValueText.ToOnOff(pkt.CompressorOutput) });
-            statusList.Add(new StatusViewRow() { Name = "온수 밸브", Value = Duo8ValueText.ToOnOff(pkt.HotValveOutput) });
-            statusList.Add(new StatusViewRow() { Name = "냉수 선택 밸브", Value = Duo8ValueText.ToOnOff(pkt.ColdSelectOutput) });
-            statusList.Add(new StatusViewRow() { Name = "출수 밸브", Value = Duo8ValueText.ToOnOff(pkt.OutletValveOutput) });
-
-            statusList.Add(new StatusViewRow() { Name = "HOT 선택", Value = Duo8ValueText.GetBitState((buttonInfo & 0x0001) != 0) });
-            statusList.Add(new StatusViewRow() { Name = "WARM 선택", Value = Duo8ValueText.GetBitState((buttonInfo & 0x0002) != 0) });
-            statusList.Add(new StatusViewRow() { Name = "NORMAL 선택", Value = Duo8ValueText.GetBitState((buttonInfo & 0x0004) != 0) });
-            statusList.Add(new StatusViewRow() { Name = "COOL 선택", Value = Duo8ValueText.GetBitState((buttonInfo & 0x0008) != 0) });
-            statusList.Add(new StatusViewRow() { Name = "COLD 선택", Value = Duo8ValueText.GetBitState((buttonInfo & 0x0010) != 0) });
-            statusList.Add(new StatusViewRow() { Name = "REHEAT", Value = Duo8ValueText.GetBitState((buttonInfo & 0x0020) != 0) });
-            statusList.Add(new StatusViewRow() { Name = "150mL", Value = Duo8ValueText.GetBitState((buttonInfo & 0x0040) != 0) });
-            statusList.Add(new StatusViewRow() { Name = "1000mL", Value = Duo8ValueText.GetBitState((buttonInfo & 0x0080) != 0) });
-            statusList.Add(new StatusViewRow() { Name = "OUTLET", Value = Duo8ValueText.GetBitState((buttonInfo & 0x0100) != 0) });
-
-            statusList.Add(new StatusViewRow() { Name = "A Heater", Value = Duo8ValueText.GetBitState((statusA & 0x01) != 0) });
-            statusList.Add(new StatusViewRow() { Name = "A Compressor", Value = Duo8ValueText.GetBitState((statusA & 0x02) != 0) });
-            statusList.Add(new StatusViewRow() { Name = "A Hot Valve", Value = Duo8ValueText.GetBitState((statusA & 0x04) != 0) });
-            statusList.Add(new StatusViewRow() { Name = "A Cold Select", Value = Duo8ValueText.GetBitState((statusA & 0x08) != 0) });
-            statusList.Add(new StatusViewRow() { Name = "A Outlet Valve", Value = Duo8ValueText.GetBitState((statusA & 0x10) != 0) });
-            statusList.Add(new StatusViewRow() { Name = "A Pump Outlet", Value = Duo8ValueText.GetBitState((statusA & 0x20) != 0) });
-            statusList.Add(new StatusViewRow() { Name = "A Pump Diaphragm", Value = Duo8ValueText.GetBitState((statusA & 0x40) != 0) });
-            statusList.Add(new StatusViewRow() { Name = "A Pump Airvent", Value = Duo8ValueText.GetBitState((statusA & 0x80) != 0) });
-
-            statusList.Add(new StatusViewRow() { Name = "B Float Sensor", Value = Duo8ValueText.GetBitState((statusB & 0x01) != 0) });
-            statusList.Add(new StatusViewRow() { Name = "B Ball Top", Value = Duo8ValueText.GetBitState((statusB & 0x02) != 0) });
-            statusList.Add(new StatusViewRow() { Name = "B Water Buffer", Value = Duo8ValueText.GetBitState((statusB & 0x04) != 0) });
-            statusList.Add(new StatusViewRow() { Name = "B Empty Detect", Value = Duo8ValueText.GetBitState((statusB & 0x08) != 0) });
-            statusList.Add(new StatusViewRow() { Name = "B Buffer Low", Value = Duo8ValueText.GetBitState((statusB & 0x10) != 0) });
-            statusList.Add(new StatusViewRow() { Name = "B Reheat Running", Value = Duo8ValueText.GetBitState((statusB & 0x20) != 0) });
-            statusList.Add(new StatusViewRow() { Name = "B Hot Ing", Value = Duo8ValueText.GetBitState((statusB & 0x40) != 0) });
-            statusList.Add(new StatusViewRow() { Name = "B Dispensing", Value = Duo8ValueText.GetBitState((statusB & 0x80) != 0) });
-
-            statusList.Add(new StatusViewRow() { Name = "Button Raw", Value = $"0x{pkt.ButtonInfo:X4}" });
-            statusList.Add(new StatusViewRow() { Name = "StatusA Raw", Value = $"0x{pkt.StatusA:X2}" });
-            statusList.Add(new StatusViewRow() { Name = "StatusB Raw", Value = $"0x{pkt.StatusB:X2}" });
-
-            Dispatcher.BeginInvoke(new Action(() =>
-            {
-                _receivedRows = statusList;
-                ReceivedParamGrid.ItemsSource = ToTwoColumnRows(_receivedRows);
-            }));
         }
 
         private void Window_KeyDown(object sender, KeyEventArgs e)
@@ -562,17 +434,17 @@ namespace BliMonitorTest
                     return;
                 }
 
-                if (_editableRows == null || _editableRows.Count == 0)
+                if (_receivedRows == null || _receivedRows.Count == 0)
                 {
-                    ToastMessage.ToastService.AppToast.Show("저장할 파라미터 정보가 없습니다.");
+                    ToastMessage.ToastService.AppToast.Show("저장할 조회 파라미터 정보가 없습니다.");
                     return;
                 }
 
-                SaveParameterFile(FileName.Text.Trim());
+                SaveParameterFile(FileName.Text.Trim(), _receivedRows);
                 SetList();
                 ClearParameterFileInputs();
 
-                ToastMessage.ToastService.AppToast.Show("파라미터 정보를 저장했습니다.");
+                ToastMessage.ToastService.AppToast.Show("조회된 PARAMETER 정보를 저장했습니다.");
             }
             catch (Exception ex)
             {
@@ -767,6 +639,13 @@ namespace BliMonitorTest
         {
             try
             {
+                // 1) 편집 중인 셀 값 커밋
+                EditableParamGrid.CommitEdit(DataGridEditingUnit.Cell, true);
+                EditableParamGrid.CommitEdit(DataGridEditingUnit.Row, true);
+                Keyboard.ClearFocus();
+
+                DebugDumpEditableState("WRITE CLICK - BEFORE SYNC");
+
                 if (_editableRows == null || _editableRows.Count == 0)
                 {
                     ToastMessage.ToastService.AppToast.Show("쓰기 대상 파라미터가 없습니다.");
@@ -779,18 +658,61 @@ namespace BliMonitorTest
                     return;
                 }
 
-                // TODO:
-                // 1. _editableRows 값을 Duo8 파라미터 Write 패킷 구조로 변환
-                // 2. MCU Write 명령 프레임 생성
-                // 3. port 또는 Dummy 인터페이스로 전송
-                // 4. 응답 ACK 처리
+                // 2) 중요: 화면 그리드 값 -> _editableRows 동기화
+                SyncEditableGridToRows();
 
-                ToastMessage.ToastService.AppToast.Show("신규 제품 PARAMETER WRITE는 추후 구현 예정입니다.");
+                DebugDumpEditableState("WRITE CLICK - AFTER SYNC");
+
+                // 3) 동기화된 _editableRows 기준으로 ushort 리스트 생성
+                List<ushort> values;
+                try
+                {
+                    values = BuildWriteValuesFromEditableRows();
+                }
+                catch (Exception exBuild)
+                {
+                    log.Warn("BuildWriteValuesFromEditableRows 실패", exBuild);
+                    ToastMessage.ToastService.AppToast.Show(exBuild.Message);
+                    return;
+                }
+
+                DebugDumpWriteValues(values, "AFTER BUILD VALUES");
+
+                if (values.Count != _parameterNames.Length)
+                {
+                    ToastMessage.ToastService.AppToast.Show(
+                        $"쓰기 파라미터 개수가 올바르지 않습니다. values={values.Count}, expected={_parameterNames.Length}");
+                    return;
+                }
+
+                OneChannelWindow parent = Window.GetWindow(oneChannel) as OneChannelWindow;
+                bool isDummyMode = parent != null && parent.IsDummyMode;
+
+                if (isDummyMode)
+                {
+                    ToastMessage.ToastService.AppToast.Show("더미 모드에서는 PARAMETER WRITE를 지원하지 않습니다.");
+                    return;
+                }
+
+                byte[] command = Protocol.GetParameterWriteRequest(values);
+
+                System.Diagnostics.Debug.WriteLine("CMD = " + BitConverter.ToString(command));
+                command.PrintHex(1);
+
+                if (port != null && port.IsOpen)
+                {
+                    port.Write(command, 0, command.Length);
+                    ToastMessage.ToastService.AppToast.Show("PARAMETER WRITE 요청을 전송했습니다.");
+                }
+                else
+                {
+                    ToastMessage.ToastService.AppToast.Show("포트가 연결되어 있지 않습니다.");
+                }
             }
             catch (Exception ex)
             {
                 log.Warn("WriteParamButton_Click 실패", ex);
-                ToastMessage.ToastService.AppToast.Show("파라미터 쓰기 준비 중 문제가 발생했습니다.");
+                ToastMessage.ToastService.AppToast.Show("파라미터 쓰기 중 문제가 발생했습니다.");
             }
         }
 
@@ -799,32 +721,9 @@ namespace BliMonitorTest
             oneChannel.ParameterMode = false;
         }
 
-                OneChannelWindow parent = Window.GetWindow(oneChannel) as OneChannelWindow;
-                bool isDummyMode = parent != null && parent.IsDummyMode;
-
-                if (isDummyMode)
-                {
-                    var gen = new BliMonitorTest.dummy.DummyValueGenerator();
-                    var rsp = new byte[37];
-                    var sample = gen.Next();
-                    BliMonitorTest.dummy.DummyValueGenerator.PatchStatusResponse37(rsp, sample);
-                    setStatus(rsp);
-                    return;
-                }
-
-                byte[] command = Protocol.GetParameter();
-                command.PrintHex(1);
-
-                if (port != null && port.IsOpen)
-                {
-                    oneChannel.setParameter();
-                    port.Write(command, 0, command.Length);
-                }
-            }
-            catch (Exception ex)
-            {
-                log.Warn("ParameterWindow_Loaded1 상태조회 실패", ex);
-            }
+        private void ParameterWindow_Loaded1(object sender, RoutedEventArgs e)
+        {
+            oneChannel.ParameterMode = true;
         }
 
         private void ResetErrorButton_Click(object sender, RoutedEventArgs e)
@@ -871,23 +770,21 @@ namespace BliMonitorTest
                 if (isDummyMode)
                 {
                     var gen = new BliMonitorTest.dummy.DummyValueGenerator();
-                    var rsp = new byte[37];
-                    var sample = gen.Next();
-                    BliMonitorTest.dummy.DummyValueGenerator.PatchStatusResponse37(rsp, sample);
-                    setStatus(rsp);
+                    var rsp = gen.BuildDummyParameterResponse74();
+                    setParameterResponse(rsp);
 
-                    ToastMessage.ToastService.AppToast.Show("더미 상태정보를 갱신했습니다.");
+                    ToastMessage.ToastService.AppToast.Show("더미 PARAMETER 데이터를 조회했습니다.");
                     return;
                 }
 
-                byte[] command = Protocol.GetParameter();
+                byte[] command = Protocol.GetParameterReadRequest();
                 command.PrintHex(1);
 
                 if (port != null && port.IsOpen)
                 {
                     oneChannel.setParameter();
                     port.Write(command, 0, command.Length);
-                    ToastMessage.ToastService.AppToast.Show("상태정보 요청을 전송했습니다.");
+                    ToastMessage.ToastService.AppToast.Show("PARAMETER 요청을 전송했습니다.");
                 }
                 else
                 {
@@ -897,8 +794,98 @@ namespace BliMonitorTest
             catch (Exception ex)
             {
                 log.Error("ReadParamButton_Click 실패", ex);
-                ToastMessage.ToastService.AppToast.Show("상태 조회 중 문제가 발생했습니다.");
+                ToastMessage.ToastService.AppToast.Show("PARAMETER 조회 중 문제가 발생했습니다.");
             }
+        }
+
+        public void setParameterResponse(byte[] data)
+        {
+            Duo8ParameterPacket pkt = Duo8PacketParser.ParseParameterResponse(data);
+            if (pkt == null)
+                return;
+
+            if (pkt.Values == null || pkt.Values.Count != _parameterNames.Length)
+            {
+                ToastMessage.ToastService.AppToast.Show("PARAMETER 응답 개수가 올바르지 않습니다.");
+                return;
+            }
+
+            var rows = new ObservableCollection<StatusViewRow>();
+            for (int i = 0; i < _parameterNames.Length; i++)
+            {
+                rows.Add(new StatusViewRow
+                {
+                    Name = GetParameterDisplayName(_parameterNames[i]),
+                    Value = pkt.Values[i].ToString()
+                });
+            }
+
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                _receivedRows = rows;
+                ReceivedParamGrid.ItemsSource = ToTwoColumnRows(_receivedRows);
+                RightSet = false;
+            }));
+        }
+
+        public void setParameterWriteAck(byte[] data)
+        {
+            Duo8ParameterWriteAck ack = Duo8PacketParser.ParseParameterWriteAck(data);
+            if (ack == null)
+            {
+                ToastMessage.ToastService.AppToast.Show("PARAMETER WRITE 응답 파싱 실패");
+
+                // 파싱 실패여도 편집영역은 초기화
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    ClearEditableParameterGrid();
+                }));
+
+                return;
+            }
+
+            string msg;
+            bool isSuccess = false;
+
+            switch (ack.Result)
+            {
+                case 0x00:
+                    msg = "PARAMETER WRITE 성공";
+                    isSuccess = true;
+                    break;
+
+                case 0x01:
+                    msg = "PARAMETER WRITE 실패 - 길이 오류";
+                    break;
+
+                case 0x02:
+                    msg = "PARAMETER WRITE 실패 - 체크섬 오류";
+                    break;
+
+                case 0x03:
+                    msg = "PARAMETER WRITE 실패 - 범위 오류";
+                    break;
+
+                default:
+                    msg = $"PARAMETER WRITE 실패 - 알 수 없는 코드(0x{ack.Result:X2})";
+                    break;
+            }
+
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                // 1) 성공/실패와 무관하게 우측 편집영역 무조건 초기화
+                ClearEditableParameterGrid();
+
+                // 2) 메시지 표시
+                ToastMessage.ToastService.AppToast.Show(msg);
+
+                // 3) 성공일 경우만 READ 재호출 -> 좌측 수신 그리드 갱신
+
+                if (isSuccess)
+                {
+                    RequestParameterReadAfterWrite();
+                }
+            }));
         }
 
         private void ErrorListDoubleClick(object sender, MouseButtonEventArgs e)
@@ -2276,7 +2263,236 @@ namespace BliMonitorTest
             return result;
         }
 
+        private void DebugDumpEditableState(string title)
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine("");
+                System.Diagnostics.Debug.WriteLine("====================================================");
+                System.Diagnostics.Debug.WriteLine("[DEBUG] " + title);
+                System.Diagnostics.Debug.WriteLine("====================================================");
+
+                System.Diagnostics.Debug.WriteLine("---- _editableRows ----");
+                if (_editableRows == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("_editableRows == null");
+                }
+                else
+                {
+                    for (int i = 0; i < _editableRows.Count; i++)
+                    {
+                        var r = _editableRows[i];
+                        System.Diagnostics.Debug.WriteLine(
+                            $"_editableRows[{i}] Name=[{r?.Name}] Value=[{r?.Value}]");
+                    }
+                }
+
+                System.Diagnostics.Debug.WriteLine("---- EditableParamGrid.ItemsSource (2Col) ----");
+                var twoColRows = EditableParamGrid?.ItemsSource as IEnumerable<StatusViewRow2Col>;
+                if (twoColRows == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("EditableParamGrid.ItemsSource == null or not StatusViewRow2Col");
+                }
+                else
+                {
+                    int idx = 0;
+                    foreach (var row in twoColRows)
+                    {
+                        System.Diagnostics.Debug.WriteLine(
+                            $"grid[{idx}] " +
+                            $"L=({row?.Name1}, {row?.Value1}) / " +
+                            $"R=({row?.Name2}, {row?.Value2})");
+                        idx++;
+                    }
+                }
+
+                System.Diagnostics.Debug.WriteLine("====================================================");
+                System.Diagnostics.Debug.WriteLine("");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("[DEBUG] DebugDumpEditableState 예외: " + ex);
+            }
+        }
+
+        private void SyncEditableGridToRows()
+        {
+            var twoColRows = EditableParamGrid?.ItemsSource as IEnumerable<StatusViewRow2Col>;
+            if (twoColRows == null)
+                return;
+
+            var flattened = new List<StatusViewRow>();
+
+            foreach (var row in twoColRows)
+            {
+                if (!string.IsNullOrWhiteSpace(row?.Name1))
+                {
+                    flattened.Add(new StatusViewRow
+                    {
+                        Name = row.Name1,
+                        Value = NormalizeNumericText(row.Value1 ?? "")
+                    });
+                }
+
+                if (!string.IsNullOrWhiteSpace(row?.Name2))
+                {
+                    flattened.Add(new StatusViewRow
+                    {
+                        Name = row.Name2,
+                        Value = NormalizeNumericText(row.Value2 ?? "")
+                    });
+                }
+            }
+
+            _editableRows.Clear();
+            foreach (var row in flattened)
+            {
+                _editableRows.Add(row);
+            }
+        }
+
+        private List<ushort> BuildWriteValuesFromEditableRows()
+        {
+            var values = new List<ushort>();
+
+            if (_editableRows == null)
+                return values;
+
+            for (int i = 0; i < _editableRows.Count; i++)
+            {
+                var row = _editableRows[i];
+                string raw = row?.Value ?? "";
+                string normalized = NormalizeNumericText(raw);
+
+                ushort v;
+                if (!ushort.TryParse(normalized, out v))
+                {
+                    throw new InvalidOperationException( $"숫자 변환 실패: index={i}, name={row?.Name}, raw=[{raw}], normalized=[{normalized}]" );
+                }
+
+                values.Add(v);
+            }
+
+            return values;
+        }
+
+        private void DebugDumpWriteValues(List<ushort> values, string title)
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine("");
+                System.Diagnostics.Debug.WriteLine("####################################################");
+                System.Diagnostics.Debug.WriteLine("[WRITE VALUES] " + title);
+                System.Diagnostics.Debug.WriteLine("####################################################");
+
+                if (values == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("values == null");
+                }
+                else
+                {
+                    for (int i = 0; i < values.Count; i++)
+                    {
+                        string name = (i < _editableRows.Count) ? _editableRows[i].Name : "";
+                        System.Diagnostics.Debug.WriteLine(
+                            $"values[{i}] Name=[{name}] Value={values[i]} (0x{values[i]:X4})");
+                    }
+                }
+
+                System.Diagnostics.Debug.WriteLine("####################################################");
+                System.Diagnostics.Debug.WriteLine("");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("[DEBUG] DebugDumpWriteValues 예외: " + ex);
+            }
+        }
+
+        private string NormalizeNumericText(string raw)
+        {
+            if (raw == null)
+                return "";
+
+            string s = raw.Trim();
+
+            // 자주 섞이는 표시 문자 제거
+            s = s.Replace(",", "");
+            s = s.Replace("_", "");
+            s = s.Replace(" ", "");
+
+            // 뒤에 붙는 U/u 제거 (예: 5700U, 5700u)
+            if (s.EndsWith("U", StringComparison.OrdinalIgnoreCase))
+                s = s.Substring(0, s.Length - 1);
+
+            return s.Trim();
+        }
+
+
+        private void ClearEditableParameterGrid()
+        {
+            try
+            {
+                _editableRows = BuildEmptyParameterRowSet();
+
+                if (EditableParamGrid != null)
+                {
+                    EditableParamGrid.ItemsSource = null;
+                    EditableParamGrid.ItemsSource = ToTwoColumnRows(_editableRows);
+                }
+
+                RightSet = false;
+
+                System.Diagnostics.Debug.WriteLine("[PARAM WRITE] Editable grid cleared.");
+            }
+            catch (Exception ex)
+            {
+                log.Warn("ClearEditableParameterGrid 실패", ex);
+            }
+        }
+
+        private void RequestParameterReadAfterWrite()
+        {
+            try
+            {
+                OneChannelWindow parent = Window.GetWindow(oneChannel) as OneChannelWindow;
+                bool isDummyMode = parent != null && parent.IsDummyMode;
+
+                if (isDummyMode)
+                {
+                    System.Diagnostics.Debug.WriteLine("[PARAM WRITE] Dummy mode - skip auto read.");
+                    return;
+                }
+
+                byte[] command = Protocol.GetParameterReadRequest();
+                command.PrintHex(1);
+
+                if (port != null && port.IsOpen)
+                {
+                    if (oneChannel != null)
+                        oneChannel.setParameter();
+
+                    port.Write(command, 0, command.Length);
+
+                    System.Diagnostics.Debug.WriteLine("[PARAM WRITE] Auto PARAMETER READ requested after success.");
+                }
+                else
+                {
+                    ToastMessage.ToastService.AppToast.Show("WRITE 성공 후 PARAMETER READ를 재요청하려 했지만 포트가 연결되어 있지 않습니다.");
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Warn("RequestParameterReadAfterWrite 실패", ex);
+                ToastMessage.ToastService.AppToast.Show("WRITE 성공 후 PARAMETER 재조회 중 문제가 발생했습니다.");
+            }
+        }
+
         private void SaveParameterFile(string fileName)
+        {
+            SaveParameterFile(fileName, _receivedRows);
+        }
+
+        private void SaveParameterFile(string fileName, IEnumerable<StatusViewRow> sourceRows)
         {
             string dir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ParameterSetting");
             if (!Directory.Exists(dir))
@@ -2290,7 +2506,7 @@ namespace BliMonitorTest
             sb.AppendLine("  <Parameter>");
 
             int index = 1;
-            foreach (var row in _editableRows)
+            foreach (var row in sourceRows)
             {
                 string name = System.Security.SecurityElement.Escape(row.Name ?? "");
                 string value = System.Security.SecurityElement.Escape((row.Value ?? "").Trim());
@@ -2330,15 +2546,19 @@ namespace BliMonitorTest
 
                 _editableRows.Add(new StatusViewRow
                 {
-                    Name = name,
+                    Name = GetParameterDisplayName(name),
                     Value = value
                 });
             }
 
+            var twoCol = ToTwoColumnRows(_editableRows);
+
             EditableParamGrid.ItemsSource = null;
-            EditableParamGrid.ItemsSource = ToTwoColumnRows(_editableRows);
+            EditableParamGrid.ItemsSource = twoCol;
 
             RightSet = true;
+
+            DebugDumpEditableState("LOAD PARAMETER FILE - AFTER LOAD");
         }
 
         private void ClearErrorFileInputs()
@@ -2686,6 +2906,93 @@ namespace BliMonitorTest
             return string.Join(",", names);
         }
 
+        private readonly string[] _parameterNames = new string[]
+        {
+            "hot_target_reheat_x10",
+            "hot_target_normal_x10",
+            "hot_target_eco_x10",
+            "cold_target_th_a_x10",
+            "cold_target_tl_a_x10",
+            "cold_target_th_b_x10",
+            "cold_target_tl_b_x10",
+            "cold_target_th_c_x10",
+            "cold_target_tl_c_x10",
+            "disp_delay_cold_normal_10ms",
+            "disp_delay_cool_normal_10ms",
+            "disp_delay_normal_normal_10ms",
+            "disp_delay_warm_normal_10ms",
+            "disp_time_cold_150ml_10ms",
+            "disp_time_cold_1000ml_10ms",
+            "disp_time_cool_150ml_10ms",
+            "disp_time_cool_1000ml_10ms",
+            "disp_time_normal_150ml_10ms",
+            "disp_time_normal_1000ml_10ms",
+            "disp_time_hot_150ml_10ms",
+            "disp_time_hot_1000ml_10ms",
+            "disp_time_warm_150ml_10ms",
+            "disp_time_warm_1000ml_10ms",
+            "disp_time_reuse_cold_150ml_10ms",
+            "disp_time_reuse_cold_1000ml_10ms",
+            "disp_time_reuse_cool_150ml_10ms",
+            "disp_time_reuse_cool_1000ml_10ms",
+            "disp_time_reuse_normal_150ml_10ms",
+            "disp_time_reuse_normal_1000ml_10ms",
+            "disp_time_reuse_hot_150ml_10ms",
+            "disp_time_reuse_hot_1000ml_10ms",
+            "disp_time_reuse_warm_150ml_10ms",
+            "disp_time_reuse_warm_1000ml_10ms",
+            "auto_refill_delay_10ms"
+        };
+
+        private readonly Dictionary<string, string> _parameterDisplayNames = new Dictionary<string, string>()
+        {
+            { "hot_target_reheat_x10", "재가열 목표 온도" },
+            { "hot_target_normal_x10", "일반 온수 목표 온도" },
+            { "hot_target_eco_x10", "ECO 온수 목표 온도" },
+            { "cold_target_th_a_x10", "냉수 제어 상한 A" },
+            { "cold_target_tl_a_x10", "냉수 제어 하한 A" },
+            { "cold_target_th_b_x10", "냉수 제어 상한 B" },
+            { "cold_target_tl_b_x10", "냉수 제어 하한 B" },
+            { "cold_target_th_c_x10", "냉수 ECO 상한 C" },
+            { "cold_target_tl_c_x10", "냉수 ECO 하한 C" },
+            { "disp_delay_cold_normal_10ms", "냉수 출수 전 지연 시간" },
+            { "disp_delay_cool_normal_10ms", "약냉 출수 전 지연 시간" },
+            { "disp_delay_normal_normal_10ms", "상온 출수 전 지연 시간" },
+            { "disp_delay_warm_normal_10ms", "약온 출수 전 지연 시간" },
+            { "disp_time_cold_150ml_10ms", "냉수 150mL 출수 시간" },
+            { "disp_time_cold_1000ml_10ms", "냉수 1000mL 출수 시간" },
+            { "disp_time_cool_150ml_10ms", "약냉 150mL 출수 시간" },
+            { "disp_time_cool_1000ml_10ms", "약냉 1000mL 출수 시간" },
+            { "disp_time_normal_150ml_10ms", "상온 150mL 출수 시간" },
+            { "disp_time_normal_1000ml_10ms", "상온 1000mL 출수 시간" },
+            { "disp_time_hot_150ml_10ms", "온수 150mL 출수 시간" },
+            { "disp_time_hot_1000ml_10ms", "온수 1000mL 출수 시간" },
+            { "disp_time_warm_150ml_10ms", "약온 150mL 출수 시간" },
+            { "disp_time_warm_1000ml_10ms", "약온 1000mL 출수 시간" },
+            { "disp_time_reuse_cold_150ml_10ms", "재출수 냉수 150mL 출수 시간" },
+            { "disp_time_reuse_cold_1000ml_10ms", "재출수 냉수 1000mL 출수 시간" },
+            { "disp_time_reuse_cool_150ml_10ms", "재출수 약냉 150mL 출수 시간" },
+            { "disp_time_reuse_cool_1000ml_10ms", "재출수 약냉 1000mL 출수 시간" },
+            { "disp_time_reuse_normal_150ml_10ms", "재출수 상온 150mL 출수 시간" },
+            { "disp_time_reuse_normal_1000ml_10ms", "재출수 상온 1000mL 출수 시간" },
+            { "disp_time_reuse_hot_150ml_10ms", "재출수 온수 150mL 출수 시간" },
+            { "disp_time_reuse_hot_1000ml_10ms", "재출수 온수 1000mL 출수 시간" },
+            { "disp_time_reuse_warm_150ml_10ms", "재출수 약온 150mL 출수 시간" },
+            { "disp_time_reuse_warm_1000ml_10ms", "재출수 약온 1000mL 출수 시간" },
+            { "auto_refill_delay_10ms", "자동 급수 대기 시간_10ms" }
+        };
+
+        private string GetParameterDisplayName(string variableName)
+        {
+            if (string.IsNullOrWhiteSpace(variableName))
+                return "";
+
+            string displayName;
+            if (_parameterDisplayNames.TryGetValue(variableName, out displayName))
+                return displayName;
+
+            return variableName;
+        }
 
     }
 }
