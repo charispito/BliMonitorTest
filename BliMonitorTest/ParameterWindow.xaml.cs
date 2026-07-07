@@ -799,12 +799,6 @@ namespace BliMonitorTest
             oneChannel.ParameterMode = false;
         }
 
-        private void ParameterWindow_Loaded1(object sender, RoutedEventArgs e)
-        {
-            oneChannel.ParameterMode = true;
-
-            try
-            {
                 OneChannelWindow parent = Window.GetWindow(oneChannel) as OneChannelWindow;
                 bool isDummyMode = parent != null && parent.IsDummyMode;
 
