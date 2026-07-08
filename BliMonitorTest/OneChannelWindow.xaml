@@ -52,7 +52,7 @@
 
                                 <Border Grid.Row="1" Grid.Column="1" Padding="8" BorderThickness="1" BorderBrush="{StaticResource SoftBorderBrush}" CornerRadius="10" Background="#FBFDFF">
                                     <WrapPanel HorizontalAlignment="Center">
-                                        <Label Content="Save File Name" FontSize="16" VerticalContentAlignment="Center" FontWeight="Black"/>
+                                        <Label Content="Save File Name" FontSize="16" VerticalContentAlignment="Center" FontWeight="Black" Margin="0,0,20,0"/>
                                         <TextBox FontSize="16" FontWeight="Black" Width="680" VerticalContentAlignment="Center" x:Name="FileName" Margin="5,0,0,0"/>
                                     </WrapPanel>
                                 </Border>
@@ -60,10 +60,10 @@
                                 <controls:LabeledCombobox x:Name="PortList" Title="COM" Grid.Column="2" Margin="10,0"/>
                                 <Button Grid.Column="3" Content="연결" Width="86" x:Name="ConnectButton" Style="{StaticResource SoftButtonStyle}" Padding="0" Margin="0,0,0,8" VerticalAlignment="Bottom"/>
                                 <Button Grid.Column="4" Content="갱신" Width="86" Margin="13,0" x:Name="RefreshButton" Style="{StaticResource SoftButtonStyle}" Padding="0"/>
-                                <ComboBox x:Name="DummyInterfaceCombo" Grid.Row="0" Grid.Column="5" Width="120" Margin="123,0,12,0" Style="{StaticResource PrettyComboBoxStyle}">
+                                <ComboBox x:Name="DummyInterfaceCombo" Grid.Row="0" Grid.Column="5" Width="120" Margin="123,0,12,0" Style="{StaticResource PrettyComboBoxStyle}" Visibility="Visible">
                                     <ComboBoxItem Content="상태 요청" Tag="3"/>
                                 </ComboBox>
-                                <CheckBox x:Name="UseDummyCheck" Grid.Column="5" Margin="15,0,170,0" VerticalAlignment="Center" Width="70" Content="더미" Checked="UseDummyCheck_Checked" Unchecked="UseDummyCheck_Unchecked"/>
+                                <CheckBox x:Name="UseDummyCheck" Grid.Column="5" Margin="15,0,170,0" VerticalAlignment="Center" Width="70" Content="더미" Checked="UseDummyCheck_Checked" Unchecked="UseDummyCheck_Unchecked" Visibility="Visible"/>
                             </Grid>
                         </Border>
 
