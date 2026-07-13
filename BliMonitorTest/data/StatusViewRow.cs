@@ -1,8 +1,43 @@
-﻿namespace BliMonitorTest.data
+﻿using System.ComponentModel;
+
+namespace BliMonitorTest.data
 {
-    public class StatusViewRow
+    public class StatusViewRow : INotifyPropertyChanged
     {
-        public string Name { get; set; }
-        public string Value { get; set; }
+        private string _name;
+        private string _value;
+
+        public string Name
+        {
+            get => _name;
+            set
+            {
+                if (_name != value)
+                {
+                    _name = value;
+                    OnPropertyChanged(nameof(Name));
+                }
+            }
+        }
+
+        public string Value
+        {
+            get => _value;
+            set
+            {
+                if (_value != value)
+                {
+                    _value = value;
+                    OnPropertyChanged(nameof(Value));
+                }
+            }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
     }
 }

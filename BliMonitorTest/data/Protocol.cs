@@ -37,14 +37,14 @@ namespace BliMonitorTest.data
 
         public static byte[] GetParameterWriteRequest(List<ushort> values)
         {
-            if (values == null || values.Count != 34)
-                throw new ArgumentException("PARAMETER WRITE requires 34 ushort values.");
+            if (values == null || values.Count != 35)
+                throw new ArgumentException("PARAMETER WRITE requires 35 ushort values.");
 
-            byte[] command = new byte[74];
+            byte[] command = new byte[76];
             command[0] = STX;
             command[1] = VERSION;
             command[2] = PARAMETER_WRITE;
-            command[3] = 74;
+            command[3] = 76;
 
             int index = 4;
             for (int i = 0; i < values.Count; i++)
@@ -54,8 +54,8 @@ namespace BliMonitorTest.data
                 command[index++] = (byte)((v >> 8) & 0xFF);
             }
 
-            command[72] = CalcChecksum(command, 1, 71);
-            command[73] = ETX;
+            command[74] = CalcChecksum(command, 1, 73);
+            command[75] = ETX;
 
             System.Diagnostics.Debug.WriteLine("=============== PARAMETER WRITE PACKET ===============");
             for (int i = 0; i < values.Count; i++)

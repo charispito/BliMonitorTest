@@ -64,6 +64,10 @@ namespace BliMonitorTest
         private RangeEnabledObservableCollection<SettingData> heater11 = new RangeEnabledObservableCollection<SettingData>();
         private RangeEnabledObservableCollection<SettingData> heater12 = new RangeEnabledObservableCollection<SettingData>();
 
+        // ===== 상태 UI 관련 =====
+        private ObservableCollection<StatusViewRow2Col> _receivedTwoColRows = new ObservableCollection<StatusViewRow2Col>();
+        private ObservableCollection<StatusViewRow2Col> _editableTwoColRows = new ObservableCollection<StatusViewRow2Col>();
+
         // 진행 상태 및 저장 간격 제어
         private volatile bool _isReadingError = false;
 
@@ -244,8 +248,14 @@ namespace BliMonitorTest
                 _receivedRows = BuildEmptyParameterRowSet();
                 _editableRows = BuildEmptyParameterRowSet();
 
-                ReceivedParamGrid.ItemsSource = ToTwoColumnRows(_receivedRows);
-                EditableParamGrid.ItemsSource = ToTwoColumnRows(_editableRows);
+                _receivedTwoColRows = BuildTwoColumnRowSet(_receivedRows.Count);
+                _editableTwoColRows = BuildTwoColumnRowSet(_editableRows.Count);
+
+                ApplyRowsToTwoColumn(_receivedRows, _receivedTwoColRows);
+                ApplyRowsToTwoColumn(_editableRows, _editableTwoColRows);
+
+                ReceivedParamGrid.ItemsSource = _receivedTwoColRows;
+                EditableParamGrid.ItemsSource = _editableTwoColRows;
             }
             catch (Exception ex)
             {
@@ -277,21 +287,8 @@ namespace BliMonitorTest
                     return;
                 }
 
-                _editableRows.Clear();
-
-                foreach (var row in _receivedRows)
-                {
-                    _editableRows.Add(new StatusViewRow
-                    {
-                        Name = row.Name,
-                        Value = row.Value
-                    });
-                }
-
-                var twoCol = ToTwoColumnRows(_editableRows);
-
-                EditableParamGrid.ItemsSource = null;
-                EditableParamGrid.ItemsSource = twoCol;
+                CopyRowValues(_receivedRows, _editableRows);
+                ApplyRowsToTwoColumn(_editableRows, _editableTwoColRows);
 
                 RightSet = true;
 
@@ -313,15 +310,92 @@ namespace BliMonitorTest
                 _receivedRows = BuildEmptyParameterRowSet();
                 _editableRows = BuildEmptyParameterRowSet();
 
-                if (ReceivedParamGrid != null)
-                    ReceivedParamGrid.ItemsSource = ToTwoColumnRows(_receivedRows);
+                if (_receivedTwoColRows == null || _receivedTwoColRows.Count == 0)
+                    _receivedTwoColRows = BuildTwoColumnRowSet(_receivedRows.Count);
 
-                if (EditableParamGrid != null)
-                    EditableParamGrid.ItemsSource = ToTwoColumnRows(_editableRows);
+                if (_editableTwoColRows == null || _editableTwoColRows.Count == 0)
+                    _editableTwoColRows = BuildTwoColumnRowSet(_editableRows.Count);
+
+                ApplyRowsToTwoColumn(_receivedRows, _receivedTwoColRows);
+                ApplyRowsToTwoColumn(_editableRows, _editableTwoColRows);
+
+                if (ReceivedParamGrid != null && ReceivedParamGrid.ItemsSource == null)
+                    ReceivedParamGrid.ItemsSource = _receivedTwoColRows;
+
+                if (EditableParamGrid != null && EditableParamGrid.ItemsSource == null)
+                    EditableParamGrid.ItemsSource = _editableTwoColRows;
             }
             catch (Exception ex)
             {
                 log.Warn("SetBottomStatusGridDefaults 실패", ex);
+            }
+        }
+
+        private ObservableCollection<StatusViewRow2Col> BuildTwoColumnRowSet(int flatRowCount)
+        {
+            var result = new ObservableCollection<StatusViewRow2Col>();
+            int rowCount = (flatRowCount + 1) / 2;
+
+            for (int i = 0; i < rowCount; i++)
+            {
+                result.Add(new StatusViewRow2Col
+                {
+                    Name1 = "",
+                    Value1 = "",
+                    Name2 = "",
+                    Value2 = ""
+                });
+            }
+
+            return result;
+        }
+
+        private void ApplyRowsToTwoColumn(
+            IList<StatusViewRow> source,
+            ObservableCollection<StatusViewRow2Col> target)
+        {
+            if (source == null || target == null)
+                return;
+
+            int expectedRowCount = (source.Count + 1) / 2;
+
+            while (target.Count < expectedRowCount)
+            {
+                target.Add(new StatusViewRow2Col());
+            }
+
+            while (target.Count > expectedRowCount)
+            {
+                target.RemoveAt(target.Count - 1);
+            }
+
+            int srcIndex = 0;
+            for (int i = 0; i < target.Count; i++)
+            {
+                var left = (srcIndex < source.Count) ? source[srcIndex++] : null;
+                var right = (srcIndex < source.Count) ? source[srcIndex++] : null;
+
+                target[i].Name1 = left?.Name ?? "";
+                target[i].Value1 = left?.Value ?? "";
+                target[i].Name2 = right?.Name ?? "";
+                target[i].Value2 = right?.Value ?? "";
+            }
+        }
+
+        private void CopyRowValues(IList<StatusViewRow> src, ObservableCollection<StatusViewRow> dst)
+        {
+            if (src == null || dst == null)
+                return;
+
+            dst.Clear();
+
+            foreach (var row in src)
+            {
+                dst.Add(new StatusViewRow
+                {
+                    Name = row.Name,
+                    Value = row.Value
+                });
             }
         }
 
@@ -770,7 +844,7 @@ namespace BliMonitorTest
                 if (isDummyMode)
                 {
                     var gen = new BliMonitorTest.dummy.DummyValueGenerator();
-                    var rsp = gen.BuildDummyParameterResponse74();
+                    var rsp = gen.BuildDummyParameterResponse76();
                     setParameterResponse(rsp);
 
                     ToastMessage.ToastService.AppToast.Show("더미 PARAMETER 데이터를 조회했습니다.");
@@ -810,20 +884,18 @@ namespace BliMonitorTest
                 return;
             }
 
-            var rows = new ObservableCollection<StatusViewRow>();
-            for (int i = 0; i < _parameterNames.Length; i++)
-            {
-                rows.Add(new StatusViewRow
-                {
-                    Name = GetParameterDisplayName(_parameterNames[i]),
-                    Value = pkt.Values[i].ToString()
-                });
-            }
-
             Dispatcher.BeginInvoke(new Action(() =>
             {
-                _receivedRows = rows;
-                ReceivedParamGrid.ItemsSource = ToTwoColumnRows(_receivedRows);
+                if (_receivedRows == null || _receivedRows.Count != _parameterNames.Length)
+                    _receivedRows = BuildEmptyParameterRowSet();
+
+                for (int i = 0; i < _parameterNames.Length; i++)
+                {
+                    _receivedRows[i].Name = GetParameterDisplayName(_parameterNames[i]);
+                    _receivedRows[i].Value = pkt.Values[i].ToString();
+                }
+
+                ApplyRowsToTwoColumn(_receivedRows, _receivedTwoColRows);
                 RightSet = false;
             }));
         }
@@ -2432,13 +2504,16 @@ namespace BliMonitorTest
         {
             try
             {
-                _editableRows = BuildEmptyParameterRowSet();
+                if (_editableRows == null || _editableRows.Count != _parameterNames.Length)
+                    _editableRows = BuildEmptyParameterRowSet();
 
-                if (EditableParamGrid != null)
+                for (int i = 0; i < _editableRows.Count; i++)
                 {
-                    EditableParamGrid.ItemsSource = null;
-                    EditableParamGrid.ItemsSource = ToTwoColumnRows(_editableRows);
+                    _editableRows[i].Name = GetParameterDisplayName(_parameterNames[i]);
+                    _editableRows[i].Value = "";
                 }
+
+                ApplyRowsToTwoColumn(_editableRows, _editableTwoColRows);
 
                 RightSet = false;
 
@@ -2537,24 +2612,27 @@ namespace BliMonitorTest
                 return;
             }
 
-            _editableRows.Clear();
+            var loadedRows = new List<StatusViewRow>();
 
             foreach (var add in section.Elements("add"))
             {
                 string name = add.Attribute("Name")?.Value ?? "";
                 string value = add.Attribute("Value")?.Value ?? "";
 
-                _editableRows.Add(new StatusViewRow
+                loadedRows.Add(new StatusViewRow
                 {
                     Name = GetParameterDisplayName(name),
                     Value = value
                 });
             }
 
-            var twoCol = ToTwoColumnRows(_editableRows);
+            _editableRows.Clear();
+            foreach (var row in loadedRows)
+            {
+                _editableRows.Add(row);
+            }
 
-            EditableParamGrid.ItemsSource = null;
-            EditableParamGrid.ItemsSource = twoCol;
+            ApplyRowsToTwoColumn(_editableRows, _editableTwoColRows);
 
             RightSet = true;
 
@@ -2920,6 +2998,7 @@ namespace BliMonitorTest
             "disp_delay_cold_normal_10ms",
             "disp_delay_cool_normal_10ms",
             "disp_delay_normal_normal_10ms",
+            "disp_delay_hot_normal_10ms",
             "disp_delay_warm_normal_10ms",
             "disp_time_cold_150ml_10ms",
             "disp_time_cold_1000ml_10ms",
@@ -2951,13 +3030,14 @@ namespace BliMonitorTest
             { "hot_target_eco_x10", "ECO 온수 목표 온도" },
             { "cold_target_th_a_x10", "냉수 제어 상한 A" },
             { "cold_target_tl_a_x10", "냉수 제어 하한 A" },
-            { "cold_target_th_b_x10", "냉수 제어 상한 B" },
-            { "cold_target_tl_b_x10", "냉수 제어 하한 B" },
+            { "cold_target_th_b_x10", "냉수 제어 상한 B (미사용)" },
+            { "cold_target_tl_b_x10", "냉수 제어 하한 B (미사용)" },
             { "cold_target_th_c_x10", "냉수 ECO 상한 C" },
             { "cold_target_tl_c_x10", "냉수 ECO 하한 C" },
             { "disp_delay_cold_normal_10ms", "냉수 출수 전 지연 시간" },
             { "disp_delay_cool_normal_10ms", "약냉 출수 전 지연 시간" },
             { "disp_delay_normal_normal_10ms", "상온 출수 전 지연 시간" },
+            { "disp_delay_hot_normal_10ms", "온수 출수 전 지연 시간" },
             { "disp_delay_warm_normal_10ms", "약온 출수 전 지연 시간" },
             { "disp_time_cold_150ml_10ms", "냉수 150mL 출수 시간" },
             { "disp_time_cold_1000ml_10ms", "냉수 1000mL 출수 시간" },
@@ -2979,7 +3059,7 @@ namespace BliMonitorTest
             { "disp_time_reuse_hot_1000ml_10ms", "재출수 온수 1000mL 출수 시간" },
             { "disp_time_reuse_warm_150ml_10ms", "재출수 약온 150mL 출수 시간" },
             { "disp_time_reuse_warm_1000ml_10ms", "재출수 약온 1000mL 출수 시간" },
-            { "auto_refill_delay_10ms", "자동 급수 대기 시간_10ms" }
+            { "auto_refill_delay_10ms", "자동 급수 대기 시간" }
         };
 
         private string GetParameterDisplayName(string variableName)

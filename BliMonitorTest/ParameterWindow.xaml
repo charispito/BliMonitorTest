@@ -22,8 +22,9 @@
             <Setter Property="HorizontalGridLinesBrush" Value="{StaticResource SoftBorderBrush}"/>
             <Setter Property="VerticalGridLinesBrush" Value="{StaticResource SoftBorderBrush}"/>
 
-            <Setter Property="BorderBrush" Value="{StaticResource SoftBorderBrush}"/>
-            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="ClipToBounds" Value="True"/>
 
             <Setter Property="HeadersVisibility" Value="None"/>
             <Setter Property="CanUserAddRows" Value="False"/>
@@ -95,7 +96,7 @@
 
         <Style x:Key="ErrorGridNameCellStyle" TargetType="DataGridCell">
             <Setter Property="BorderBrush" Value="{StaticResource SoftBorderBrush}"/>
-            <Setter Property="BorderThickness" Value="0.5"/>
+            <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="4,2"/>
             <Setter Property="Background" Value="#F3F4F6"/>
             <Setter Property="Foreground" Value="#374151"/>
@@ -116,7 +117,7 @@
 
         <Style x:Key="ErrorGridValueCellStyle" TargetType="DataGridCell">
             <Setter Property="BorderBrush" Value="{StaticResource SoftBorderBrush}"/>
-            <Setter Property="BorderThickness" Value="0.5"/>
+            <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="4,2"/>
             <Setter Property="Background" Value="White"/>
             <Setter Property="Foreground" Value="#374151"/>
@@ -144,7 +145,7 @@
             <Setter Property="Foreground" Value="#374151"/>
             <Setter Property="Background" Value="#F3F4F6"/>
             <Setter Property="BorderBrush" Value="{StaticResource SoftBorderBrush}"/>
-            <Setter Property="BorderThickness" Value="0.5"/>
+            <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="6,4"/>
         </Style>
     </Window.Resources>
@@ -645,8 +646,8 @@
                                 Grid.ColumnSpan="3"
                                 Style="{StaticResource CardBorderStyle}"
                                 Margin="0,0,10,0"
-                                Padding="12"
-                                Height="620"
+                                Padding="10"
+                                Height="630"
                                 VerticalAlignment="Top">
                             <Grid>
                                 <Grid.ColumnDefinitions>
@@ -682,20 +683,23 @@
 
                                 <!-- 좌측 수신 그리드 -->
                                 <DataGrid x:Name="ReceivedParamGrid"
-          Grid.Row="2"
-          Grid.Column="0"
-          Style="{StaticResource GridStyle}"
-          AutoGenerateColumns="False"
-          VerticalAlignment="Top"
-          HeadersVisibility="Column"
-          ColumnHeaderStyle="{StaticResource CenterColumnHeaderStyle}"
-          CanUserAddRows="False"
-          CanUserDeleteRows="False"
-          CanUserResizeRows="False"
-          IsReadOnly="True"
-          Height="502"
-          Margin="0,0,8,0"
-          SelectionChanged="ReceivedParamGrid_SelectionChanged">
+                                          Grid.Row="2"
+                                          Grid.Column="0"
+                                          Style="{StaticResource GridStyle}"
+                                          AutoGenerateColumns="False"
+                                          VerticalAlignment="Top"
+                                          HeadersVisibility="Column"
+                                          ColumnHeaderStyle="{StaticResource CenterColumnHeaderStyle}"
+                                          CanUserAddRows="False"
+                                          CanUserDeleteRows="False"
+                                          CanUserResizeRows="False"
+                                          IsReadOnly="True"
+                                          Height="540"
+                                          Margin="0,0,8,0"
+                                          ScrollViewer.CanContentScroll="False"
+                                          EnableRowVirtualization="False"
+                                          EnableColumnVirtualization="False"
+                                          SelectionChanged="ReceivedParamGrid_SelectionChanged">
                                     <DataGrid.Columns>
                                         <DataGridTextColumn Header="항목1" Width="1.7*" Binding="{Binding Name1}">
                                             <DataGridTextColumn.ElementStyle>
@@ -757,19 +761,22 @@
 
                                 <!-- 우측 편집 그리드 -->
                                 <DataGrid x:Name="EditableParamGrid"
-          Grid.Row="2"
-          Grid.Column="2"
-          Style="{StaticResource GridStyle}"
-          AutoGenerateColumns="False"
-          VerticalAlignment="Top"
-          HeadersVisibility="Column"
-          ColumnHeaderStyle="{StaticResource CenterColumnHeaderStyle}"
-          CanUserAddRows="False"
-          CanUserDeleteRows="False"
-          CanUserResizeRows="False"
-          IsReadOnly="False"
-          Height="502"
-          Margin="8,0,0,0">
+                                          Grid.Row="2"
+                                          Grid.Column="2"
+                                          Style="{StaticResource GridStyle}"
+                                          AutoGenerateColumns="False"
+                                          VerticalAlignment="Top"
+                                          HeadersVisibility="Column"
+                                          ColumnHeaderStyle="{StaticResource CenterColumnHeaderStyle}"
+                                          CanUserAddRows="False"
+                                          CanUserDeleteRows="False"
+                                          CanUserResizeRows="False"
+                                          IsReadOnly="False"
+                                          Height="540"
+                                          Margin="8,0,0,0"
+                                          ScrollViewer.CanContentScroll="False"
+                                          EnableRowVirtualization="False"
+                                          EnableColumnVirtualization="False">
                                     <DataGrid.Columns>
                                         <DataGridTextColumn Header="항목1" Width="1.7*" Binding="{Binding Name1}" IsReadOnly="True">
                                             <DataGridTextColumn.ElementStyle>

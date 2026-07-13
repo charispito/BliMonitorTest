@@ -56,7 +56,7 @@ namespace BliMonitorTest
                         break;
 
                     case 0xC1:
-                        if (array.Length != 74)
+                        if (array.Length != 76)
                             return;
 
                         if (channel.ParameterMode && channel.parameterWindow != null)

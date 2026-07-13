@@ -209,12 +209,12 @@ namespace BliMonitorTest.data
 
         public static Duo8ParameterPacket ParseParameterResponse(byte[] buf)
         {
-            if (buf == null || buf.Length != 74) return null;
-            if (buf[0] != 0x12 || buf[1] != 0x01 || buf[2] != 0xC1 || buf[73] != 0x34) return null;
-            if (buf[3] != 74) return null;
+            if (buf == null || buf.Length != 76) return null;
+            if (buf[0] != 0x12 || buf[1] != 0x01 || buf[2] != 0xC1 || buf[75] != 0x34) return null;
+            if (buf[3] != 76) return null;
 
-            byte checksum = CalcXorChecksum(buf, 1, 71);
-            if (checksum != buf[72]) return null;
+            byte checksum = CalcXorChecksum(buf, 1, 73);
+            if (checksum != buf[74]) return null;
 
             var result = new Duo8ParameterPacket
             {
@@ -223,11 +223,11 @@ namespace BliMonitorTest.data
                 Version = buf[1],
                 Command = buf[2],
                 Size = buf[3],
-                Checksum = buf[72],
-                EndPacket = buf[73]
+                Checksum = buf[74],
+                EndPacket = buf[75]
             };
 
-            for (int i = 4; i <= 71; i += 2)
+            for (int i = 4; i <= 73; i += 2)
             {
                 ushort v = (ushort)(buf[i] | (buf[i + 1] << 8));
                 result.Values.Add(v);

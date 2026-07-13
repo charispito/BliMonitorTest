@@ -67,7 +67,7 @@ namespace DummySerialPortNs
                     break;
 
                 case CMD_PARAMETER_READ:
-                    rsp = _generator.BuildDummyParameterResponse74();
+                    rsp = _generator.BuildDummyParameterResponse76();
                     break;
 
                 case CMD_PARAMETER_SET:
