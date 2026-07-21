@@ -658,7 +658,7 @@ namespace BliMonitorTest
             }
         }
 
-        private void StartLargeExcelBuildInBackground(
+        private async void StartLargeExcelBuildInBackground(
             string dbPath,
             long fromMs,
             long toMs,
@@ -701,100 +701,103 @@ namespace BliMonitorTest
 
             var token = _excelCts.Token;
 
-            _excelBuildTask = Task.Run(() =>
+            try
             {
-                try
+                string resultPath = await Task.Run(() =>
                 {
-                    ExportAllToExcelOpenXml(
-                        dbPath,
-                        tmpPath,
-                        fromMs,
-                        toMs,
-                        modelCode,
-                        sourceType,
-                        channelNo,
-                        hotTempMin,
-                        hotTempMax,
-                        coldTempMin,
-                        coldTempMax,
-                        compressorOutput,
-                        progress,
-                        token
-                    );
-
-                    token.ThrowIfCancellationRequested();
-
-                    if (File.Exists(finalTempPath)) File.Delete(finalTempPath);
-                    File.Move(tmpPath, finalTempPath);
-
-                    return finalTempPath;
-                }
-                catch
-                {
-                    try { if (File.Exists(tmpPath)) File.Delete(tmpPath); } catch { }
-                    throw;
-                }
-            }, token)
-            .ContinueWith(t =>
-            {
-                Dispatcher.Invoke(() =>
-                {
-                    _excelBuilding = false;
-
-                    if (btnCancelBusy != null)
-                        btnCancelBusy.Visibility = Visibility.Collapsed;
-
-                    _excelCts?.Dispose();
-                    _excelCts = null;
-
-                    if (t.IsCanceled || (t.IsFaulted && t.Exception?.GetBaseException() is OperationCanceledException))
+                    try
                     {
-                        if (btnExcel != null)
-                        {
-                            btnExcel.IsEnabled = true;
-                            btnExcel.Content = "엑셀";
-                            btnExcel.ToolTip = null;
-                        }
-
-                        ToastMessage.ToastService.AppToast.Show("엑셀 생성이 취소되었습니다.");
-                        return;
-                    }
-
-                    if (t.IsFaulted)
-                    {
-                        if (btnExcel != null)
-                        {
-                            btnExcel.IsEnabled = true;
-                            btnExcel.Content = "엑셀";
-                            btnExcel.ToolTip = null;
-                        }
-
-                        MessageBox.Show(
-                            t.Exception?.GetBaseException()?.ToString() ?? "엑셀 생성 오류",
-                            "오류",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Error
+                        ExportAllToExcelOpenXml(
+                            dbPath,
+                            tmpPath,
+                            fromMs,
+                            toMs,
+                            modelCode,
+                            sourceType,
+                            channelNo,
+                            hotTempMin,
+                            hotTempMax,
+                            coldTempMin,
+                            coldTempMax,
+                            compressorOutput,
+                            progress,
+                            token
                         );
-                        return;
+
+                        token.ThrowIfCancellationRequested();
+
+                        if (File.Exists(finalTempPath))
+                            File.Delete(finalTempPath);
+
+                        File.Move(tmpPath, finalTempPath);
+                        return finalTempPath;
                     }
-
-                    _excelTempPath = t.Result;
-
-                    if (btnExcel != null)
+                    catch
                     {
-                        btnExcel.IsEnabled = true;
-                        btnExcel.Content = "엑셀 저장";
-                        btnExcel.ToolTip = "엑셀 생성 완료";
-                    }
+                        try
+                        {
+                            if (File.Exists(tmpPath))
+                                File.Delete(tmpPath);
+                        }
+                        catch { }
 
-                    MessageBox.Show(
-                        $"대용량 엑셀 생성이 완료되었습니다.\n\n'엑셀 저장'을 누르면 원하는 위치에 저장할 수 있습니다.\n(건수: {totalCount:N0})",
-                        "완료",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information
-                    );
-                });
-            });
+                        throw;
+                    }
+                }, token);
+
+                _excelTempPath = resultPath;
+
+                if (btnExcel != null)
+                {
+                    btnExcel.IsEnabled = true;
+                    btnExcel.Content = "엑셀 저장";
+                    btnExcel.ToolTip = "엑셀 생성 완료";
+                }
+
+                MessageBox.Show(
+                    $"대용량 엑셀 생성이 완료되었습니다.\n\n'엑셀 저장'을 누르면 원하는 위치에 저장할 수 있습니다.\n(건수: {totalCount:N0})",
+                    "완료",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information
+                );
+            }
+            catch (OperationCanceledException)
+            {
+                if (btnExcel != null)
+                {
+                    btnExcel.IsEnabled = true;
+                    btnExcel.Content = "엑셀";
+                    btnExcel.ToolTip = null;
+                }
+
+                ToastMessage.ToastService.AppToast.Show("엑셀 생성이 취소되었습니다.");
+            }
+            catch (Exception ex)
+            {
+                if (btnExcel != null)
+                {
+                    btnExcel.IsEnabled = true;
+                    btnExcel.Content = "엑셀";
+                    btnExcel.ToolTip = null;
+                }
+
+                MessageBox.Show(
+                    ex.ToString(),
+                    "오류",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error
+                );
+            }
+            finally
+            {
+                _excelBuilding = false;
+
+                if (btnCancelBusy != null)
+                    btnCancelBusy.Visibility = Visibility.Collapsed;
+
+                _excelCts?.Dispose();
+                _excelCts = null;
+            }
         }
 
         private static void ExportAllToExcelOpenXml(
@@ -924,10 +927,11 @@ namespace BliMonitorTest
 
                         foreach (DataRow row in exportTable.Rows)
                         {
+                            token.ThrowIfCancellationRequested();
+
                             if (currentRowInSheet >= MaxRowsPerSheet)
                                 StartNewSheet();
 
-                            //WriteDataRow(writer, dt, row);
                             WriteDataRow(writer, exportTable, row);
                             currentRowInSheet++;
                             written++;
@@ -937,8 +941,6 @@ namespace BliMonitorTest
                                 int percent = (int)(written * 100 / totalRows);
                                 progress?.Report((percent, written, totalRows));
                             }
-
-                            token.ThrowIfCancellationRequested();
                         }
 
                         if (writer != null)
@@ -947,6 +949,8 @@ namespace BliMonitorTest
                             writer.WriteEndElement();
                             writer.Close();
                         }
+
+                        token.ThrowIfCancellationRequested();
 
                         wbPart.Workbook.Save();
                         progress?.Report((100, written, totalRows));
