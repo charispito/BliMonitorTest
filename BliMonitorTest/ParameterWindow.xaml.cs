@@ -100,6 +100,12 @@ namespace BliMonitorTest
             InitializeComponent();
             this.port = port;
             oneChannel = detail;
+
+            if (oneChannel != null)
+            {
+                oneChannel.parameterWindow = this;
+            }
+
             Initialize2();
             InitializeSetting();
             management = new ConfigFileManagement();
@@ -793,11 +799,28 @@ namespace BliMonitorTest
         private void ParameterWindow_Closed1(object sender, EventArgs e)
         {
             oneChannel.ParameterMode = false;
+
+            if (oneChannel != null)
+            {
+                oneChannel.parameterWindow = null;
+            }
+
+            OneChannelWindow parent = Window.GetWindow(oneChannel) as OneChannelWindow;
+            if (parent != null)
+            {
+                parent.ResumeStatusPolling();
+            }
         }
 
         private void ParameterWindow_Loaded1(object sender, RoutedEventArgs e)
         {
             oneChannel.ParameterMode = true;
+
+            OneChannelWindow parent = Window.GetWindow(oneChannel) as OneChannelWindow;
+            if (parent != null)
+            {
+                parent.SuspendStatusPolling();
+            }
         }
 
         private void ResetErrorButton_Click(object sender, RoutedEventArgs e)
@@ -836,6 +859,8 @@ namespace BliMonitorTest
 
         private void ReadParamButton_Click(object sender, RoutedEventArgs e)
         {
+            System.Diagnostics.Debug.WriteLine("[UI] ReadParamButton_Click ENTER");
+
             try
             {
                 OneChannelWindow parent = Window.GetWindow(oneChannel) as OneChannelWindow;
@@ -853,11 +878,13 @@ namespace BliMonitorTest
 
                 byte[] command = Protocol.GetParameterReadRequest();
                 command.PrintHex(1);
+                System.Diagnostics.Debug.WriteLine("[TX] PARAM READ -> " + BitConverter.ToString(command));
 
                 if (port != null && port.IsOpen)
                 {
-                    oneChannel.setParameter();
+                    //oneChannel.setParameter();
                     port.Write(command, 0, command.Length);
+                    System.Diagnostics.Debug.WriteLine("[TX] PARAM READ port.Write DONE");
                     ToastMessage.ToastService.AppToast.Show("PARAMETER 요청을 전송했습니다.");
                 }
                 else
@@ -874,18 +901,28 @@ namespace BliMonitorTest
 
         public void setParameterResponse(byte[] data)
         {
+            System.Diagnostics.Debug.WriteLine("[PARAM] setParameterResponse ENTER");
+
             Duo8ParameterPacket pkt = Duo8PacketParser.ParseParameterResponse(data);
             if (pkt == null)
+            {
+                System.Diagnostics.Debug.WriteLine("[PARAM] ParseParameterResponse == null");
                 return;
+            }
 
             if (pkt.Values == null || pkt.Values.Count != _parameterNames.Length)
             {
+                System.Diagnostics.Debug.WriteLine($"[PARAM] invalid value count = {pkt.Values?.Count}");
                 ToastMessage.ToastService.AppToast.Show("PARAMETER 응답 개수가 올바르지 않습니다.");
                 return;
             }
 
+            System.Diagnostics.Debug.WriteLine($"[PARAM] parsed OK count={pkt.Values.Count}");
+
             Dispatcher.BeginInvoke(new Action(() =>
             {
+                System.Diagnostics.Debug.WriteLine("[PARAM UI] APPLY START");
+
                 if (_receivedRows == null || _receivedRows.Count != _parameterNames.Length)
                     _receivedRows = BuildEmptyParameterRowSet();
 
@@ -896,8 +933,22 @@ namespace BliMonitorTest
                 }
 
                 ApplyRowsToTwoColumn(_receivedRows, _receivedTwoColRows);
+
+                if (ReceivedParamGrid != null)
+                {
+                    ApplyRowsToTwoColumn(_receivedRows, _receivedTwoColRows);
+                    ReceivedParamGrid.Items.Refresh();
+                }
+
+                System.Diagnostics.Debug.WriteLine(
+                    $"[PARAM UI] row0=({_receivedTwoColRows[0].Name1}, {_receivedTwoColRows[0].Value1})");
+
                 RightSet = false;
+
+                System.Diagnostics.Debug.WriteLine("[PARAM UI] APPLY END");
             }));
+
+            System.Diagnostics.Debug.WriteLine(Environment.StackTrace);
         }
 
         public void setParameterWriteAck(byte[] data)

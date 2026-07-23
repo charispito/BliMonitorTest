@@ -1,5 +1,6 @@
 ﻿using BliMonitorTest.controls;
 using BliMonitorTest.data;
+using BliMonitorTest.dummy;
 using BliMonitorTest.server;
 using BliMonitorTest.util;
 using log4net;
@@ -7,13 +8,13 @@ using OxyPlot;
 using System;
 using System.Collections.Generic;
 using System.IO.Ports;
+using System.Linq;
 using System.Reflection;
 using System.Timers;
 using System.Windows;
 using System.Windows.Controls;
 using FontWeights = System.Windows.FontWeights;
 using Timer = System.Timers.Timer;
-using BliMonitorTest.dummy;
 
 namespace BliMonitorTest
 {
@@ -43,13 +44,15 @@ namespace BliMonitorTest
         private System.Timers.Timer _connectionWatchdog;
         private DateTime _lastResponseAt = DateTime.MinValue;
         private bool _waitingFirstResponse = false;
-        private readonly TimeSpan _connectionTimeout = TimeSpan.FromSeconds(5);
+        private readonly TimeSpan _connectionTimeout = TimeSpan.FromSeconds(10);
 
         // RX buffer and lock for thread safety
         private bool _isConnecting = false;
         private readonly object _connectStateLock = new object();
         private bool _hasValidStatusResponse = false;
         private volatile bool _isWriting = false;
+
+        private volatile bool _suspendStatusPolling = false;
 
         public OneChannelWindow()
         {
@@ -65,8 +68,8 @@ namespace BliMonitorTest
             port.StopBits = StopBits.One;
             port.Parity = Parity.None;
             port.Handshake = Handshake.None;
-            port.ReadTimeout = 500;
-            port.WriteTimeout = 500;
+            port.ReadTimeout = 1000;
+            port.WriteTimeout = 1000;
             port.DtrEnable = false;
             port.RtsEnable = false;
             port.DataReceived += Port_DataReceived;
@@ -246,6 +249,12 @@ namespace BliMonitorTest
                     {
                         TestTime += TimeSpan.FromSeconds(1);
 
+                        if (_suspendStatusPolling)
+                        {
+                            System.Diagnostics.Debug.WriteLine("[STATUS POLLING] skipped - suspended");
+                            return;
+                        }
+
                         if (parameterCnt > 0)
                         {
                             receivedData.Clear();
@@ -283,6 +292,7 @@ namespace BliMonitorTest
             }
         }
 
+        
         private void Port_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
             if (UseDummy) return;
@@ -306,6 +316,8 @@ namespace BliMonitorTest
                     buf = new byte[read];
                     Array.Copy(tmp, 0, buf, 0, read);
                 }
+
+                System.Diagnostics.Debug.WriteLine("[RX-RAW] read=" + read + " data=" + BitConverter.ToString(buf));
 
                 Dispatcher.Invoke(() =>
                 {
@@ -870,5 +882,18 @@ namespace BliMonitorTest
         {
             _useDummyCached = false;
         }
+
+        public void SuspendStatusPolling()
+        {
+            _suspendStatusPolling = true;
+            System.Diagnostics.Debug.WriteLine("[STATUS POLLING] suspended");
+        }
+
+        public void ResumeStatusPolling()
+        {
+            _suspendStatusPolling = false;
+            System.Diagnostics.Debug.WriteLine("[STATUS POLLING] resumed");
+        }
+
     }
 }

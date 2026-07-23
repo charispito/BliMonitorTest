@@ -33,6 +33,7 @@ namespace BliMonitorTest
             lock (_rxLock)
             {
                 _rxBuffer.AddRange(chunk);
+                System.Diagnostics.Debug.WriteLine("[RX-BUF] total=" + _rxBuffer.Count + " data=" + BitConverter.ToString(_rxBuffer.ToArray()));
                 frames = ExtractFramesFromBuffer(_rxBuffer);
             }
 
@@ -72,7 +73,7 @@ namespace BliMonitorTest
                 }
 
                 byte cmd = buf[2];
-                System.Diagnostics.Debug.WriteLine($"RX CMD=0x{cmd:X2}, size={buf[3]}, allowed={_allowedCmd.Contains(cmd)}");
+                //System.Diagnostics.Debug.WriteLine($"RX CMD=0x{cmd:X2}, size={buf[3]}, allowed={_allowedCmd.Contains(cmd)}");
 
                 if (!_allowedCmd.Contains(cmd))
                 {
@@ -97,8 +98,10 @@ namespace BliMonitorTest
                 }
 
                 byte[] frame = buf.GetRange(0, size).ToArray();
+                System.Diagnostics.Debug.WriteLine( $"[FRAME] completed cmd=0x{frame[2]:X2}, size={frame.Length}, checksumByte=0x{frame[frame.Length - 2]:X2}");
                 frames.Add(frame);
                 buf.RemoveRange(0, size);
+
             }
 
             return frames;

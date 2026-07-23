@@ -56,12 +56,19 @@ namespace BliMonitorTest
                         break;
 
                     case 0xC1:
+                        System.Diagnostics.Debug.WriteLine($"[C1] RX frame complete len={array.Length}, ParameterMode={channel.ParameterMode}, parameterWindowNull={channel.parameterWindow == null}");
+
                         if (array.Length != 76)
                             return;
 
                         if (channel.ParameterMode && channel.parameterWindow != null)
                         {
+                            System.Diagnostics.Debug.WriteLine("[C1] calling setParameterResponse()");
                             channel.parameterWindow.setParameterResponse(array);
+                        }
+                        else
+                        {
+                            System.Diagnostics.Debug.WriteLine("[C1] dropped - no active parameter window");
                         }
                         break;
 
