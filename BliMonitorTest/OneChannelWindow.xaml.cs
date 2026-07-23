@@ -452,8 +452,8 @@ namespace BliMonitorTest
 
         private void setItems(OneChannelValueDetail item)
         {
-            item.Item1.label.Content = "온수 Temp";
-            item.Item2.label.Content = "냉수 Temp";
+            item.Item1.label.Content = "온수 Temp ADC";
+            item.Item2.label.Content = "냉수 Temp ADC";
             item.Item3.label.Content = "초기급수 완료";
             item.Item4.label.Content = "초기급수 진행";
             item.Item5.label.Content = "물부족 감지";
