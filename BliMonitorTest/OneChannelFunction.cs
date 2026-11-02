@@ -219,12 +219,12 @@ namespace BliMonitorTest
             bool btnCold = (buttonInfo & 0x0010) != 0;
             bool btnReheat = (buttonInfo & 0x0020) != 0;
             bool btn150 = (buttonInfo & 0x0040) != 0;
-            bool btn1000 = (buttonInfo & 0x0080) != 0;
+            bool btn500 = (buttonInfo & 0x0080) != 0;
             bool btnOutlet = (buttonInfo & 0x0100) != 0;
 
             DetailView.UpdateButtons(
                 btnHot, btnWarm, btnNormal, btnCool, btnCold,
-                btnReheat, btn150, btn1000, btnOutlet,
+                btnReheat, btn150, btn500, btnOutlet,
                 pkt.TestMode != 0, pkt.Night != 0, pkt.HeaterPwm != 0
             );
 

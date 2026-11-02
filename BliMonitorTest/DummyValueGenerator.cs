@@ -143,7 +143,7 @@ namespace BliMonitorTest.dummy
 
         private const byte QTY_NONE = 0;
         private const byte QTY_150ML = 1;
-        private const byte QTY_1000ML = 2;
+        private const byte QTY_500ML = 2;
 
         private const byte DISP_PHASE_STOP = 0;
         private const byte DISP_PHASE_CONT = 1;
@@ -513,7 +513,7 @@ namespace BliMonitorTest.dummy
             if (coldSelected != 0) v |= 0x0010;
             if (reheatRunning != 0) v |= 0x0020;
             if (qtySelected == QTY_150ML) v |= 0x0040;
-            if (qtySelected == QTY_1000ML) v |= 0x0080;
+            if (qtySelected == QTY_500ML) v |= 0x0080;
             if (dispensePhase != 0) v |= 0x0100;
 
             return v;
@@ -590,16 +590,16 @@ namespace BliMonitorTest.dummy
         850, 880, 820,              // hot_target_reheat_x10, hot_target_normal_x10, hot_target_eco_x10
         80, 40, 120, 60, 140, 80,   // cold_target_th/tl_a/b/c
         30, 35, 40, 45, 50,         // disp_delay_cold/cool/normal/hot/warm
-        150, 900,                   // disp_time_cold_150/1000
-        160, 920,                   // disp_time_cool_150/1000
-        170, 940,                   // disp_time_normal_150/1000
-        180, 960,                   // disp_time_hot_150/1000
-        190, 980,                   // disp_time_warm_150/1000
-        155, 905,                   // disp_time_reuse_cold_150/1000
-        165, 925,                   // disp_time_reuse_cool_150/1000
-        175, 945,                   // disp_time_reuse_normal_150/1000
-        185, 965,                   // disp_time_reuse_hot_150/1000
-        195, 985,                   // disp_time_reuse_warm_150/1000
+        150, 900,                   // disp_time_cold_150/500
+        160, 920,                   // disp_time_cool_150/500
+        170, 940,                   // disp_time_normal_150/500
+        180, 960,                   // disp_time_hot_150/500
+        190, 980,                   // disp_time_warm_150/500
+        155, 905,                   // disp_time_reuse_cold_150/500
+        165, 925,                   // disp_time_reuse_cool_150/500
+        175, 945,                   // disp_time_reuse_normal_150/500
+        185, 965,                   // disp_time_reuse_hot_150/500
+        195, 985,                   // disp_time_reuse_warm_150/500
         300                         // auto_refill_delay_10ms
             };
 

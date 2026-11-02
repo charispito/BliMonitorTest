@@ -13,7 +13,7 @@ namespace BliMonitorTest.controls
         public static readonly string[] DefaultNames = new[]
         {
             "HOT 선택", "150mL",
-            "WARM 선택", "1000mL",
+            "WARM 선택", "500mL",
             "NORMAL 선택", "OUTLET",
             "COOL 선택", "TEST MODE",
             "COLD 선택", "NIGHT",
@@ -34,14 +34,14 @@ namespace BliMonitorTest.controls
 
         public void UpdateButtons(
             bool hot, bool warm, bool normal, bool cool, bool cold,
-            bool reheat, bool qty150, bool qty1000, bool outlet,
+            bool reheat, bool qty150, bool qty500, bool outlet,
             bool testMode, bool night, bool heaterPwm)
         {
             DL0.cont.Text = OnOff(hot);
             DL1.cont.Text = OnOff(qty150);
 
             DL2.cont.Text = OnOff(warm);
-            DL3.cont.Text = OnOff(qty1000);
+            DL3.cont.Text = OnOff(qty500);
 
             DL4.cont.Text = OnOff(normal);
             DL5.cont.Text = OnOff(outlet);

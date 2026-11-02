@@ -341,7 +341,7 @@ namespace BliMonitorTest.data
             {
                 case 0: return "NONE";
                 case 1: return "150mL";
-                case 2: return "1000mL";
+                case 2: return "500mL";
                 default: return "UNKNOWN(" + qty + ")";
             }
         }
@@ -399,7 +399,7 @@ namespace BliMonitorTest.data
             if ((value & 0x0010) != 0) list.Add("COLD 선택");
             if ((value & 0x0020) != 0) list.Add("REHEAT 상태");
             if ((value & 0x0040) != 0) list.Add("150mL 선택");
-            if ((value & 0x0080) != 0) list.Add("1000mL 선택");
+            if ((value & 0x0080) != 0) list.Add("500mL 선택");
             if ((value & 0x0100) != 0) list.Add("출수 동작");
 
             return list.Count == 0 ? "-" : string.Join(", ", list);
